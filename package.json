@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/jyaaan/eatifiy-crm#readme",
   "dependencies": {
+    "async": "^2.4.1",
     "chai": "^4.0.2",
     "chromedriver": "^2.29.0",
     "mocha": "^3.4.2",
