@@ -25,11 +25,11 @@ function login() {
               .click();
             })
         driver.wait(until.titleIs('Instagram'))
-            .then(waited => {
-                console.log('login successful, async process started');  
-                console.log('waited', waited);
-                resolve('done');
-            })
+          .then(waited => {
+            console.log('login successful, async process started');  
+            console.log('waited', waited);
+            resolve('done');
+          })
         })
 }
 
@@ -41,7 +41,8 @@ function getSuggested() {
         async.mapSeries(focus, (user, next) => {
           user.findElement(By.className('_m0jj1')).getText()
             .then(name => {
-              if (name != '') suggestedUsers.push(name);
+              const a = suggestedUsers.indexOf(name);
+              if (name != '' && a == -1) suggestedUsers.push(name);
               next();
             })
         }, (err, dev) => {
@@ -75,16 +76,22 @@ function lookupUser(username) {
             })
     }
     driver.get('https://www.instagram.com/' + username)
-    driver.wait(until.titleIs('Lauren | Fashionably Lo (@' + username + ') • Instagram photos and videos'))
+    var title;
+    var fullName;
+    if (fullName == '') {
+      title = username + ' • Instagram photos and videos';
+    } else {
+      title = fullName + ' (@' + username + ') • Instagram photos and videos';
+    }
+    driver.wait(until.titleIs(title))
     .then(result => {
-        driver.findElement(By.className('_5eykz'))
-            .click();
-            setTimeout(() => {
-            getNext();
-            }, 2000);
-    })
-
-  })
+      driver.findElement(By.className('_5eykz'))
+        .click();
+        setTimeout(() => {
+          getNext();
+        }, 2000);
+    });
+  });
 }
 
 login()
