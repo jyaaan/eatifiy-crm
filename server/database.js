@@ -143,7 +143,8 @@ Database.prototype.upsertRelationship = function (userEId, followingEId, followi
           const count = Number(result[0].count);
           if (count > 0) {
             this.updateRelationship(userEId, followingEId, following)
-              .then(upsert => {
+              .then(update => {
+                resolve(update);
               })
               .catch(err => {
                 console.log('error in upserting>updating relationship');
@@ -152,16 +153,107 @@ Database.prototype.upsertRelationship = function (userEId, followingEId, followi
           } else {
             this.createRelationship(userEId, followingEId, following)
               .then(create => {
-
+                resolve(create);
               })
               .catch(err => {
                 console.log('error in upserting>creating relationship');
                 reject(err);
               })
           }
-          resolve('upsert relationship successful');
         })
   })
+}
+
+// SUGGESTIONS
+
+Database.prototype.createSuggestion = function (userEId, suggestedEId, rank) {
+  const timeNow = new Date(Date.now()).toISOString();
+  const suggestion = {
+    user_id: userEId,
+    suggested_id: suggestedEId,
+    created_at: timeNow,
+    updated_at: timeNow,
+    last_rank: rank,
+    highest_rank: rank
+  };
+  return knex('suggestions').insert(suggestion);
+}
+
+Database.prototype.updateSuggestion = function (userEId, suggestedEId, rank, prevRank) {
+  const timeNow = new Date(Date.now()).toISOString();
+  const suggestion = {
+    updated_at: timeNow,
+    last_rank: rank,
+    highest_rank: (rank < prevRank) ? rank : prevRank
+  }
+  return knex('suggestions')
+    .where('user_id', userEId)
+    .andWhere('suggested_id', suggestedEId)
+    .update(suggestion);
+}
+
+Database.prototype.upsertSuggestion = function (userEId, suggestedEId, rank) {
+  return new Promise((resolve, reject) => {
+    knex('suggestions')
+      .count('*')
+      .where('user_id', userEId)
+      .andWhere('suggested_id', suggestedEId)
+      .then(result => {
+        const count = Number(result[0].count);
+        if (count > 0) {
+          this.getSuggestion(userEId, suggestedEId)
+            .then(prevSuggestion => {
+              this.updateSuggestion(userEId, suggestedEId, rank, prevSuggestion.highest_rank)
+                .then(update => {
+                  resolve(update);
+                })
+                .catch(err => {
+                  console.log('error upserting>updating suggestion');
+                  reject(err);
+                })
+            })
+        } else {
+          this.createSuggestion(userEId, suggestedEId, rank)
+            .then(create => {
+              resolve(create);
+            })
+            .catch(err => {
+              console.log('error upserting>creating suggestion');
+              reject(err);
+            })
+        }
+      })
+  })
+}
+
+Database.prototype.getSuggestion = function (userEId, suggestedEId) {
+  return knex('suggestions')
+    .select('*')
+    .where('user_id', userEId)
+    .andWhere('suggested_id', suggestedEId)
+    .then(result => {
+      return result[0];
+    })
+}
+
+// UTILITY
+
+// MASS INSERT
+Database.prototype.insertObjects = function (tableName, arrObjData) {
+  return knex.transaction((trx) => {
+    return knex.batchInsert(tableName, arrObjData)
+      .transacting(trx)
+      .then(trx.commit)
+      .catch(trx.rollback);
+  })
+    .then(() => {
+      console.log('transaction successful')
+      return 'transaction successful';
+    })
+    .catch(() => {
+      console.log('transaction failed');
+      return 'transaction failed';
+    });
 }
 
 exports.Database = Database;
