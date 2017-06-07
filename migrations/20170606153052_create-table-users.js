@@ -22,6 +22,7 @@ exports.up = function(knex, Promise) {
     table.integer('recent_comment_count').notNull().defaultTo(0);
     table.decimal('truefluence_score').notNull().defaultTo(0.0);
     table.integer('task_id').defaultTo(null);
+    table.boolean('verified').defaultTo(false);
   });
 
   return query;
