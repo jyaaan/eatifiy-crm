@@ -35,15 +35,22 @@ Database.prototype.usernameExists = function (username) {
   });
 }
 
-Database.prototype.getUserByEID = function (id) {
+Database.prototype.getUserByEId = function (eId) {
   return new Promise((resolve, reject) => {
     knex('users')
       .select('*')
-      .where('id', id)
+      .where('id', eId)
       .then(result => {
         resolve(result[0]);
       });
   });
+}
+
+Database.prototype.getEIdFromExternalId = function (externalId, tableName) {
+  return knex(tableName)
+    .where('external_id', externalId)
+    .select('id')
+    .limit(1);
 }
 
 // MODIFY FUNCTIONS
@@ -96,6 +103,64 @@ Database.prototype.upsertUser = function (user) {
             })
         }
       })
+  })
+}
+
+// RELATIONSHIPS
+
+Database.prototype.createRelationship = function (userEId, followingEId, following) {
+  const timeNow = new Date(Date.now()).toISOString();
+  const relationship = {
+    user_id: userEId,
+    following_id: followingEId,
+    created_at: timeNow,
+    updated_at: timeNow,
+    following: following
+  };
+  return knex('relationships').insert(relationship);
+}
+
+Database.prototype.updateRelationship = function (userEId, followingEId, following) {
+  const timeNow = new Date(Date.now()).toISOString();
+  const relationship = {
+    updated_at: timeNow,
+    following: following
+  };
+
+  return knex('relationships')
+    .where('user_id', userEId)
+    .andWhere('following_id', followingEId)
+    .update(relationship);
+}
+
+Database.prototype.upsertRelationship = function (userEId, followingEId, following = true) {
+  return new Promise((resolve, reject) => {
+    knex('relationships')
+      .count('*')
+      .where('user_id', userEId)
+      .andWhere('following_id', followingEId)
+        .then(result => {
+          const count = Number(result[0].count);
+          if (count > 0) {
+            this.updateRelationship(userEId, followingEId, following)
+              .then(upsert => {
+              })
+              .catch(err => {
+                console.log('error in upserting>updating relationship');
+                reject(err);
+              })
+          } else {
+            this.createRelationship(userEId, followingEId, following)
+              .then(create => {
+
+              })
+              .catch(err => {
+                console.log('error in upserting>creating relationship');
+                reject(err);
+              })
+          }
+          resolve('upsert relationship successful');
+        })
   })
 }
 
