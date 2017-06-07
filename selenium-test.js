@@ -77,7 +77,7 @@ function lookupUser(username) {
     }
     driver.get('https://www.instagram.com/' + username)
     var title;
-    var fullName;
+    var fullName = 'Gena Hamshaw';
     if (fullName == '') {
       title = username + ' • Instagram photos and videos';
     } else {
@@ -96,5 +96,5 @@ function lookupUser(username) {
 
 login()
     .then(result => {
-        lookupUser('laurenelyce');
+        lookupUser('thefullhelping');
     })
