@@ -34,8 +34,10 @@ const UserProfile = props => {
         <p>{ profile.bio }</p>
         <button
           className='ui button'
-          onClick={ handleGetFollowing }>Get Following</button>
+          onClick={ handleGetFollowing }>Analyze Followers</button>
       </div>
     </div>
   )
 }
+
+module.exports = UserProfile;

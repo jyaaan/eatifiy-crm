@@ -5,6 +5,8 @@ const bodyParser = require('body-parser');
 const IG = require('./ig');
 const Database = require('./database').Database;
 const database = new Database();
+const ParseScrape = require('./parse-scrape');
+const Scraper = require('./scraper');
 
 const publicPath = path.join(__dirname, '/public');
 const staticMiddleware = express.static(publicPath);
@@ -34,10 +36,11 @@ app.post('/lookup', (req, res) => {
       } else {
         scrapeSave(req.body.username)
           .then(scrape => {
-            database.getUserById(scrape.id)
-              .then(user => {
-                res.json(user);
-              })
+            console.log('scrape', scrape);
+            // database.getUserByEID(scrape.id)
+            //   .then(user => {
+            //     res.json(user);
+            //   })
           })
       }
     })

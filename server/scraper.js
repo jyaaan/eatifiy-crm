@@ -1,5 +1,5 @@
 const https = require('https');
-const PraseScrape = require('./parse-scrape');
+const ParseScrape = require('./parse-scrape');
 
 function Scraper(username) {
   return new Promise((resolve, reject) => {
@@ -25,3 +25,5 @@ function Scraper(username) {
     });
   });
 }
+
+module.exports = Scraper;
