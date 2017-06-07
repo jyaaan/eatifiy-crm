@@ -12,10 +12,14 @@ const usernameInput = (state = '', action) => {
   }
 }
 
-const userProfile = (state = {}, action) => {
+const userProfile = (state = { profile: { id: -1 }, followingBtn: false }, action) => {
   switch (action.type) {
     case 'SHOW_PROFILE':
-      return action.profile;
+      return { profile: action.profile };
+    case 'DISABLE_FOLLOWING':
+      return { followingBtn: action.show, profile: state.profile };
+    case 'ENABLE_FOLLOWING':
+      return { followingBtn: action.show, profile: state.profile };
     default:
       return state;
   }

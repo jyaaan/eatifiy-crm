@@ -13,14 +13,14 @@ IG.prototype.getFollowing = function (userId, session) {
   const startTime = new Date();
 
   return new Promise((resolve, reject) => {
-    let feed = new Client.Feed.AccountFollowing(session, userId)
+    let feed = new Client.Feed.AccountFollowing(session, userId);
     function retrieve() {
       feed.get()
         .then(result => {
           result.map(user => { following.push(user._params)})
           if (feed.isMoreAvailable()) {
             setTimeout(() => {
-              retrieve()
+              retrieve();
             }, 3000);
           } else {
             resolve(following);
@@ -32,7 +32,7 @@ IG.prototype.getFollowing = function (userId, session) {
 }
 
 IG.prototype.initialize = function () {
-  return new Client.Session.create(device, storage, 'eatifyjohn', 'occsbootbamp')
+  return new Client.Session.create(device, storage, 'eatifyjohn', 'occsbootcamp')
     .then(session => {
       return session;
     })

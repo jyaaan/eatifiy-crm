@@ -3,14 +3,25 @@ const store = require('./store');
 const async = require('async');
 
 const UserProfile = props => {
-  const profile = store.getState().userProfile;
-  
-  if (!profile.id) return null; // if there is no profile loaded, do not show
+  console.log('user profile state:', store.getState().userProfile);
+  const profile = store.getState().userProfile.profile;
+  var disableFollowingBtn = store.getState().userProfile.followingBtn;
+  console.log('showfollowingbtn', disableFollowingBtn);
+  console.log('profile', profile);
+  if (profile.id == '-1') return null; // if there is no profile loaded, do not show
 
   const profileLink = 'http://www.instagram.com/' + profile.username;
   
   const handleGetFollowing = event => {
-
+    store.dispatch({
+      type: 'DISABLE_FOLLOWING',
+      show: true
+    })
+    fetch('/get-following', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: profile.external_id })
+    })
   }
 
   return (
@@ -33,8 +44,9 @@ const UserProfile = props => {
       <div className='ui four column centered row'>
         <p>{ profile.bio }</p>
         <button
-          className='ui button'
-          onClick={ handleGetFollowing }>Analyze Followers</button>
+          className='ui button analyzebtn'
+          disabled={ disableFollowingBtn }
+          onClick={ handleGetFollowing }>Get Following</button>
       </div>
     </div>
   )

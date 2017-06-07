@@ -6,8 +6,8 @@ function Scraper(username) {
     https.get('https://www.instagram.com/' + username + '/?__a=1', res => {
       var dataQueue = '';
 
-      res.on('data', data => {
-        dataQueue += data;
+      res.on('data', d => {
+        dataQueue += d;
       });
 
       res.on('uncaughtException', err => {

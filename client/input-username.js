@@ -29,6 +29,10 @@ const UsernameInput = props => {
           type: 'SHOW_PROFILE',
           profile: user
         });
+        store.dispatch({
+          type: 'DISABLE_FOLLOWING',
+          show: false
+        })
       });
   };
   return (
