@@ -3,11 +3,8 @@ const store = require('./store');
 const async = require('async');
 
 const UserProfile = props => {
-  console.log('user profile state:', store.getState().userProfile);
   const profile = store.getState().userProfile.profile;
   var disableFollowingBtn = store.getState().userProfile.followingBtn;
-  console.log('showfollowingbtn', disableFollowingBtn);
-  console.log('profile', profile);
   if (profile.id == '-1') return null; // if there is no profile loaded, do not show
 
   const profileLink = 'http://www.instagram.com/' + profile.username;
@@ -20,7 +17,7 @@ const UserProfile = props => {
     fetch('/get-following', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: profile.external_id })
+      body: JSON.stringify(profile)
     })
   }
 

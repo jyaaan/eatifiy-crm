@@ -26,10 +26,16 @@ ig.initialize()
 
 
 app.post('/get-following', (req, res) => {
-  ig.getFollowing(req.body.id, currentSession.session)
+  ig.getFollowing(req.body.external_id, currentSession.session)
     .then(following => {
       console.log('following:', following);
-      res.send('okay dokay');
+      // queueFollowing(following, req.body.profile.id)
+      //   .then(result => {
+      //     console.log('following harvest complete');
+      //   })
+      //   .catch(err => {
+      //     console.error(err);
+      //   })
     })
 });
 
@@ -77,7 +83,7 @@ const scrapeSave = username => {
 }
 
 // update this to work with tasks if you decide to use them
-const queueFollowing = (following, primaryUserId) => {
+const queueFollowing = (following, primaryUserEId) => {
   
   console.log('queueFollowing activating!');
   const timeNow = new Date(Date.now()).toISOString();
@@ -87,11 +93,15 @@ const queueFollowing = (following, primaryUserId) => {
       database.getUserByUsername(follow.username)
         .then(result => {
           if (result) {
-            console.log('old user, upserting relationship primary:', primaryUserId);
-            database.upsertRelationship(result.id, primaryUserId, true)
+            // (usereid, eid of person user is following)
+            database.upsertRelationship(primaryUserEId, result.id, true)
               .then(related => {
                 next();
-              });
+              })
+              .catch(err => {
+                console.error(err);
+                next();
+              })
           } else {
             console.log('new user, inserting');
             const profile = { //add task to here
@@ -103,10 +113,15 @@ const queueFollowing = (following, primaryUserId) => {
             };
             database.upsertUser(profile)
               .then(newUser => {
-                console.log('newUser[0]', newUser[0]);
-                console.log('primary id:', primaryUserId);
-                database.upsertRelationship(newUser[0], primaryUserId, true)
+                // console.log('newUser[0]', newUser[0]);
+                // console.log('primary id:', primaryUserEId);
+                // (usereid, eid of person user is following)
+                database.upsertRelationship(primaryUserEId, newUser[0], true)
                   .then(related => {
+                    next();
+                  })
+                  .catch(err => {
+                    console.error(err);
                     next();
                   })
               })

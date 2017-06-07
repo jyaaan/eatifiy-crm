@@ -55,7 +55,8 @@ Database.prototype.getEIdFromExternalId = function (externalId, tableName) {
 
 // MODIFY FUNCTIONS
 
-// USER
+// USERS
+
 Database.prototype.createUser = function (user) {
   const timeNow = new Date(Date.now()).toISOString();
   user.created_at = timeNow;
