@@ -94,7 +94,7 @@ function lookupUser(username) {
   });
 }
 
-login()
-    .then(result => {
-        lookupUser('thefullhelping');
-    })
+// login()
+//     .then(result => {
+//         lookupUser('thefullhelping');
+//     })

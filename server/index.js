@@ -8,6 +8,7 @@ const database = new Database();
 const ParseScrape = require('./parse-scrape');
 const Scraper = require('./scraper');
 const async = require('async');
+const AutoBrowser = require('./auto-browser');
 
 const publicPath = path.join(__dirname, '/public');
 const staticMiddleware = express.static(publicPath);
@@ -26,11 +27,13 @@ ig.initialize()
 
 
 app.post('/get-following', (req, res) => {
+  res.send('request received');
   ig.getFollowing(req.body.external_id, currentSession.session)
     .then(following => {
       queueFollowing(following, req.body.id)
         .then(result => {
           console.log('following harvest complete');
+          AutoBrowser(req.body);
         })
         .catch(err => {
           console.error(err);
