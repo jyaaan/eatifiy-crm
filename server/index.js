@@ -28,14 +28,13 @@ ig.initialize()
 app.post('/get-following', (req, res) => {
   ig.getFollowing(req.body.external_id, currentSession.session)
     .then(following => {
-      console.log('following:', following);
-      // queueFollowing(following, req.body.profile.id)
-      //   .then(result => {
-      //     console.log('following harvest complete');
-      //   })
-      //   .catch(err => {
-      //     console.error(err);
-      //   })
+      queueFollowing(following, req.body.id)
+        .then(result => {
+          console.log('following harvest complete');
+        })
+        .catch(err => {
+          console.error(err);
+        })
     })
 });
 
@@ -84,7 +83,6 @@ const scrapeSave = username => {
 
 // update this to work with tasks if you decide to use them
 const queueFollowing = (following, primaryUserEId) => {
-  
   console.log('queueFollowing activating!');
   const timeNow = new Date(Date.now()).toISOString();
 
