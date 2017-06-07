@@ -8,12 +8,20 @@ var driver = new webdriver.Builder()
 
 const async = require('async');
 
+function spliceDuplicates(users) {
+  return users.filter((user, index, collection) => {
+    return collection.indexOf(user) == index;
+  })
+}
+
 function AutoBrowser(user) {
   lookupUser(user)
     .then(suggestions => {
       console.log('retrieved suggestions:', suggestions);
+      console.log('after splicing:', spliceDuplicates(suggestions));
     });
 }
+
 
 function login() {
   return new Promise((resolve, reject) => {

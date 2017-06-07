@@ -34,6 +34,7 @@ const UserProfile = props => {
             <li>User Name: { profile.username }</li>
             <li>User ID: { profile.external_id }</li>
             <li>Followers: { profile.follower_count }</li>
+            <li>Following: { profile.following_count }</li>
             <li>Posts: { profile.post_count }</li>
           </ul>
         </div>
