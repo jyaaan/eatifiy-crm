@@ -87,14 +87,14 @@ function lookupUser(username) {
     .then(result => {
       driver.findElement(By.className('_5eykz'))
         .click();
-        setTimeout(() => {
-          getNext();
-        }, 2000);
+      setTimeout(() => {
+        getNext();
+      }, 2000);
     });
   });
 }
 
 login()
     .then(result => {
-        lookupUser('laurenelyce');
+        lookupUser('laurenelyce'); // this is a test
     })
