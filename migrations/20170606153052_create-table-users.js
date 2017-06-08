@@ -2,11 +2,11 @@
 exports.up = function(knex, Promise) {
   const query = knex.schema.createTable('users', table => {
     table.increments('id').notNull();
-    table.string('username').notNull().defaultTo('');
+    table.string('username').notNull();
+    table.unique('username');
     table.string('picture_url').notNull().defaultTo('');
     table.string('full_name').notNull().defaultTo('');
-    table.string('external_id').notNull();
-    table.unique('external_id');
+    table.string('external_id').defaultTo('');
     table.boolean('private').notNull().defaultTo(false);
     table.integer('user_tags_count').notNull().defaultTo(0);
     table.integer('following_count').notNull().defaultTo(0);

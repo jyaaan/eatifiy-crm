@@ -9,6 +9,7 @@ const ParseScrape = require('./parse-scrape');
 const Scraper = require('./scraper');
 const async = require('async');
 const AutoBrowser = require('./auto-browser');
+const autoBrowser = new AutoBrowser();
 
 const publicPath = path.join(__dirname, '/public');
 const staticMiddleware = express.static(publicPath);
@@ -32,8 +33,15 @@ app.post('/get-following', (req, res) => {
     .then(following => {
       queueFollowing(following, req.body.id)
         .then(result => {
-          console.log('following harvest complete');
-          AutoBrowser(req.body);
+          console.log('following harvest complete result:', result);
+          async.mapSeries(result, (follow, next) => {
+            autoBrowser.process(follow)
+              .then(processed => {
+                setTimeout(next, 1000);
+              })
+          }, err => {
+            console.log('complete');
+          })
         })
         .catch(err => {
           console.error(err);
@@ -88,12 +96,13 @@ const scrapeSave = username => {
 const queueFollowing = (following, primaryUserEId) => {
   console.log('queueFollowing activating!');
   const timeNow = new Date(Date.now()).toISOString();
-
+  const upsertedUsers = [];
   return new Promise((resolve, reject) => {
     async.mapSeries(following, (follow, next) => {
       database.getUserByUsername(follow.username)
         .then(result => {
           if (result) {
+            upsertedUsers.push(result);
             // (usereid, eid of person user is following)
             database.upsertRelationship(primaryUserEId, result.id, true)
               .then(related => {
@@ -114,10 +123,14 @@ const queueFollowing = (following, primaryUserEId) => {
             };
             database.upsertUser(profile)
               .then(newUser => {
+                console.log('newUser:', newUser);
+                console.log('profile:', profile);
+                profile.id = newUser;
+                upsertedUsers.push(profile);
                 // console.log('newUser[0]', newUser[0]);
                 // console.log('primary id:', primaryUserEId);
                 // (usereid, eid of person user is following)
-                database.upsertRelationship(primaryUserEId, newUser[0], true)
+                database.upsertRelationship(primaryUserEId, newUser, true)
                   .then(related => {
                     next();
                   })
@@ -130,7 +143,7 @@ const queueFollowing = (following, primaryUserEId) => {
         })
     }, (err, dat) => {
       if (!err) {
-        resolve('complete');
+        resolve(upsertedUsers);
       } else {
         reject(err);
       }

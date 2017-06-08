@@ -72,7 +72,7 @@ Database.prototype.updateUser = function (user) {
   user.updated_at = timeNow;
 
   return knex('users')
-    .where('external_id', user.external_id)
+    .where('username', user.username)
     .returning('id')
     .update(user);
 }
@@ -81,13 +81,13 @@ Database.prototype.upsertUser = function (user) {
   return new Promise((resolve, reject) => {
     knex('users')
       .count('*')
-      .where('external_id', user.external_id)
+      .where('username', user.username)
       .then(result => {
         const count = Number(result[0].count);
         if (count > 0) {
           this.updateUser(user)
             .then(updated => {
-              resolve(updated);
+              resolve(updated[0]);
             })
             .catch(err => {
               console.log('error updating user');
@@ -96,7 +96,7 @@ Database.prototype.upsertUser = function (user) {
         } else {
           this.createUser(user)
             .then(created => {
-              resolve(created);
+              resolve(created[0]);
             })
             .catch(err => {
               console.log('error creating user');
@@ -236,6 +236,8 @@ Database.prototype.getSuggestion = function (userEId, suggestedEId) {
       return result[0];
     })
 }
+
+Database.prototype.getSuggestionsForUser
 
 // UTILITY
 
