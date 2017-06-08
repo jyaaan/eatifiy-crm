@@ -7,6 +7,8 @@ var driver = new webdriver.Builder()
   .build();
 
 const async = require('async');
+const Database = require('./database').Database;
+const database = new Database();
 
 function spliceDuplicates(users) {
   return users.filter((user, index, collection) => {
@@ -14,12 +16,47 @@ function spliceDuplicates(users) {
   })
 }
 
-function AutoBrowser(user) {
-  lookupUser(user)
-    .then(suggestions => {
-      console.log('retrieved suggestions:', suggestions);
-      console.log('after splicing:', spliceDuplicates(suggestions));
-    });
+function AutoBrowser() {
+
+}
+
+AutoBrowser.prototype.process = function (user) {
+  // const user = {
+  //   username: profile.username,
+  //   picture_url: profile.picture,
+  //   full_name: profile.fullName,
+  //   external_id: profile.id,
+  //   private: profile.isPrivate
+  // };
+  console.log('starting process, user:', user);
+  const timeNow = new Date(Date.now()).toISOString();
+  return new Promise((resolve, reject) => {
+    lookupUser(user)
+      .then(suggestions => {
+        console.log('retrieved suggestions:', suggestions);
+        const dedupedSuggestions = spliceDuplicates(suggestions);
+        console.log('after splicing:', spliceDuplicates(suggestions));
+        async.mapSeries(dedupedSuggestions, (suggested, next) => {
+          const profile = {
+            username: suggested
+          };
+          database.upsertUser(profile)
+            .then(id => {
+              database.upsertSuggestion(user.id, id, dedupedSuggestions.indexOf(suggested) + 1)
+                .then(upsert => {
+                  next();
+                })
+            })
+        }, err => {
+          user.last_suggested_updated_at = timeNow;
+          user.last_suggested_count = dedupedSuggestions.length;
+          database.updateUser(user)
+            .then(finished => {
+              resolve(finished);
+            })
+        });
+      });
+  })
 }
 
 
@@ -57,6 +94,7 @@ function getSuggested() {
             .then(name => {
               const a = suggestedUsers.indexOf(name);
               if (name != '' && a == -1) suggestedUsers.push(name);
+              // USE THIS TO CHECK IF USER IS VERIFIED
               // user.findElement(By.className('_soakw'))
               //   .then(element => {
               //     // user is verified
@@ -72,7 +110,7 @@ function getSuggested() {
   })
 }
 
-function lookupUser(user) {
+function lookupUser(user) { // returns a raw list of suggested usernames. usually includes duplicates
   var suggestedUsers = [];
   return new Promise((resolve, reject) => {
     function getNext() {
@@ -87,7 +125,7 @@ function lookupUser(user) {
                             .then(() => {
                                 setTimeout(() => {
                                     getNext();
-                                }, 1000)
+                                }, 1100)
                             })
                     }, err => {
                         // console.log('all suggested:', suggestedUsers);
