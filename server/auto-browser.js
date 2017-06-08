@@ -8,6 +8,20 @@ var driver = new webdriver.Builder()
 
 const async = require('async');
 
+function spliceDuplicates(users) {
+  return users.filter((user, index, collection) => {
+    return collection.indexOf(user) == index;
+  })
+}
+
+function AutoBrowser(user) {
+  lookupUser(user)
+    .then(suggestions => {
+      console.log('retrieved suggestions:', suggestions);
+      console.log('after splicing:', spliceDuplicates(suggestions));
+    });
+}
+
 
 function login() {
   return new Promise((resolve, reject) => {
@@ -39,10 +53,16 @@ function getSuggested() {
     driver.findElements(By.css('._7svr2'))
       .then(focus => {
         async.mapSeries(focus, (user, next) => {
-          user.findElement(By.className('_m0jj1')).getText()
+          user.findElement(By.className('_4zhc5 _77kjb')).getText() // changed to a more specific element
             .then(name => {
               const a = suggestedUsers.indexOf(name);
               if (name != '' && a == -1) suggestedUsers.push(name);
+              // user.findElement(By.className('_soakw'))
+              //   .then(element => {
+              //     // user is verified
+              //   }, err => {
+              //     // user is not verified
+              //   })
               next();
             })
         }, (err, dev) => {
@@ -52,7 +72,7 @@ function getSuggested() {
   })
 }
 
-function lookupUser(username) {
+function lookupUser(user) {
   var suggestedUsers = [];
   return new Promise((resolve, reject) => {
     function getNext() {
@@ -70,19 +90,19 @@ function lookupUser(username) {
                                 }, 1000)
                             })
                     }, err => {
-                        console.log('all suggested:', suggestedUsers);
-                        resolve('complete');
+                        // console.log('all suggested:', suggestedUsers);
+                        resolve(suggestedUsers);
                     })
-            })
+            });
     }
-    driver.get('https://www.instagram.com/' + username)
+    driver.get('https://www.instagram.com/' + user.username)
     var title;
-    var fullName;
-    if (fullName == '') {
-      title = username + ' • Instagram photos and videos';
+    if (user.full_name == '' || user.full_name == user.username) {
+      title = '@' + user.username + ' • Instagram photos and videos';
     } else {
-      title = fullName + ' (@' + username + ') • Instagram photos and videos';
+      title = user.full_name + ' (@' + user.username + ') • Instagram photos and videos';
     }
+    console.log('full name:', user.full_name, 'title:', title);
     driver.wait(until.titleIs(title))
     .then(result => {
       driver.findElement(By.className('_5eykz'))
@@ -94,7 +114,11 @@ function lookupUser(username) {
   });
 }
 
-login()
-    .then(result => {
-        lookupUser('laurenelyce'); // this is a test
-    })
+login();
+
+// login()
+//     .then(result => {
+//         lookupUser('laurenelyce'); // this is a test
+//     })
+
+module.exports = AutoBrowser;

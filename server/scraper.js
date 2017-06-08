@@ -1,13 +1,13 @@
 const https = require('https');
-const PraseScrape = require('./parse-scrape');
+const ParseScrape = require('./parse-scrape');
 
 function Scraper(username) {
   return new Promise((resolve, reject) => {
     https.get('https://www.instagram.com/' + username + '/?__a=1', res => {
       var dataQueue = '';
 
-      res.on('data', data => {
-        dataQueue += data;
+      res.on('data', d => {
+        dataQueue += d;
       });
 
       res.on('uncaughtException', err => {
@@ -25,3 +25,5 @@ function Scraper(username) {
     });
   });
 }
+
+module.exports = Scraper;
