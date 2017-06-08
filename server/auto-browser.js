@@ -53,10 +53,16 @@ function getSuggested() {
     driver.findElements(By.css('._7svr2'))
       .then(focus => {
         async.mapSeries(focus, (user, next) => {
-          user.findElement(By.className('_m0jj1')).getText()
+          user.findElement(By.className('_4zhc5 _77kjb')).getText() // changed to a more specific element
             .then(name => {
               const a = suggestedUsers.indexOf(name);
               if (name != '' && a == -1) suggestedUsers.push(name);
+              // user.findElement(By.className('_soakw'))
+              //   .then(element => {
+              //     // user is verified
+              //   }, err => {
+              //     // user is not verified
+              //   })
               next();
             })
         }, (err, dev) => {
