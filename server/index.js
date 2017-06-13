@@ -53,6 +53,34 @@ app.post('/get-suggested', (req, res) => {
 
 });
 
+// show list of rank 1 suggestions as well as frequency of rank 1
+
+app.get('/get-report-rank', (req, res) => {
+  const topRanked = [];
+  const topRankedDedupe = [];
+  const results = [];
+  database.getUserByUsername('eatify')
+    .then(user => {
+      database.getTopRanked(user.username);
+    });
+  results = topRankedDedupe.map(user => {
+    const filtered = topRanked.filter(result => {
+      return result = user;
+    })
+    return [user, filtered.length];
+  });
+  results.map(result => {
+    console.log(result);
+  })
+});
+
+// show list of suggestions by frequency among following
+
+app.get('/get-report-frequency', (req, res) => {
+  // get internal id of target user. look up relationships to generate array of internal ids
+  // for each internal id in that array, 
+})
+
 app.post('/lookup', (req, res) => {
   database.usernameExists(req.body.username)
     .then(result => {

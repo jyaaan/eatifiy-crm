@@ -234,10 +234,17 @@ Database.prototype.getSuggestion = function (userEId, suggestedEId) {
     .andWhere('suggested_id', suggestedEId)
     .then(result => {
       return result[0];
-    })
+    });
 }
 
-Database.prototype.getSuggestionsForUser
+Database.prototype.getSuggestionsForUser = function (userEId) {
+  return knex('suggestions')
+    .select('*')
+    .where('user_id', userEId)
+    .then(result => {
+      return result[0];
+    });
+}
 
 // UTILITY
 

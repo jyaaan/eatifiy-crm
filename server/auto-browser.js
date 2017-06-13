@@ -103,6 +103,10 @@ function getSuggested() {
               //   })
               next();
             })
+            .catch(err => {
+              console.log('error in getSuggested');
+              reject(err);
+            })
         }, (err, dev) => {
           resolve(suggestedUsers);
         })
