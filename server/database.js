@@ -53,6 +53,15 @@ Database.prototype.getEIdFromExternalId = function (externalId, tableName) {
     .limit(1);
 }
 
+Database.prototype.getUsernameFromEId = function (userEId) {
+  return knex('users')
+    .select('username')
+    .where('id', userEId)
+    .then(result => {
+      return result[0];
+    })
+}
+
 Database.prototype.getFollowing = function (userEId) {
   return knex('relationships')
     .select('following_id')

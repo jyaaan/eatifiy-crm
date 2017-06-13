@@ -20,6 +20,12 @@ const currentSession = { initialized: false, session: {} };
 app.use(staticMiddleware);
 app.use(bodyParser.json());
 
+function spliceDuplicates(users) {
+  return users.filter((user, index, collection) => {
+    return collection.indexOf(user) == index;
+  })
+}
+
 ig.initialize()
   .then(result => {
     console.log('initializing session');
@@ -57,8 +63,8 @@ app.post('/get-suggested', (req, res) => {
 
 app.get('/get-report-rank', (req, res) => {
   var topRanked = [];
-  const topRankedDedupe = [];
-  const results = [];
+  var topRankedDedupe = [];
+  var results = [];
   database.getUserByUsername('eatify')
     .then(user => {
       database.getFollowing(user.id)
@@ -77,26 +83,44 @@ app.get('/get-report-rank', (req, res) => {
                 next();
               })
           }, (err, data) => {
+
             // console.log(topRanked[1]);
-            // anonymous {
+            // anonymous { // sample of returned suggestion data
             //   user_id: 676,
             //   suggested_id: 316,
             //   created_at: 2017-06-13T00:43:13.318Z,
             //   updated_at: 2017-06-13T00:43:13.318Z,
             //   last_rank: 2,
             //   highest_rank: 2 }
+
+            topRanked = topRanked.map(rank => {
+              return rank.suggested_id;
+            });
+
+            topRankedDedupe = spliceDuplicates(topRanked);
+
+            results = topRankedDedupe.map(user => {
+              var filtered = topRanked.filter(result => {
+                return result == user;
+              })
+              return [user, filtered.length];
+            });
+
+            async.mapSeries(results, (result, next) => {
+              database.getUsernameFromEId(result[0])
+                .then(username => {
+                  result[0] = username.username;
+                  next();
+                })
+            }, (err, data) => {
+              results.sort((a, b) => {
+                return b[1] - a[1];
+              })
+              console.log(results);
+            })
           })
         })
     });
-  // results = topRankedDedupe.map(user => {
-  //   const filtered = topRanked.filter(result => {
-  //     return result = user;
-  //   })
-  //   return [user, filtered.length];
-  // });
-  // results.map(result => {
-  //   console.log(result);
-  // })
 });
 
 // show list of suggestions by frequency among following
