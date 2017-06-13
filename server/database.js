@@ -71,6 +71,18 @@ Database.prototype.getFollowing = function (userEId) {
     })
 }
 
+Database.prototype.userSuggestionsLoaded = function (username) {
+  return new Promise((resolve, reject) => {
+    knex('users')
+      .count('*')
+      .whereNotNull('last_suggested_updated_at')
+      .andWhere('username', username)
+      .then(result => {
+        resolve(result[0].count > 0);
+      });
+  })
+}
+
 // MODIFY FUNCTIONS
 
 // USERS

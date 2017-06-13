@@ -39,11 +39,19 @@ app.post('/get-following', (req, res) => {
     .then(following => {
       queueFollowing(following, req.body.id)
         .then(result => {
-          console.log('following harvest complete result:', result);
-          async.mapSeries(result, (follow, next) => {
-            autoBrowser.process(follow)
-              .then(processed => {
-                setTimeout(next, 1000);
+          // console.log('following harvest complete result:', result);
+          // splice out users where suggestions have been loaded already
+          async.mapSeries(result, (user, next) => {
+            database.userSuggestionsLoaded(user.username)
+              .then(loaded => {
+                if (!loaded) {
+                  autoBrowser.process(user)
+                    .then(processed => {
+                      setTimeout(next, 1000);
+                    })
+                } else {
+                  next();
+                }
               })
           }, err => {
             console.log('complete');
