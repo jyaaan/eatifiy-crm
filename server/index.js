@@ -56,22 +56,47 @@ app.post('/get-suggested', (req, res) => {
 // show list of rank 1 suggestions as well as frequency of rank 1
 
 app.get('/get-report-rank', (req, res) => {
-  const topRanked = [];
+  var topRanked = [];
   const topRankedDedupe = [];
   const results = [];
   database.getUserByUsername('eatify')
     .then(user => {
-      database.getTopRanked(user.username);
+      database.getFollowing(user.id)
+        .then(following => {
+          async.mapSeries(following, (follow, next) => {
+            database.getSuggestionsForUser(follow)
+              .then(suggestions => {
+                if (suggestions.length > 0) {
+                  topRanked = topRanked.concat(suggestions);
+                }
+                next();
+              })
+              .catch(err => {
+                console.log('error in getting suggestions');
+                console.error(err);
+                next();
+              })
+          }, (err, data) => {
+            // console.log(topRanked[1]);
+            // anonymous {
+            //   user_id: 676,
+            //   suggested_id: 316,
+            //   created_at: 2017-06-13T00:43:13.318Z,
+            //   updated_at: 2017-06-13T00:43:13.318Z,
+            //   last_rank: 2,
+            //   highest_rank: 2 }
+          })
+        })
     });
-  results = topRankedDedupe.map(user => {
-    const filtered = topRanked.filter(result => {
-      return result = user;
-    })
-    return [user, filtered.length];
-  });
-  results.map(result => {
-    console.log(result);
-  })
+  // results = topRankedDedupe.map(user => {
+  //   const filtered = topRanked.filter(result => {
+  //     return result = user;
+  //   })
+  //   return [user, filtered.length];
+  // });
+  // results.map(result => {
+  //   console.log(result);
+  // })
 });
 
 // show list of suggestions by frequency among following
