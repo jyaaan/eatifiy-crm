@@ -62,6 +62,15 @@ Database.prototype.getUsernameFromEId = function (userEId) {
     })
 }
 
+Database.prototype.everScraped = function (username) {
+  return knex('users')
+    .select('follower_count')
+    .where('username', username)
+    .then(result => {
+      return (result[0].follower_count > 0);
+    });
+}
+
 Database.prototype.getFollowing = function (userEId) {
   return knex('relationships')
     .select('following_id')

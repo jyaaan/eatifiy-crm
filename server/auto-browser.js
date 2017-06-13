@@ -65,10 +65,10 @@ function login() {
     driver.get('https://www.instagram.com/accounts/login/')
     driver.wait(until.titleIs('Login • Instagram', 1000));
     driver.findElement(By.className('_kp5f7 _qy55y'))
-      .sendKeys('eatifyjohn')
+      .sendKeys('jakeyDenton')
       .then(result => {
         driver.findElement(By.className('_kp5f7 _1mdqd _qy55y'))
-          .sendKeys('occsbootcamp');
+          .sendKeys('instagram123');
         })
           .then(second => {
             console.log('form entry complete');

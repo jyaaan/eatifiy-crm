@@ -64,8 +64,32 @@ app.post('/get-following', (req, res) => {
 });
 
 app.post('/get-suggested', (req, res) => {
-
+  
 });
+
+app.get('/update-viewrecipes', (req, res) => {
+  console.log('starting viewrecip.es update');
+  ig.getFollowing('5451104717', currentSession.session)
+    .then(following => {
+      async.mapSeries(following, (follow, next) => {
+        console.log(follow.username);
+        database.everScraped(follow.username)
+          .then(result => {
+            if (!result) {
+              scrapeSave(follow.username)
+                .then(saved => {
+                  next();
+                })
+            } else {
+              console.log('skipping');
+              next();
+            }
+          })
+      }, err => {
+        console.log('viewrecip.es updated');
+      })
+    })
+})
 
 // show list of rank 1 suggestions as well as frequency of rank 1
 
@@ -73,7 +97,7 @@ app.get('/get-report-rank', (req, res) => {
   var topRanked = [];
   var topRankedDedupe = [];
   var results = [];
-  database.getUserByUsername('eatify')
+  database.getUserByUsername('viewrecip.es')
     .then(user => {
       database.getFollowing(user.id)
         .then(following => {
@@ -159,6 +183,7 @@ app.post('/lookup', (req, res) => {
 });
 
 const scrapeSave = username => {
+  console.log('scraping', username);
   var thisId;
   return new Promise((resolve, reject) => {
     Scraper(username)
