@@ -17,7 +17,7 @@ IG.prototype.getFollowing = function (userId, session) {
     function retrieve() {
       feed.get()
         .then(result => {
-          result.map(user => { following.push(user._params)})
+          result.map(user => { following.push(user._params); })
           if (feed.isMoreAvailable()) {
             setTimeout(() => {
               retrieve();
@@ -31,8 +31,29 @@ IG.prototype.getFollowing = function (userId, session) {
   })
 }
 
+IG.prototype.getMedias = function (userId, session) {
+  const medias = [];
+  console.log('and here we are');
+  return new Promise((resolve, reject) => {
+    let feed = new Client.Feed.UserMedia(session, userId);
+    function retrieve() {
+      feed.get()
+        .then(result => {
+          result.map(media => { 
+            medias.push(media); 
+            console.log('concise:', media._params);
+            console.log('comments:', media.comments);
+            console.log('user tags:', media._params.usertags);
+          });
+          resolve(medias);
+        });
+    };
+    retrieve();
+  });
+}
+
 IG.prototype.initialize = function () {
-  return new Client.Session.create(device, storage, 'eatifyjohn', 'occsbootcamp')
+  return new Client.Session.create(device, storage, 'jakeydenton', 'instagram123')
     .then(session => {
       return session;
     })

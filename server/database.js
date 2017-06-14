@@ -7,11 +7,50 @@ const knex = require('knex')({
   }
 });
 
+const async = require('async');
+
 function Database() {
 
 }
 
 // QUERY FUNCTIONS
+
+Database.prototype.clearSuggestionRank = function (userEId) {
+  return knex('suggestions')
+    .where('user_id', userEId)
+    .update('last_rank', null)
+    .then(result => {
+      return 'done';
+    })
+}
+
+Database.prototype.getFirst = function (userEId, maxRank) {
+  const suggestedUsernames = [];
+  return new Promise((resolve, reject) => {
+    knex('suggestions')
+      .select('suggested_id')
+      .where('user_id', userEId)
+      .andWhere('last_rank', '<=', maxRank)
+      .then(results => {
+        // console.log('results:', results);
+        var trimmed = results.map(result => {
+          return result.suggested_id;
+        })
+        async.mapSeries(trimmed, (suggestedEId, next) => {
+          this.getUsernameFromEId(suggestedEId)
+            .then(username => {
+              suggestedUsernames.push(username.username);
+              next();
+            })
+        }, err=> {
+
+
+          resolve(suggestedUsernames);
+        })
+      })
+  })
+
+}
 
 Database.prototype.getUserByUsername = function (username) {
   return new Promise((resolve, reject) => {

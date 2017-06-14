@@ -10,6 +10,7 @@ const Scraper = require('./scraper');
 const async = require('async');
 const AutoBrowser = require('./auto-browser');
 const autoBrowser = new AutoBrowser();
+var fs = require('fs');
 
 const publicPath = path.join(__dirname, '/public');
 const staticMiddleware = express.static(publicPath);
@@ -32,6 +33,14 @@ ig.initialize()
     currentSession.session = result;
   });
 
+app.get('/test-media', (req, res) => {
+  res.send('otay');
+  console.log('testing media');
+  ig.getMedias('289436556', currentSession.session)
+    .then(medias => {
+      // console.log(medias);
+    })
+})
 
 app.post('/get-following', (req, res) => {
   res.send('request received');
@@ -63,8 +72,60 @@ app.post('/get-following', (req, res) => {
     })
 });
 
-app.post('/get-suggested', (req, res) => {
-  
+const suggestionTestUsers = ['perrysplate','love_and_laundry','pamelaz','garlicandzest','foodologygeek','foodfash','plaidandpaleo','vita_sunshine','creativegreenliving','lemonsforlulu','vegan.chickpea','bowl_me_over','asweetenedlife','nyssas_kitchen','jonesinfortaste','vintagekittyblog','coffeewithus3','asformeandmyhomestead','kyleecooks','the.green.life','go2kitchens','taraobrady','amber_dessertnowdinnerlater','theseasidebaker','everydaymaven','littlefiggyfood'];
+
+
+app.get('/get-suggested', (req, res) => {
+  console.log('getting suggested');
+  const userEIds = [];
+  var suggestedUsers = [];
+
+  async.mapSeries(suggestionTestUsers, (test, next) => {
+    database.getUserByUsername(test)
+      .then(user => {
+        userEIds.push(user.id);
+        database.clearSuggestionRank(user.id)
+          .then(cleared => {
+            autoBrowser.process(user)
+              .then(result => {
+                next();
+              })
+          })
+      })
+  }, err => {
+    async.mapSeries(userEIds, (eid, next) => {
+      // console.log('eid under investigation:', eid);
+      database.getFirst(eid, 3)
+        .then(suggestions => {
+          suggestedUsers = suggestedUsers.concat(suggestions);
+          next();
+        })
+
+    }, err => {
+      var lineArray = [];
+      lineArray.push('data:text/csv;charset=utf-8,');
+      var tempstore = suggestedUsers.map(suggested => {
+        return suggested.concat(',');
+      })
+      lineArray = lineArray.concat(...tempstore);
+
+      var csvContent = lineArray.join("\n");
+
+      fs.writeFile(
+
+          './users.csv',
+
+          csvContent,
+
+          function (err) {
+              if (err) {
+                  console.error('Crap happens');
+              }
+          }
+      );
+      // console.log(suggestedUsers);
+    })
+  })
 });
 
 app.get('/update-viewrecipes', (req, res) => {
