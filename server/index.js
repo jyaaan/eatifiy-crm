@@ -38,7 +38,7 @@ app.get('/test-media', (req, res) => {
   console.log('testing media');
   ig.getMedias('289436556', currentSession.session)
     .then(medias => {
-      // console.log(medias);
+      console.log(medias);
     })
 })
 

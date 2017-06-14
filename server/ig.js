@@ -31,21 +31,40 @@ IG.prototype.getFollowing = function (userId, session) {
   })
 }
 
+Date.prototype.formatMMDDYYYY = function(){
+	return ((this.getMonth()+1)+"/"+this.getDate()+"/"+this.getFullYear());
+};
+
 IG.prototype.getMedias = function (userId, session) {
   const medias = [];
   console.log('and here we are');
+  var date30Ago = new Date();
+  var validDate = true;
+  date30Ago.setDate(date30Ago.getDate() - 30);
+  console.log('date 30 ago:', date30Ago.formatMMDDYYYY());
   return new Promise((resolve, reject) => {
     let feed = new Client.Feed.UserMedia(session, userId);
     function retrieve() {
       feed.get()
         .then(result => {
           result.map(media => { 
-            medias.push(media); 
-            console.log('concise:', media._params);
-            console.log('comments:', media.comments);
-            console.log('user tags:', media._params.usertags);
+            // console.log('concise:', media._params);
+            // console.log('comments:', media.comments);
+            // console.log('user tags:', media._params.usertags);
+            console.log('deviceTimestamp:', media._params.deviceTimestamp);
+            var postDate = new Date(media._params.deviceTimestamp * 1000);
+            console.log('converted date:', postDate.formatMMDDYYYY());
+            if (postDate > date30Ago) {
+              medias.push(media._params); 
+            } else {
+              validDate = false;
+            }
           });
-          resolve(medias);
+          if (feed.isMoreAvailable && validDate) {
+            retrieve();
+          } else {
+            resolve(medias);
+          }
         });
     };
     retrieve();
