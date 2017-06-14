@@ -36,9 +36,27 @@ ig.initialize()
 app.get('/test-media', (req, res) => {
   res.send('otay');
   console.log('testing media');
+  var arrLikers = [];
   ig.getMedias('289436556', currentSession.session)
     .then(medias => {
-      console.log(medias);
+      console.log('medias count:', medias.length);
+      async.mapSeries(medias, (media, next) => {
+        ig.getLikers(media, currentSession.session)
+          .then(likers => {
+            arrLikers = arrLikers.concat(...likers);
+            next();
+          })
+      }, err => {
+        console.log('likers count:', arrLikers.length);
+        // console.log(arrLikers[1]);
+        var likerNames = arrLikers.map(liker => { return liker.username; });
+        var dedupedLikers = spliceDuplicates(likerNames);
+        console.log('after dedupe:', dedupedLikers.length);
+        var publicLikers = arrLikers.filter(liker => { return liker.isPrivate == false; });
+        var publicLikerNames = publicLikers.map(liker => { return liker.username; });
+        var dedupedPublicLikers = spliceDuplicates(publicLikerNames);
+        console.log('deduped public only:', dedupedPublicLikers.length);
+      })
     })
 })
 

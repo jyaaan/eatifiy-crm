@@ -71,6 +71,17 @@ IG.prototype.getMedias = function (userId, session) {
   });
 }
 
+IG.prototype.getLikers = function (media, session) {
+  return new Promise((resolve, reject) => {
+    Client.Media.likers(session, media.id)
+      .then(likers => {
+        const concise = likers.map(liker => { return liker._params; });
+        resolve(concise);
+      })
+  })
+
+}
+
 IG.prototype.initialize = function () {
   return new Client.Session.create(device, storage, 'jakeydenton', 'instagram123')
     .then(session => {
