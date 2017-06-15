@@ -32,8 +32,8 @@ function spliceDuplicates(users) {
 const saveArrayToCSV = function (data, filename) {
   var lineArray = [];
   lineArray.push('data:text/csv;charset=utf-8,');
-  var tempStore = data.map(indiv => {
-    return indiv.concat(',');
+  var tempStore = data.map(datum => {
+    return datum + ',';
   })
   lineArray = lineArray.concat(...tempStore);
 
