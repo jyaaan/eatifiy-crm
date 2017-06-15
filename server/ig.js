@@ -8,11 +8,10 @@ function IG() {
 
 }
 
-IG.prototype.discoveryTest = function (session) {
+IG.prototype.discover = function (session) { // returns 100 suggested users for session user
   Client.discover(session)
     .then(discovery => {
-      const temper = discovery.map(discovered => { return discovered.account._params });
-      console.log(temper.length);
+      return discovery.map(discovered => { return discovered.account._params });
     })
 }
 
