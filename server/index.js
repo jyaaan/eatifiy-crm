@@ -84,7 +84,6 @@ app.get('/tf-test', (req, res) => {
 
 app.get('/test-media', (req, res) => {
   res.send('otay, mofo');
-  console.log('testing media');
   var arrLikers = [];
   const publicLikerIds = [];
   ig.getMedias('289436556', currentSession.session)
