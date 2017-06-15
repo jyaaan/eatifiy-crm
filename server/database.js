@@ -15,6 +15,23 @@ function Database() {
 
 // QUERY FUNCTIONS
 
+Database.prototype.getConsumers = function (userEIds) {
+  const consumers = [];
+  return new Promise((resolve, reject) => {
+    async.mapSeries(userEIds, (userId, next) => {
+      this.getUserByEId(userId)
+        .then(user => {
+          if (user.follower_count < 1000 && (user.following_count / user.follower_count) < 3) {
+            consumers.push(user);
+          }
+          next();
+        })
+    }, err => {
+      resolve(consumers);
+    })
+  })
+}
+
 Database.prototype.clearSuggestionRank = function (userEId) {
   return knex('suggestions')
     .where('user_id', userEId)
@@ -50,6 +67,35 @@ Database.prototype.getFirst = function (userEId, maxRank) {
       })
   })
 
+}
+
+const convertTF = user => {
+  return {
+    id: user.external_id,
+    username: user.username,
+    profile_picture: user.picture_url,
+    full_name: user.full_name,
+    website: user.external_url,
+    bio: user.bio,
+    counts: {
+      media: user.post_count,
+      followed_by: user.follower_count,
+      follows: user.following_count
+    }
+  };
+}
+
+Database.prototype.getTFFormatUsers = function () {
+  return new Promise((resolve, reject) => {
+    knex('users')
+      .select('*')
+      .orderBy('created_at', 'asc')
+      .limit(10)
+      .then(users => {
+        const tfUsers = users.map(user => { return convertTF(user); });
+        resolve(tfUsers);
+      })
+  })
 }
 
 Database.prototype.getUserByUsername = function (username) {

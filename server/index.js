@@ -10,7 +10,9 @@ const Scraper = require('./scraper');
 const async = require('async');
 const AutoBrowser = require('./auto-browser');
 const autoBrowser = new AutoBrowser();
-var fs = require('fs');
+const fs = require('fs');
+const http = require('http');
+const request = require('request');
 
 const publicPath = path.join(__dirname, '/public');
 const staticMiddleware = express.static(publicPath);
@@ -27,16 +29,64 @@ function spliceDuplicates(users) {
   })
 }
 
+const saveArrayToCSV = function (data, filename) {
+  var lineArray = [];
+  lineArray.push('data:text/csv;charset=utf-8,');
+  var tempStore = data.map(indiv => {
+    return indiv.concat(',');
+  })
+  lineArray = lineArray.concat(...tempStore);
+
+  var csvContent = lineArray.join("\n");
+
+  fs.writeFile(
+
+      './' + filename + '.csv',
+
+      csvContent,
+
+      err => {
+          if (err) {
+            console.error('Crap happens');
+          } else {
+            console.log(filename, '.csv saved :3');
+          }
+      }
+  );
+}
+
 ig.initialize()
   .then(result => {
     console.log('initializing session');
     currentSession.session = result;
   });
 
+app.get('/discovery', (req, res) => {
+  res.send('discovery test');
+  ig.discoveryTest(currentSession.session);
+})
+
+app.get('/tf-test', (req, res) => {
+  res.send('truefluence test');
+  database.getTFFormatUsers()
+    .then(users => {
+      request.post(
+        'http://192.168.0.106:9292/users/sourtoe/favorites/batch',
+        { json: {instagram_users: users} },
+        (error, res, body) => {
+          if (!error && res.statusCode == 200) {
+            console.log(body);
+          }
+        }
+      );
+    });
+})
+
 app.get('/test-media', (req, res) => {
-  res.send('otay');
+  res.send('otay, mofo');
   console.log('testing media');
   var arrLikers = [];
+  const publicLikerIds = [];
   ig.getMedias('289436556', currentSession.session)
     .then(medias => {
       console.log('medias count:', medias.length);
@@ -56,7 +106,28 @@ app.get('/test-media', (req, res) => {
         var publicLikerNames = publicLikers.map(liker => { return liker.username; });
         var dedupedPublicLikers = spliceDuplicates(publicLikerNames);
         console.log('deduped public only:', dedupedPublicLikers.length);
+        async.mapSeries(dedupedPublicLikers, (liker, next) => {
+          scrapeSave(liker)
+            .then(user => {
+              publicLikerIds.push(user.id);
+              next();
+            })
+        }, err => {
+          database.getConsumers(publicLikerIds)
+            .then(consumers => {
+              var consumerIds = consumers.map(consumer => { return consumer.id; });
+              saveArrayToCSV(consumerIds, 'consumerIds');
+            })
+        })
       })
+    })
+})
+
+app.get('/get-me', (req, res) => {
+  res.send('kay');
+  ig.getFollowing('52139312', currentSession.session)
+    .then(following => {
+      console.log(following);
     })
 })
 
@@ -261,22 +332,31 @@ app.post('/lookup', (req, res) => {
     })
 });
 
-const scrapeSave = username => {
+const scrapeSave = username => { // now with more resume-ability!
   console.log('scraping', username);
   var thisId;
   return new Promise((resolve, reject) => {
-    Scraper(username)
+    database.getUserByUsername(username)
       .then(user => {
-        database.upsertUser(user)
-          .then(result => {
-            database.getEIdFromExternalId(user.external_id, 'users')
-              .then(id => {
-                resolve({ id: id[0].id, external_id: user.external_id });
-              })
-          })
-      })
-      .catch(err => {
-        reject(err);
+        // console.log('user:', user);
+        if (!user) {
+          Scraper(username)
+            .then(user => {
+              database.upsertUser(user)
+                .then(result => {
+                  database.getEIdFromExternalId(user.external_id, 'users')
+                    .then(id => {
+                      resolve({ id: id[0].id, external_id: user.external_id });
+                    })
+                })
+            })
+            .catch(err => {
+              reject(err);
+            })
+        } else {
+          console.log('skipping');
+          resolve({ id: user.id, external_id: user.external_id });
+        }
       })
   });
 }

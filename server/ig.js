@@ -8,6 +8,14 @@ function IG() {
 
 }
 
+IG.prototype.discoveryTest = function (session) {
+  Client.discover(session)
+    .then(discovery => {
+      const temper = discovery.map(discovered => { return discovered.account._params });
+      console.log(temper.length);
+    })
+}
+
 IG.prototype.getFollowing = function (userId, session) {
   const following = [];
   const startTime = new Date();
