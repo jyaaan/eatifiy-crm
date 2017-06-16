@@ -49,7 +49,7 @@ const saveArrayToCSV = function (data, filename) {
           if (err) {
             console.error('Crap happens');
           } else {
-            console.log(filename, '.csv saved :3');
+            console.log(filename + '.csv saved :3');
           }
       }
   );
