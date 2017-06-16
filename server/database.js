@@ -7,11 +7,96 @@ const knex = require('knex')({
   }
 });
 
+const async = require('async');
+
 function Database() {
 
 }
 
 // QUERY FUNCTIONS
+
+Database.prototype.getConsumers = function (userEIds) {
+  const consumers = [];
+  return new Promise((resolve, reject) => {
+    async.mapSeries(userEIds, (userId, next) => {
+      this.getUserByEId(userId)
+        .then(user => {
+          if (user.follower_count < 1000 && (user.following_count / user.follower_count) < 3) {
+            consumers.push(user);
+          }
+          next();
+        })
+    }, err => {
+      resolve(consumers);
+    })
+  })
+}
+
+Database.prototype.clearSuggestionRank = function (userEId) {
+  return knex('suggestions')
+    .where('user_id', userEId)
+    .update('last_rank', null)
+    .then(result => {
+      return 'done';
+    })
+}
+
+Database.prototype.getFirst = function (userEId, maxRank) {
+  const suggestedUsernames = [];
+  return new Promise((resolve, reject) => {
+    knex('suggestions')
+      .select('suggested_id')
+      .where('user_id', userEId)
+      .andWhere('last_rank', '<=', maxRank)
+      .then(results => {
+        // console.log('results:', results);
+        var trimmed = results.map(result => {
+          return result.suggested_id;
+        })
+        async.mapSeries(trimmed, (suggestedEId, next) => {
+          this.getUsernameFromEId(suggestedEId)
+            .then(username => {
+              suggestedUsernames.push(username.username);
+              next();
+            })
+        }, err=> {
+
+
+          resolve(suggestedUsernames);
+        })
+      })
+  })
+
+}
+
+const convertTF = user => {
+  return {
+    id: user.external_id,
+    username: user.username,
+    profile_picture: user.picture_url,
+    full_name: user.full_name,
+    website: user.external_url,
+    bio: user.bio,
+    counts: {
+      media: user.post_count,
+      followed_by: user.follower_count,
+      follows: user.following_count
+    }
+  };
+}
+
+Database.prototype.getTFFormatUsers = function () {
+  return new Promise((resolve, reject) => {
+    knex('users')
+      .select('*')
+      .orderBy('created_at', 'asc')
+      .limit(10)
+      .then(users => {
+        const tfUsers = users.map(user => { return convertTF(user); });
+        resolve(tfUsers);
+      })
+  })
+}
 
 Database.prototype.getUserByUsername = function (username) {
   return new Promise((resolve, reject) => {
@@ -51,6 +136,45 @@ Database.prototype.getEIdFromExternalId = function (externalId, tableName) {
     .where('external_id', externalId)
     .select('id')
     .limit(1);
+}
+
+Database.prototype.getUsernameFromEId = function (userEId) {
+  return knex('users')
+    .select('username')
+    .where('id', userEId)
+    .then(result => {
+      return result[0];
+    })
+}
+
+Database.prototype.everScraped = function (username) {
+  return knex('users')
+    .select('follower_count')
+    .where('username', username)
+    .then(result => {
+      return (result[0].follower_count > 0);
+    });
+}
+
+Database.prototype.getFollowing = function (userEId) {
+  return knex('relationships')
+    .select('following_id')
+    .where('user_id', userEId)
+    .then(result => {
+      return result.map(user => { return user.following_id; });
+    })
+}
+
+Database.prototype.userSuggestionsLoaded = function (username) {
+  return new Promise((resolve, reject) => {
+    knex('users')
+      .count('*')
+      .whereNotNull('last_suggested_updated_at')
+      .andWhere('username', username)
+      .then(result => {
+        resolve(result[0].count > 0);
+      });
+  })
 }
 
 // MODIFY FUNCTIONS
@@ -242,7 +366,7 @@ Database.prototype.getSuggestionsForUser = function (userEId) {
     .select('*')
     .where('user_id', userEId)
     .then(result => {
-      return result[0];
+      return result;
     });
 }
 

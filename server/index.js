@@ -10,6 +10,9 @@ const Scraper = require('./scraper');
 const async = require('async');
 const AutoBrowser = require('./auto-browser');
 const autoBrowser = new AutoBrowser();
+const fs = require('fs');
+const http = require('http');
+const request = require('request');
 
 const publicPath = path.join(__dirname, '/public');
 const staticMiddleware = express.static(publicPath);
@@ -20,12 +23,112 @@ const currentSession = { initialized: false, session: {} };
 app.use(staticMiddleware);
 app.use(bodyParser.json());
 
+function spliceDuplicates(users) {
+  return users.filter((user, index, collection) => {
+    return collection.indexOf(user) == index;
+  })
+}
+
+const saveArrayToCSV = function (data, filename) {
+  var lineArray = [];
+  lineArray.push('data:text/csv;charset=utf-8,');
+  var tempStore = data.map(datum => {
+    return datum + ',';
+  })
+  lineArray = lineArray.concat(...tempStore);
+
+  var csvContent = lineArray.join("\n");
+
+  fs.writeFile(
+
+      './' + filename + '.csv',
+
+      csvContent,
+
+      err => {
+          if (err) {
+            console.error('Crap happens');
+          } else {
+            console.log(filename + '.csv saved :3');
+          }
+      }
+  );
+}
+
 ig.initialize()
   .then(result => {
     console.log('initializing session');
     currentSession.session = result;
   });
 
+app.get('/discovery', (req, res) => {
+  res.send('discovery test');
+  ig.discoveryTest(currentSession.session);
+})
+
+app.get('/tf-test', (req, res) => {
+  res.send('truefluence test');
+  database.getTFFormatUsers()
+    .then(users => {
+      request.post(
+        'http://192.168.0.106:9292/users/sourtoe/favorites/batch',
+        { json: {instagram_users: users} },
+        (error, res, body) => {
+          if (!error && res.statusCode == 200) {
+            console.log(body);
+          }
+        }
+      );
+    });
+})
+
+app.get('/test-media', (req, res) => {
+  res.send('otay, mofo');
+  var arrLikers = [];
+  const publicLikerIds = [];
+  ig.getMedias('289436556', currentSession.session)
+    .then(medias => {
+      console.log('medias count:', medias.length);
+      async.mapSeries(medias, (media, next) => {
+        ig.getLikers(media, currentSession.session)
+          .then(likers => {
+            arrLikers = arrLikers.concat(...likers);
+            next();
+          })
+      }, err => {
+        console.log('likers count:', arrLikers.length);
+        // console.log(arrLikers[1]);
+        var likerNames = arrLikers.map(liker => { return liker.username; });
+        var dedupedLikers = spliceDuplicates(likerNames);
+        console.log('after dedupe:', dedupedLikers.length);
+        var publicLikers = arrLikers.filter(liker => { return liker.isPrivate == false; });
+        var publicLikerNames = publicLikers.map(liker => { return liker.username; });
+        var dedupedPublicLikers = spliceDuplicates(publicLikerNames);
+        console.log('deduped public only:', dedupedPublicLikers.length);
+        async.mapSeries(dedupedPublicLikers, (liker, next) => {
+          scrapeSave(liker)
+            .then(user => {
+              publicLikerIds.push(user.id);
+              next();
+            })
+        }, err => {
+          database.getConsumers(publicLikerIds)
+            .then(consumers => {
+              var consumerIds = consumers.map(consumer => { return consumer.id; });
+              saveArrayToCSV(consumerIds, 'consumerIds');
+            })
+        })
+      })
+    })
+})
+
+app.get('/get-me', (req, res) => {
+  res.send('kay');
+  ig.getFollowing('52139312', currentSession.session)
+    .then(following => {
+      console.log(following);
+    })
+})
 
 app.post('/get-following', (req, res) => {
   res.send('request received');
@@ -33,11 +136,19 @@ app.post('/get-following', (req, res) => {
     .then(following => {
       queueFollowing(following, req.body.id)
         .then(result => {
-          console.log('following harvest complete result:', result);
-          async.mapSeries(result, (follow, next) => {
-            autoBrowser.process(follow)
-              .then(processed => {
-                setTimeout(next, 1000);
+          // console.log('following harvest complete result:', result);
+          // splice out users where suggestions have been loaded already
+          async.mapSeries(result, (user, next) => {
+            database.userSuggestionsLoaded(user.username)
+              .then(loaded => {
+                if (!loaded) {
+                  autoBrowser.process(user)
+                    .then(processed => {
+                      setTimeout(next, 1000);
+                    })
+                } else {
+                  next();
+                }
               })
           }, err => {
             console.log('complete');
@@ -49,29 +160,148 @@ app.post('/get-following', (req, res) => {
     })
 });
 
-app.post('/get-suggested', (req, res) => {
+const suggestionTestUsers = ['perrysplate','love_and_laundry','pamelaz','garlicandzest','foodologygeek','foodfash','plaidandpaleo','vita_sunshine','creativegreenliving','lemonsforlulu','vegan.chickpea','bowl_me_over','asweetenedlife','nyssas_kitchen','jonesinfortaste','vintagekittyblog','coffeewithus3','asformeandmyhomestead','kyleecooks','the.green.life','go2kitchens','taraobrady','amber_dessertnowdinnerlater','theseasidebaker','everydaymaven','littlefiggyfood'];
 
+
+app.get('/get-suggested', (req, res) => {
+  console.log('getting suggested');
+  const userEIds = [];
+  var suggestedUsers = [];
+
+  async.mapSeries(suggestionTestUsers, (test, next) => {
+    database.getUserByUsername(test)
+      .then(user => {
+        userEIds.push(user.id);
+        database.clearSuggestionRank(user.id)
+          .then(cleared => {
+            autoBrowser.process(user)
+              .then(result => {
+                next();
+              })
+          })
+      })
+  }, err => {
+    async.mapSeries(userEIds, (eid, next) => {
+      // console.log('eid under investigation:', eid);
+      database.getFirst(eid, 3)
+        .then(suggestions => {
+          suggestedUsers = suggestedUsers.concat(suggestions);
+          next();
+        })
+
+    }, err => {
+      var lineArray = [];
+      lineArray.push('data:text/csv;charset=utf-8,');
+      var tempstore = suggestedUsers.map(suggested => {
+        return suggested.concat(',');
+      })
+      lineArray = lineArray.concat(...tempstore);
+
+      var csvContent = lineArray.join("\n");
+
+      fs.writeFile(
+
+          './users.csv',
+
+          csvContent,
+
+          function (err) {
+              if (err) {
+                  console.error('Crap happens');
+              }
+          }
+      );
+      // console.log(suggestedUsers);
+    })
+  })
 });
+
+app.get('/update-viewrecipes', (req, res) => {
+  console.log('starting viewrecip.es update');
+  ig.getFollowing('5451104717', currentSession.session)
+    .then(following => {
+      async.mapSeries(following, (follow, next) => {
+        console.log(follow.username);
+        database.everScraped(follow.username)
+          .then(result => {
+            if (!result) {
+              scrapeSave(follow.username)
+                .then(saved => {
+                  next();
+                })
+            } else {
+              console.log('skipping');
+              next();
+            }
+          })
+      }, err => {
+        console.log('viewrecip.es updated');
+      })
+    })
+})
 
 // show list of rank 1 suggestions as well as frequency of rank 1
 
 app.get('/get-report-rank', (req, res) => {
-  const topRanked = [];
-  const topRankedDedupe = [];
-  const results = [];
-  database.getUserByUsername('eatify')
+  var topRanked = [];
+  var topRankedDedupe = [];
+  var results = [];
+  database.getUserByUsername('viewrecip.es')
     .then(user => {
-      database.getTopRanked(user.username);
+      database.getFollowing(user.id)
+        .then(following => {
+          async.mapSeries(following, (follow, next) => {
+            database.getSuggestionsForUser(follow)
+              .then(suggestions => {
+                if (suggestions.length > 0) {
+                  topRanked = topRanked.concat(suggestions);
+                }
+                next();
+              })
+              .catch(err => {
+                console.log('error in getting suggestions');
+                console.error(err);
+                next();
+              })
+          }, (err, data) => {
+
+            // console.log(topRanked[1]);
+            // anonymous { // sample of returned suggestion data
+            //   user_id: 676,
+            //   suggested_id: 316,
+            //   created_at: 2017-06-13T00:43:13.318Z,
+            //   updated_at: 2017-06-13T00:43:13.318Z,
+            //   last_rank: 2,
+            //   highest_rank: 2 }
+
+            topRanked = topRanked.map(rank => {
+              return rank.suggested_id;
+            });
+
+            topRankedDedupe = spliceDuplicates(topRanked);
+
+            results = topRankedDedupe.map(user => {
+              var filtered = topRanked.filter(result => {
+                return result == user;
+              })
+              return [user, filtered.length];
+            });
+
+            async.mapSeries(results, (result, next) => {
+              database.getUsernameFromEId(result[0])
+                .then(username => {
+                  result[0] = username.username;
+                  next();
+                })
+            }, (err, data) => {
+              results.sort((a, b) => {
+                return b[1] - a[1];
+              })
+              console.log(results);
+            })
+          })
+        })
     });
-  results = topRankedDedupe.map(user => {
-    const filtered = topRanked.filter(result => {
-      return result = user;
-    })
-    return [user, filtered.length];
-  });
-  results.map(result => {
-    console.log(result);
-  })
 });
 
 // show list of suggestions by frequency among following
@@ -101,21 +331,31 @@ app.post('/lookup', (req, res) => {
     })
 });
 
-const scrapeSave = username => {
+const scrapeSave = username => { // now with more resume-ability!
+  console.log('scraping', username);
   var thisId;
   return new Promise((resolve, reject) => {
-    Scraper(username)
+    database.getUserByUsername(username)
       .then(user => {
-        database.upsertUser(user)
-          .then(result => {
-            database.getEIdFromExternalId(user.external_id, 'users')
-              .then(id => {
-                resolve({ id: id[0].id, external_id: user.external_id });
-              })
-          })
-      })
-      .catch(err => {
-        reject(err);
+        // console.log('user:', user);
+        if (!user) {
+          Scraper(username)
+            .then(user => {
+              database.upsertUser(user)
+                .then(result => {
+                  database.getEIdFromExternalId(user.external_id, 'users')
+                    .then(id => {
+                      resolve({ id: id[0].id, external_id: user.external_id });
+                    })
+                })
+            })
+            .catch(err => {
+              reject(err);
+            })
+        } else {
+          console.log('skipping');
+          resolve({ id: user.id, external_id: user.external_id });
+        }
       })
   });
 }

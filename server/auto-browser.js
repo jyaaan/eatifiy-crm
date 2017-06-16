@@ -61,27 +61,27 @@ AutoBrowser.prototype.process = function (user) {
 
 
 function login() {
-  return new Promise((resolve, reject) => {
-    driver.get('https://www.instagram.com/accounts/login/')
-    driver.wait(until.titleIs('Login • Instagram', 1000));
-    driver.findElement(By.className('_kp5f7 _qy55y'))
-      .sendKeys('eatifyjohn')
-      .then(result => {
-        driver.findElement(By.className('_kp5f7 _1mdqd _qy55y'))
-          .sendKeys('occsbootcamp');
-        })
-          .then(second => {
-            console.log('form entry complete');
-            driver.findElement(By.className('_ah57t _84y62 _i46jh _rmr7s'))
-              .click();
-            })
-        driver.wait(until.titleIs('Instagram'))
-          .then(waited => {
-            console.log('login successful, async process started');  
-            console.log('waited', waited);
-            resolve('done');
-          })
-        })
+  // return new Promise((resolve, reject) => {
+  //   driver.get('https://www.instagram.com/accounts/login/')
+  //   driver.wait(until.titleIs('Login • Instagram', 1000));
+  //   driver.findElement(By.className('_kp5f7 _qy55y'))
+  //     .sendKeys('jakeyDenton')
+  //     .then(result => {
+  //       driver.findElement(By.className('_kp5f7 _1mdqd _qy55y'))
+  //         .sendKeys('instagram123');
+  //       })
+  //         .then(second => {
+  //           console.log('form entry complete');
+  //           driver.findElement(By.className('_ah57t _84y62 _i46jh _rmr7s'))
+  //             .click();
+  //           })
+  //       driver.wait(until.titleIs('Instagram'))
+  //         .then(waited => {
+  //           console.log('login successful, async process started');  
+  //           console.log('waited', waited);
+  //           resolve('done');
+  //         })
+  //       })
 }
 
 function getSuggested() {
