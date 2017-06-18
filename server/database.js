@@ -32,6 +32,23 @@ Database.prototype.getConsumers = function (userEIds) {
   })
 }
 
+Database.prototype.getInfluencers = function (userEIds) {
+  const influencers = [];
+  return new Promise((resolve, reject) => {
+    async.mapSeries(userEIds, (userId, next) => {
+      this.getUserByEId(userId)
+        .then(user => {
+          if (user.follower_count >= 1000 && (user.following_count / user.follower_count) < 0.5) {
+            influencers.push(user);
+          }
+          next();
+        })
+    }, err => {
+      resolve(influencers);
+    })
+  })
+}
+
 Database.prototype.clearSuggestionRank = function (userEId) {
   return knex('suggestions')
     .where('user_id', userEId)

@@ -30,29 +30,33 @@ function spliceDuplicates(users) {
 }
 
 const saveArrayToCSV = function (data, filename) {
-  var lineArray = [];
-  lineArray.push('data:text/csv;charset=utf-8,');
-  var tempStore = data.map(datum => {
-    return datum + ',';
+  return new Promise((resolve, reject) => {
+    var lineArray = [];
+    lineArray.push('data:text/csv;charset=utf-8,');
+    var tempStore = data.map(datum => {
+      return datum + ',';
+    })
+    lineArray = lineArray.concat(...tempStore);
+
+    var csvContent = lineArray.join("\n");
+
+    fs.writeFile(
+
+        './' + filename + '.csv',
+
+        csvContent,
+
+        err => {
+            if (err) {
+              console.error('Crap happens');
+              reject(err);
+            } else {
+              console.log(filename + '.csv saved :3');
+              resolve('complete');
+            }
+        }
+    );
   })
-  lineArray = lineArray.concat(...tempStore);
-
-  var csvContent = lineArray.join("\n");
-
-  fs.writeFile(
-
-      './' + filename + '.csv',
-
-      csvContent,
-
-      err => {
-          if (err) {
-            console.error('Crap happens');
-          } else {
-            console.log(filename + '.csv saved :3');
-          }
-      }
-  );
 }
 
 ig.initialize()
@@ -83,10 +87,12 @@ app.get('/tf-test', (req, res) => {
 })
 
 app.get('/test-media', (req, res) => {
-  res.send('otay, mofo');
+  const focusUsername = 'fitstrongshan';
+  res.send('influencer test for ' + focusUsername);
   var arrLikers = [];
   const publicLikerIds = [];
-  ig.getMedias('289436556', currentSession.session)
+  var publicLikerNames = [];
+  ig.getMedias('2134357383', currentSession.session)
     .then(medias => {
       console.log('medias count:', medias.length);
       async.mapSeries(medias, (media, next) => {
@@ -97,12 +103,13 @@ app.get('/test-media', (req, res) => {
           })
       }, err => {
         console.log('likers count:', arrLikers.length);
-        // console.log(arrLikers[1]);
+
         var likerNames = arrLikers.map(liker => { return liker.username; });
         var dedupedLikers = spliceDuplicates(likerNames);
         console.log('after dedupe:', dedupedLikers.length);
+
         var publicLikers = arrLikers.filter(liker => { return liker.isPrivate == false; });
-        var publicLikerNames = publicLikers.map(liker => { return liker.username; });
+        publicLikerNames = publicLikers.map(liker => { return liker.username; });
         var dedupedPublicLikers = spliceDuplicates(publicLikerNames);
         console.log('deduped public only:', dedupedPublicLikers.length);
         async.mapSeries(dedupedPublicLikers, (liker, next) => {
@@ -112,15 +119,26 @@ app.get('/test-media', (req, res) => {
               next();
             })
         }, err => {
-          database.getConsumers(publicLikerIds)
-            .then(consumers => {
-              var consumerIds = consumers.map(consumer => { return consumer.id; });
-              saveArrayToCSV(consumerIds, 'consumerIds');
+          database.getInfluencers(publicLikerIds)
+            .then(influencers => {
+              var influencerData = influencers.map(influencer => {
+                return influencer.id +',' + influencer.external_id + ',' + influencer.username + ',' + influencer.follower_count + ',' + influencer.following_count + ',' + publicLikerNames.filter(likerName => { return likerName == influencer.username; }).length + ',' + influencer.external_url;
+              });
+              saveArrayToCSV(influencerData, focusUsername + '-influencer-data')
+                .then(result => {
+                  database.getConsumers(publicLikerIds)
+                    .then(consumers => {
+                      var consumerData = consumers.map(consumer => {
+                        return consumer.id +',' + consumer.external_id + ',' + consumer.username + ',' + consumer.follower_count + ',' + consumer.following_count + ',' + publicLikerNames.filter(likerName => { return likerName == consumer.username; }).length + ',' + consumer.external_url;
+                      })
+                      saveArrayToCSV(consumerData, focusUsername + '-consumer-data');
+                    })
+                })
             })
-        })
+        });
       })
-    })
-})
+    });
+});
 
 app.get('/get-me', (req, res) => {
   res.send('kay');
@@ -160,7 +178,6 @@ app.post('/get-following', (req, res) => {
     })
 });
 
-const suggestionTestUsers = ['perrysplate','love_and_laundry','pamelaz','garlicandzest','foodologygeek','foodfash','plaidandpaleo','vita_sunshine','creativegreenliving','lemonsforlulu','vegan.chickpea','bowl_me_over','asweetenedlife','nyssas_kitchen','jonesinfortaste','vintagekittyblog','coffeewithus3','asformeandmyhomestead','kyleecooks','the.green.life','go2kitchens','taraobrady','amber_dessertnowdinnerlater','theseasidebaker','everydaymaven','littlefiggyfood'];
 
 
 app.get('/get-suggested', (req, res) => {
@@ -423,4 +440,4 @@ const PORT = 5760;
 
 app.listen(PORT, () => {
   console.log('listening on port:', PORT);
-})
+});
