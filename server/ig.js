@@ -42,26 +42,22 @@ Date.prototype.formatMMDDYYYY = function(){
 	return ((this.getMonth()+1)+"/"+this.getDate()+"/"+this.getFullYear());
 };
 
-IG.prototype.getMedias = function (userId, session) {
+IG.prototype.getMedias = function (userId, session, days=30) {
   const medias = [];
-  console.log('and here we are');
-  var date30Ago = new Date();
+  var dateRange = new Date();
   var validDate = true;
-  date30Ago.setDate(date30Ago.getDate() - 30);
-  console.log('date 30 ago:', date30Ago.formatMMDDYYYY());
+  dateRange.setDate(dateRange.getDate() - days);
+  console.log('date ' + days + ' ago:', dateRange.formatMMDDYYYY());
   return new Promise((resolve, reject) => {
     let feed = new Client.Feed.UserMedia(session, userId);
     function retrieve() {
       feed.get()
         .then(result => {
           result.map(media => { 
-            // console.log('concise:', media._params);
-            // console.log('comments:', media.comments);
-            // console.log('user tags:', media._params.usertags);
             console.log('deviceTimestamp:', media._params.deviceTimestamp);
             var postDate = new Date(media._params.deviceTimestamp * 1000);
             console.log('converted date:', postDate.formatMMDDYYYY());
-            if (postDate > date30Ago) {
+            if (postDate > dateRange) {
               medias.push(media._params); 
             } else {
               validDate = false;

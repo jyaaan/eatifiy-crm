@@ -13,6 +13,7 @@ const autoBrowser = new AutoBrowser();
 const fs = require('fs');
 const http = require('http');
 const request = require('request');
+const fileHandler = require('./file-controller');
 
 const publicPath = path.join(__dirname, '/public');
 const staticMiddleware = express.static(publicPath);
@@ -29,36 +30,6 @@ function spliceDuplicates(users) {
   })
 }
 
-const saveArrayToCSV = function (data, filename) {
-  return new Promise((resolve, reject) => {
-    var lineArray = [];
-    lineArray.push('data:text/csv;charset=utf-8,');
-    var tempStore = data.map(datum => {
-      return datum + ',';
-    })
-    lineArray = lineArray.concat(...tempStore);
-
-    var csvContent = lineArray.join("\n");
-
-    fs.writeFile(
-
-        './' + filename + '.csv',
-
-        csvContent,
-
-        err => {
-            if (err) {
-              console.error('Crap happens');
-              reject(err);
-            } else {
-              console.log(filename + '.csv saved :3');
-              resolve('complete');
-            }
-        }
-    );
-  })
-}
-
 ig.initialize()
   .then(result => {
     console.log('initializing session');
@@ -70,74 +41,80 @@ app.get('/discovery', (req, res) => {
   ig.discoveryTest(currentSession.session);
 })
 
-app.get('/tf-test', (req, res) => {
-  res.send('truefluence test');
-  database.getTFFormatUsers()
-    .then(users => {
-      request.post(
-        'http://192.168.0.106:9292/users/sourtoe/favorites/batch',
-        { json: {instagram_users: users} },
-        (error, res, body) => {
-          if (!error && res.statusCode == 200) {
-            console.log(body);
-          }
-        }
-      );
-    });
-})
 
-app.get('/test-media', (req, res) => {
-  const focusUsername = 'fitstrongshan';
+// Marked for deletion
+// app.get('/tf-test', (req, res) => {
+//   res.send('truefluence test');
+//   database.getTFFormatUsers()
+//     .then(users => {
+//       request.post(
+//         'http://192.168.0.106:9292/users/sourtoe/favorites/batch',
+//         { json: {instagram_users: users} },
+//         (error, res, body) => {
+//           if (!error && res.statusCode == 200) {
+//             console.log(body);
+//           }
+//         }
+//       );
+//     });
+// })
+
+app.get('/analyze/:username', (req, res) => {
+  const focusUsername = req.params.username;
   res.send('influencer test for ' + focusUsername);
   var arrLikers = [];
   const publicLikerIds = [];
   var publicLikerNames = [];
-  ig.getMedias('2134357383', currentSession.session)
-    .then(medias => {
-      console.log('medias count:', medias.length);
-      async.mapSeries(medias, (media, next) => {
-        ig.getLikers(media, currentSession.session)
-          .then(likers => {
-            arrLikers = arrLikers.concat(...likers);
-            next();
-          })
-      }, err => {
-        console.log('likers count:', arrLikers.length);
+  scrapeSave(focusUsername)
+    .then(scraped => {
+      ig.getMedias(scraped.external_id, currentSession.session)
+        .then(medias => {
+          console.log('medias count:', medias.length);
+          async.mapSeries(medias, (media, next) => {
+            ig.getLikers(media, currentSession.session)
+              .then(likers => {
+                arrLikers = arrLikers.concat(...likers);
+                next();
+              })
+          }, err => {
+            console.log('likers count:', arrLikers.length);
 
-        var likerNames = arrLikers.map(liker => { return liker.username; });
-        var dedupedLikers = spliceDuplicates(likerNames);
-        console.log('after dedupe:', dedupedLikers.length);
+            var likerNames = arrLikers.map(liker => { return liker.username; });
+            var dedupedLikers = spliceDuplicates(likerNames);
+            console.log('after dedupe:', dedupedLikers.length);
 
-        var publicLikers = arrLikers.filter(liker => { return liker.isPrivate == false; });
-        publicLikerNames = publicLikers.map(liker => { return liker.username; });
-        var dedupedPublicLikers = spliceDuplicates(publicLikerNames);
-        console.log('deduped public only:', dedupedPublicLikers.length);
-        async.mapSeries(dedupedPublicLikers, (liker, next) => {
-          scrapeSave(liker)
-            .then(user => {
-              publicLikerIds.push(user.id);
-              next();
-            })
-        }, err => {
-          database.getInfluencers(publicLikerIds)
-            .then(influencers => {
-              var influencerData = influencers.map(influencer => {
-                return influencer.id +',' + influencer.external_id + ',' + influencer.username + ',' + influencer.follower_count + ',' + influencer.following_count + ',' + publicLikerNames.filter(likerName => { return likerName == influencer.username; }).length + ',' + influencer.external_url;
-              });
-              saveArrayToCSV(influencerData, focusUsername + '-influencer-data')
-                .then(result => {
-                  database.getConsumers(publicLikerIds)
-                    .then(consumers => {
-                      var consumerData = consumers.map(consumer => {
-                        return consumer.id +',' + consumer.external_id + ',' + consumer.username + ',' + consumer.follower_count + ',' + consumer.following_count + ',' + publicLikerNames.filter(likerName => { return likerName == consumer.username; }).length + ',' + consumer.external_url;
-                      })
-                      saveArrayToCSV(consumerData, focusUsername + '-consumer-data');
+            var publicLikers = arrLikers.filter(liker => { return liker.isPrivate == false; });
+            publicLikerNames = publicLikers.map(liker => { return liker.username; });
+            var dedupedPublicLikers = spliceDuplicates(publicLikerNames);
+            console.log('deduped public only:', dedupedPublicLikers.length);
+            async.mapSeries(dedupedPublicLikers, (liker, next) => {
+              scrapeSave(liker)
+                .then(user => {
+                  publicLikerIds.push(user.id);
+                  next();
+                })
+            }, err => {
+              database.getInfluencers(publicLikerIds)
+                .then(influencers => {
+                  const headers = ['id', 'externalId', 'username', 'followerCount', 'followingCount', 'likeCount', 'website'];
+                  var influencerData = influencers.map(influencer => {
+                    return influencer.id +',' + influencer.external_id + ',' + influencer.username + ',' + influencer.follower_count + ',' + influencer.following_count + ',' + publicLikerNames.filter(likerName => { return likerName == influencer.username; }).length + ',' + influencer.external_url;
+                  });
+                  fileHandler.writeToCSV(influencerData, focusUsername + '-influencer-data', headers)
+                    .then(result => {
+                      database.getConsumers(publicLikerIds)
+                        .then(consumers => {
+                          var consumerData = consumers.map(consumer => {
+                            return consumer.id +',' + consumer.external_id + ',' + consumer.username + ',' + consumer.follower_count + ',' + consumer.following_count + ',' + publicLikerNames.filter(likerName => { return likerName == consumer.username; }).length + ',' + consumer.external_url;
+                          })
+                          fileHandler.writeToCSV(consumerData, focusUsername + '-consumer-data', headers);
+                        })
                     })
                 })
-            })
+            });
+          })
         });
-      })
-    });
+    })
 });
 
 app.get('/get-me', (req, res) => {
