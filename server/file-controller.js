@@ -7,10 +7,7 @@ function fileHandler() {
 fileHandler.prototype.writeToCSV = (data, filename, headers = []) => {
   return new Promise((resolve, reject) => {
     var lineArray = [];
-    lineArray.push(headers.map(header => {
-        return header + ',';
-      })
-    );
+    lineArray.push(headers);
 
     const tempStore = data.map(datum => {
       return datum + ',';

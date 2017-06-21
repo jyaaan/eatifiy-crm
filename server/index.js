@@ -13,8 +13,8 @@ const autoBrowser = new AutoBrowser();
 const fs = require('fs');
 const http = require('http');
 const request = require('request');
-const fileHandler = require('./file-controller');
-
+const FileHandler = require('./file-controller');
+const fileHandler = new FileHandler();
 const publicPath = path.join(__dirname, '/public');
 const staticMiddleware = express.static(publicPath);
 const ig = new IG();
@@ -65,8 +65,9 @@ app.get('/analyze/:username', (req, res) => {
   var arrLikers = [];
   const publicLikerIds = [];
   var publicLikerNames = [];
-  scrapeSave(focusUsername)
+  scrapeSave(focusUsername, true)
     .then(scraped => {
+      console.log(scraped);
       ig.getMedias(scraped.external_id, currentSession.session)
         .then(medias => {
           console.log('medias count:', medias.length);
@@ -74,7 +75,9 @@ app.get('/analyze/:username', (req, res) => {
             ig.getLikers(media, currentSession.session)
               .then(likers => {
                 arrLikers = arrLikers.concat(...likers);
-                next();
+                setTimeout(() => {
+                  next();
+                }, 1000)
               })
           }, err => {
             console.log('likers count:', arrLikers.length);
@@ -88,11 +91,15 @@ app.get('/analyze/:username', (req, res) => {
             var dedupedPublicLikers = spliceDuplicates(publicLikerNames);
             console.log('deduped public only:', dedupedPublicLikers.length);
             async.mapSeries(dedupedPublicLikers, (liker, next) => {
-              scrapeSave(liker)
-                .then(user => {
-                  publicLikerIds.push(user.id);
-                  next();
-                })
+              if (liker != 'barbiebuli') {
+                scrapeSave(liker)
+                  .then(user => {
+                    publicLikerIds.push(user.id);
+                    next();
+                  })
+              } else {
+                next();
+              }
             }, err => {
               database.getInfluencers(publicLikerIds)
                 .then(influencers => {
@@ -325,14 +332,14 @@ app.post('/lookup', (req, res) => {
     })
 });
 
-const scrapeSave = username => { // now with more resume-ability!
+const scrapeSave = (username, bypass=false) => { // now with more resume-ability!
   console.log('scraping', username);
   var thisId;
   return new Promise((resolve, reject) => {
     database.getUserByUsername(username)
       .then(user => {
         // console.log('user:', user);
-        if (!user) {
+        if (!user || bypass) {
           Scraper(username)
             .then(user => {
               database.upsertUser(user)
