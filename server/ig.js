@@ -75,6 +75,7 @@ IG.prototype.getMedias = function (userId, session, days=30) {
 }
 
 IG.prototype.getLikers = function (media, session) {
+  console.log('getLikers');
   return new Promise((resolve, reject) => {
     Client.Media.likers(session, media.id)
       .then(likers => {
