@@ -103,16 +103,20 @@ app.get('/analyze/:username', (req, res) => {
             }, err => {
               database.getInfluencers(publicLikerIds)
                 .then(influencers => {
-                  const headers = ['id', 'externalId', 'username', 'followerCount', 'followingCount', 'likeCount', 'website'];
+                  const headers = ['id', 'externalId', 'username', 'followerCount', 'followingCount', 'following/follower ratio', 'likeCount', 'website'];
                   var influencerData = influencers.map(influencer => {
-                    return influencer.id +',' + influencer.external_id + ',' + influencer.username + ',' + influencer.follower_count + ',' + influencer.following_count + ',' + publicLikerNames.filter(likerName => { return likerName == influencer.username; }).length + ',' + influencer.external_url;
+                    return influencer.id +',' + influencer.external_id + ',' + influencer.username + ',' + influencer.follower_count + ',' + 
+                    influencer.following_count + ',' + (influencer.following_count / influencer.follower_count) + ',' + 
+                    publicLikerNames.filter(likerName => { return likerName == influencer.username; }).length + ',' + influencer.external_url;
                   });
                   fileHandler.writeToCSV(influencerData, focusUsername + '-influencer-data', headers)
                     .then(result => {
                       database.getConsumers(publicLikerIds)
                         .then(consumers => {
                           var consumerData = consumers.map(consumer => {
-                            return consumer.id +',' + consumer.external_id + ',' + consumer.username + ',' + consumer.follower_count + ',' + consumer.following_count + ',' + publicLikerNames.filter(likerName => { return likerName == consumer.username; }).length + ',' + consumer.external_url;
+                            return consumer.id +',' + consumer.external_id + ',' + consumer.username + ',' + consumer.follower_count + ',' + 
+                            consumer.following_count + ',' + (consumer.following_count / consumer.follower_count) + ',' + 
+                            publicLikerNames.filter(likerName => { return likerName == consumer.username; }).length + ',' + consumer.external_url;
                           })
                           fileHandler.writeToCSV(consumerData, focusUsername + '-consumer-data', headers);
                         })
