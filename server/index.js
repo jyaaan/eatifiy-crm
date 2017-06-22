@@ -91,7 +91,7 @@ app.get('/analyze/:username', (req, res) => {
             var dedupedPublicLikers = spliceDuplicates(publicLikerNames);
             console.log('deduped public only:', dedupedPublicLikers.length);
             async.mapSeries(dedupedPublicLikers, (liker, next) => {
-              if (liker != 'barbiebuli') {
+              if (liker != 'barbiebuli' && liker != 'mlb_hunchoo' && liker != 'isaac_zoller') {
                 scrapeSave(liker)
                   .then(user => {
                     publicLikerIds.push(user.id);
@@ -103,16 +103,22 @@ app.get('/analyze/:username', (req, res) => {
             }, err => {
               database.getInfluencers(publicLikerIds)
                 .then(influencers => {
-                  const headers = ['id', 'externalId', 'username', 'followerCount', 'followingCount', 'likeCount', 'website'];
+                  const headers = ['id', 'externalId', 'username', 'followerCount', 'followingCount', 'following/follower ratio', 'recentPosts', 'recentLikeCount', 'recentCommentCount', 'postFrequency', 'likesCount', 'website'];
                   var influencerData = influencers.map(influencer => {
-                    return influencer.id +',' + influencer.external_id + ',' + influencer.username + ',' + influencer.follower_count + ',' + influencer.following_count + ',' + publicLikerNames.filter(likerName => { return likerName == influencer.username; }).length + ',' + influencer.external_url;
+                    return influencer.id +',' + influencer.external_id + ',' + influencer.username + ',' + influencer.follower_count + ',' + 
+                    influencer.following_count + ',' + (influencer.following_count / influencer.follower_count) + ',' + 
+                    influencer.recent_post_count + ',' + influencer.recent_like_count + ',' + influencer.recent_comment_count + ',' + ((influencer.recent_post_duration / 3600) / influencer.recent_post_count) + ',' +
+                    publicLikerNames.filter(likerName => { return likerName == influencer.username; }).length + ',' + influencer.external_url;
                   });
                   fileHandler.writeToCSV(influencerData, focusUsername + '-influencer-data', headers)
                     .then(result => {
                       database.getConsumers(publicLikerIds)
                         .then(consumers => {
                           var consumerData = consumers.map(consumer => {
-                            return consumer.id +',' + consumer.external_id + ',' + consumer.username + ',' + consumer.follower_count + ',' + consumer.following_count + ',' + publicLikerNames.filter(likerName => { return likerName == consumer.username; }).length + ',' + consumer.external_url;
+                            return consumer.id +',' + consumer.external_id + ',' + consumer.username + ',' + consumer.follower_count + ',' + 
+                            consumer.following_count + ',' + (consumer.following_count / consumer.follower_count) + ',' + 
+                            consumer.recent_post_count + ',' + consumer.recent_like_count + ',' + consumer.recent_comment_count + ',' + ((consumer.recent_post_duration / 3600) / consumer.recent_post_count) + ',' +
+                            publicLikerNames.filter(likerName => { return likerName == consumer.username; }).length + ',' + consumer.external_url;
                           })
                           fileHandler.writeToCSV(consumerData, focusUsername + '-consumer-data', headers);
                         })
