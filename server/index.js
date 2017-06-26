@@ -79,6 +79,11 @@ app.get('/analyze/:username', (req, res) => {
                   next();
                 }, 1000)
               })
+              .catch(err => {
+                setTimeout(() => {
+                  next();
+                })
+              })
           }, err => {
             console.log('likers count:', arrLikers.length);
 
@@ -369,6 +374,9 @@ const scrapeSave = (username, bypass=false) => { // now with more resume-ability
                     .then(id => {
                       resolve({ id: id[0].id, external_id: user.external_id });
                     })
+                })
+                .catch(err => {
+                  reject(err);
                 })
             })
             .catch(err => {
