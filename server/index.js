@@ -96,27 +96,23 @@ app.get('/analyze/:username', (req, res) => {
             var dedupedPublicLikers = spliceDuplicates(publicLikerNames);
             console.log('deduped public only:', dedupedPublicLikers.length);
             async.mapSeries(dedupedPublicLikers, (liker, next) => {
-              if (liker != 'barbiebuli' && liker != 'mlb_hunchoo' && liker != 'isaac_zoller') {
-                scrapeSave(liker)
-                  .then(user => {
-                    publicLikerIds.push(user.id);
-                    next();
-                  })
-                  .catch(err => {
-                    console.log('error detected, trying again...');
-                    scrapeSave(liker)
-                      .then(user2 => {
-                        publicLikerIds.push(user2.id);
-                        next();
-                      })
-                      .catch(err => {
-                        console.log('second error, continuing');
-                        next();
-                      })
-                  })
-              } else {
-                next();
-              }
+              scrapeSave(liker)
+                .then(user => {
+                  publicLikerIds.push(user.id);
+                  next();
+                })
+                .catch(err => {
+                  console.log('error detected, trying again...');
+                  scrapeSave(liker)
+                    .then(user2 => {
+                      publicLikerIds.push(user2.id);
+                      next();
+                    })
+                    .catch(err => {
+                      console.log('second error, continuing');
+                      next();
+                    })
+                })
             }, err => {
               database.getInfluencers(publicLikerIds)
                 .then(influencers => {
