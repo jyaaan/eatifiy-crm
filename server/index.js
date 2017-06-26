@@ -97,6 +97,18 @@ app.get('/analyze/:username', (req, res) => {
                     publicLikerIds.push(user.id);
                     next();
                   })
+                  .catch(err => {
+                    console.log('error detected, trying again...');
+                    scrapeSave(liker)
+                      .then(user2 => {
+                        publicLikerIds.push(user2.id);
+                        next();
+                      })
+                      .catch(err => {
+                        console.log('second error, continuing');
+                        next();
+                      })
+                  })
               } else {
                 next();
               }
@@ -127,6 +139,9 @@ app.get('/analyze/:username', (req, res) => {
             });
           })
         });
+    })
+    .catch(err => {
+      console.error(err);
     })
 });
 
