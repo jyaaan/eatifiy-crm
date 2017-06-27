@@ -59,8 +59,10 @@ app.get('/discovery', (req, res) => {
 //     });
 // })
 
-app.get('/analyze/:username', (req, res) => {
+app.get('/analyze/:username/:days', (req, res) => {
   const focusUsername = req.params.username;
+  const days = (typeof req.params.days != 'undefined') ? req.params.days : 30;
+
   res.send('influencer test for ' + focusUsername);
   var arrLikers = [];
   const publicLikerIds = [];
@@ -68,7 +70,7 @@ app.get('/analyze/:username', (req, res) => {
   scrapeSave(focusUsername, true)
     .then(scraped => {
       console.log(scraped);
-      ig.getMedias(scraped.external_id, currentSession.session)
+      ig.getMedias(scraped.external_id, currentSession.session, days)
         .then(medias => {
           console.log('medias count:', medias.length);
           async.mapSeries(medias, (media, next) => {
@@ -78,6 +80,11 @@ app.get('/analyze/:username', (req, res) => {
                 setTimeout(() => {
                   next();
                 }, 1000)
+              })
+              .catch(err => {
+                setTimeout(() => {
+                  next();
+                })
               })
           }, err => {
             console.log('likers count:', arrLikers.length);
@@ -91,15 +98,23 @@ app.get('/analyze/:username', (req, res) => {
             var dedupedPublicLikers = spliceDuplicates(publicLikerNames);
             console.log('deduped public only:', dedupedPublicLikers.length);
             async.mapSeries(dedupedPublicLikers, (liker, next) => {
-              if (liker != 'barbiebuli' && liker != 'mlb_hunchoo' && liker != 'isaac_zoller') {
-                scrapeSave(liker)
-                  .then(user => {
-                    publicLikerIds.push(user.id);
-                    next();
-                  })
-              } else {
-                next();
-              }
+              scrapeSave(liker)
+                .then(user => {
+                  publicLikerIds.push(user.id);
+                  next();
+                })
+                .catch(err => {
+                  console.log('error detected, trying again...');
+                  scrapeSave(liker)
+                    .then(user2 => {
+                      publicLikerIds.push(user2.id);
+                      next();
+                    })
+                    .catch(err => {
+                      console.log('second error, continuing');
+                      next();
+                    })
+                })
             }, err => {
               database.getInfluencers(publicLikerIds)
                 .then(influencers => {
@@ -127,6 +142,9 @@ app.get('/analyze/:username', (req, res) => {
             });
           })
         });
+    })
+    .catch(err => {
+      console.error(err);
     })
 });
 
@@ -345,7 +363,7 @@ const scrapeSave = (username, bypass=false) => { // now with more resume-ability
     database.getUserByUsername(username)
       .then(user => {
         // console.log('user:', user);
-        if (!user || bypass) {
+        if (!user || bypass || user.following_count == 0) {
           Scraper(username)
             .then(user => {
               database.upsertUser(user)
@@ -354,6 +372,9 @@ const scrapeSave = (username, bypass=false) => { // now with more resume-ability
                     .then(id => {
                       resolve({ id: id[0].id, external_id: user.external_id });
                     })
+                })
+                .catch(err => {
+                  reject(err);
                 })
             })
             .catch(err => {
