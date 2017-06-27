@@ -8,6 +8,25 @@ const knex = require('knex')({
 });
 
 const async = require('async');
+const InfluencerFilter = require('./influencer-filter');
+
+const exampleSettings = {
+  follower_count: {
+    max: 250000,
+    min: 1000
+  },
+  following_count: {
+
+  },
+  external_url: {
+    min: 1
+  },
+  ratio: {
+    max: 0.1
+  }
+}
+
+const currentFilter = new InfluencerFilter(exampleSettings);
 
 function Database() {
 
@@ -38,7 +57,7 @@ Database.prototype.getInfluencers = function (userEIds) {
     async.mapSeries(userEIds, (userId, next) => {
       this.getUserByEId(userId)
         .then(user => {
-          if (user.follower_count >= 1000 && (user.following_count / user.follower_count) < 0.5) {
+          if (currentFilter.filter(user)) {
             influencers.push(user);
           }
           next();

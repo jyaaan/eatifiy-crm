@@ -1,4 +1,4 @@
-class influencerFilter {
+class InfluencerFilter {
   constructor(settings) {
     const { follower_count, following_count, external_url, ratio } = settings;
 
@@ -25,29 +25,13 @@ class influencerFilter {
     }
   }
 
-
   filter(user) {
-    var result = true;
     for (let key in this) {
-      console.log('looking at', key);
       if (!this[key].filter(user)) {
-        console.log(key, ' failed');
-        result = false;
+        return false;
       }
     }
-    return result;
-  }
-
-  test() {
-    var result = true;
-    for (let key in this) {
-      console.log('looking at', key);
-      if (!this[key].filter(user)) {
-        console.log(key, ' failed');
-        result = false;
-      }
-    }
-    return result;
+    return true;
   }
 }
 
@@ -61,27 +45,4 @@ const eval = (val, paramObj) => {
   return true;
 }
 
-const exampleSettings = {
-  follower_count: {
-    max: 250000,
-    min: 1000
-  },
-  following_count: {
-
-  },
-  external_url: {
-    min: 1
-  },
-  ratio: {
-    max: 0.1
-  }
-}
-
-const testUser = {
-  following_count: 18,
-  follower_count: 1000,
-  external_url: 'something'
-}
-
-var testFilter = new influencerFilter(exampleSettings);
-console.log(testFilter.filter(testUser));
+module.exports = InfluencerFilter;
