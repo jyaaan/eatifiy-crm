@@ -1,6 +1,6 @@
 class InfluencerFilter {
   constructor(settings) {
-    const { follower_count, following_count, external_url, ratio } = settings;
+    const { follower_count, following_count, external_url, ratio, terms } = settings;
 
     this.follower_count = follower_count;
     this.follower_count.filter = function(user) {
@@ -22,6 +22,11 @@ class InfluencerFilter {
     this.ratio.filter = function(user) {
       const userRatio = user.following_count / user.follower_count;
       return eval(userRatio, this);
+    }
+
+    this.terms = terms;
+    this.terms.filter = function(user) {
+      return true;
     }
   }
 

@@ -54,6 +54,12 @@ IG.prototype.getMedias = function (userId, session, days=30) {
       feed.get()
         .then(result => {
           result.map(media => { 
+            console.log('media', media._params);
+            if (typeof media._params.usertags != 'undefined') {
+              // media._params.usertags.in will yield an array of user objects.
+              // user.username .pk for external_id
+              console.log('usertags', media._params.usertags.in);
+            }
             console.log('deviceTimestamp:', media._params.deviceTimestamp);
             var postDate = new Date(media._params.deviceTimestamp * 1000);
             console.log('converted date:', postDate.formatMMDDYYYY());

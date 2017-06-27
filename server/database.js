@@ -23,6 +23,9 @@ const exampleSettings = {
   },
   ratio: {
     max: 0.1
+  },
+  terms: {
+    terms: ['john']
   }
 }
 
