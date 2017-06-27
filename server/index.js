@@ -59,8 +59,10 @@ app.get('/discovery', (req, res) => {
 //     });
 // })
 
-app.get('/analyze/:username', (req, res) => {
+app.get('/analyze/:username/:days', (req, res) => {
   const focusUsername = req.params.username;
+  const days = (typeof req.params.days != 'undefined') ? req.params.days : 30;
+
   res.send('influencer test for ' + focusUsername);
   var arrLikers = [];
   const publicLikerIds = [];
@@ -68,7 +70,7 @@ app.get('/analyze/:username', (req, res) => {
   scrapeSave(focusUsername, true)
     .then(scraped => {
       console.log(scraped);
-      ig.getMedias(scraped.external_id, currentSession.session)
+      ig.getMedias(scraped.external_id, currentSession.session, days)
         .then(medias => {
           console.log('medias count:', medias.length);
           async.mapSeries(medias, (media, next) => {
@@ -361,7 +363,7 @@ const scrapeSave = (username, bypass=false) => { // now with more resume-ability
     database.getUserByUsername(username)
       .then(user => {
         // console.log('user:', user);
-        if (!user || bypass) {
+        if (!user || bypass || user.following_count == 0) {
           Scraper(username)
             .then(user => {
               database.upsertUser(user)
