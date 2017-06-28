@@ -25,9 +25,27 @@ const userProfile = (state = { profile: { id: -1 }, followingBtn: false }, actio
   }
 }
 
+const defaultParameters = {
+  engagement: {
+    active: false
+  }
+}
+
+const prospectParameters = (state = defaultParameters, action) => {
+  switch (action.type) {
+    case 'UPDATE_PARAMETERS':
+      console.log(state);
+
+      return action.parameters;
+    default:
+      return state;
+  }
+}
+
 const reducer = combineReducers({
   usernameInput,
-  userProfile
+  userProfile,
+  prospectParameters
 });
 
 const store = createStore(reducer);

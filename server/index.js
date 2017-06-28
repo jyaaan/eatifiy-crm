@@ -8,8 +8,8 @@ const database = new Database();
 const ParseScrape = require('./parse-scrape');
 const Scraper = require('./scraper');
 const async = require('async');
-const AutoBrowser = require('./auto-browser');
-const autoBrowser = new AutoBrowser();
+// const AutoBrowser = require('./auto-browser');
+// const autoBrowser = new AutoBrowser();
 const fs = require('fs');
 const http = require('http');
 const request = require('request');
@@ -197,14 +197,14 @@ app.post('/get-following', (req, res) => {
           async.mapSeries(result, (user, next) => {
             database.userSuggestionsLoaded(user.username)
               .then(loaded => {
-                if (!loaded) {
-                  autoBrowser.process(user)
-                    .then(processed => {
-                      setTimeout(next, 1000);
-                    })
-                } else {
+                // if (!loaded) {
+                //   autoBrowser.process(user)
+                //     .then(processed => {
+                //       setTimeout(next, 1000);
+                //     })
+                // } else {
                   next();
-                }
+                // }
               })
           }, err => {
             console.log('complete');
@@ -216,60 +216,60 @@ app.post('/get-following', (req, res) => {
     })
 });
 
+// Commented out in order to load onto digital ocean
 
+// app.get('/get-suggested', (req, res) => {
+//   console.log('getting suggested');
+//   const userEIds = [];
+//   var suggestedUsers = [];
 
-app.get('/get-suggested', (req, res) => {
-  console.log('getting suggested');
-  const userEIds = [];
-  var suggestedUsers = [];
+//   async.mapSeries(suggestionTestUsers, (test, next) => {
+//     database.getUserByUsername(test)
+//       .then(user => {
+//         userEIds.push(user.id);
+//         database.clearSuggestionRank(user.id)
+//           .then(cleared => {
+//             autoBrowser.process(user)
+//               .then(result => {
+//                 next();
+//               })
+//           })
+//       })
+//   }, err => {
+//     async.mapSeries(userEIds, (eid, next) => {
+//       // console.log('eid under investigation:', eid);
+//       database.getFirst(eid, 3)
+//         .then(suggestions => {
+//           suggestedUsers = suggestedUsers.concat(suggestions);
+//           next();
+//         })
 
-  async.mapSeries(suggestionTestUsers, (test, next) => {
-    database.getUserByUsername(test)
-      .then(user => {
-        userEIds.push(user.id);
-        database.clearSuggestionRank(user.id)
-          .then(cleared => {
-            autoBrowser.process(user)
-              .then(result => {
-                next();
-              })
-          })
-      })
-  }, err => {
-    async.mapSeries(userEIds, (eid, next) => {
-      // console.log('eid under investigation:', eid);
-      database.getFirst(eid, 3)
-        .then(suggestions => {
-          suggestedUsers = suggestedUsers.concat(suggestions);
-          next();
-        })
+//     }, err => {
+//       var lineArray = [];
+//       lineArray.push('data:text/csv;charset=utf-8,');
+//       var tempstore = suggestedUsers.map(suggested => {
+//         return suggested.concat(',');
+//       })
+//       lineArray = lineArray.concat(...tempstore);
 
-    }, err => {
-      var lineArray = [];
-      lineArray.push('data:text/csv;charset=utf-8,');
-      var tempstore = suggestedUsers.map(suggested => {
-        return suggested.concat(',');
-      })
-      lineArray = lineArray.concat(...tempstore);
+//       var csvContent = lineArray.join("\n");
 
-      var csvContent = lineArray.join("\n");
+//       fs.writeFile(
 
-      fs.writeFile(
+//           './users.csv',
 
-          './users.csv',
+//           csvContent,
 
-          csvContent,
-
-          function (err) {
-              if (err) {
-                  console.error('Crap happens');
-              }
-          }
-      );
-      // console.log(suggestedUsers);
-    })
-  })
-});
+//           function (err) {
+//               if (err) {
+//                   console.error('Crap happens');
+//               }
+//           }
+//       );
+//       // console.log(suggestedUsers);
+//     })
+//   })
+// });
 
 app.get('/update-viewrecipes', (req, res) => {
   console.log('starting viewrecip.es update');
@@ -367,6 +367,26 @@ app.get('/get-report-frequency', (req, res) => {
 })
 
 app.get('/lookup/:username', (req, res) => {
+  database.usernameExists(req.params.username)
+    .then(result => {
+      if (result) {
+        database.getUserByUsername(req.params.username)
+          .then(user => {
+            res.json(user);
+          })
+      } else {
+        scrapeSave(req.params.username)
+          .then(scrape => {
+            database.getUserByEId(scrape.id)
+              .then(user => {
+                res.json(user);
+              })
+          })
+      }
+    })
+});
+
+app.get('/tf-lookup/:username', (req, res) => {
   database.usernameExists(req.params.username)
     .then(result => {
       if (result) {
