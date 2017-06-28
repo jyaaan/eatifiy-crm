@@ -25,7 +25,9 @@ const exampleSettings = {
     max: 0.1
   },
   terms: {
-    terms: ['john']
+    bio: ['john'],
+    mention: ['john'],
+    tag: ['eatifyjohn']
   }
 }
 

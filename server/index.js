@@ -61,13 +61,30 @@ app.get('/discovery', (req, res) => {
 
 app.get('/mentions/:username/:mention', (req, res) => {
   const focusUsername = req.params.username;
-
+  const lookup = req.params.mention.toLowerCase();
+  var mentionCount = 0;
+  var tagCount = 0;
   res.send('mention analysis for ' + focusUsername);
   scrapeSave(focusUsername, true)
     .then(scraped => {
-      ig.getMedias(scraped.external_id, currentSession.session, 5)
-        .then(medias => {
-          console.log('done');
+      ig.getMedias(scraped.external_id, currentSession.session, 3000)
+        .then(rawMedias => {
+          console.log('posts:', rawMedias.length);
+          rawMedias.map(media => {
+            if (typeof media.caption != 'undefined' && media.caption.toLowerCase().includes(lookup)) {
+              mentionCount++;
+            }
+            if (typeof media.usertags != 'undefined') {
+              const tagged = media.usertags.in;
+              tagged.map(tag => {
+                if (tag.user.username.toLowerCase() == lookup) {
+                  tagCount++;
+                }
+              })
+            }
+            return 'ok';
+          });
+          console.log('mentions: ', mentionCount, ' tags: ', tagCount);
         })
     })
 })
@@ -355,14 +372,30 @@ app.get('/lookup/:username', (req, res) => {
       if (result) {
         database.getUserByUsername(req.params.username)
           .then(user => {
-            res.json(user);
+            res.json({
+                  username: user.username,
+                  follower_count: user.follower_count,
+                  following_count: user.following_count,
+                  post_count: user.post_count,
+                  like_count: user.recent_like_count / user.recent_post_count,
+                  comment_count: user.recent_comment_count / user.recent_post_count,
+                  like_ratio: (user.recent_like_count / user.recent_post_count) / user.follower_count
+                });
           })
       } else {
-        scrapeSave(req.body.username)
+        scrapeSave(req.params.username)
           .then(scrape => {
             database.getUserByEId(scrape.id)
               .then(user => {
-                res.json(user);
+                res.json({
+                  username: user.username,
+                  follower_count: user.follower_count,
+                  following_count: user.following_count,
+                  post_count: user.post_count,
+                  like_count: user.recent_like_count / user.recent_post_count,
+                  comment_count: user.recent_comment_count / user.recent_post.count,
+                  like_ratio: (user.recent_like_count / user.recent_post_count) / user.follower_count
+                });
               })
           })
       }
