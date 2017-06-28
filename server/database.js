@@ -23,6 +23,11 @@ const exampleSettings = {
   },
   ratio: {
     max: 0.1
+  },
+  terms: {
+    bio: ['john'],
+    mention: ['john'],
+    tag: ['eatifyjohn']
   }
 }
 

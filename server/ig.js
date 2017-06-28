@@ -45,6 +45,7 @@ Date.prototype.formatMMDDYYYY = function(){
 IG.prototype.getMedias = function (userId, session, days=30) {
   const medias = [];
   var dateRange = new Date();
+  var errorDate = new Date(2010, 1, 1);
   var validDate = true;
   dateRange.setDate(dateRange.getDate() - days);
   console.log('date ' + days + ' ago:', dateRange.formatMMDDYYYY());
@@ -54,17 +55,27 @@ IG.prototype.getMedias = function (userId, session, days=30) {
       feed.get()
         .then(result => {
           result.map(media => { 
+            // console.log('media', media._params);
+            // if (typeof media._params.usertags != 'undefined') {
+            //   // media._params.usertags.in will yield an array of user objects.
+            //   // user.username .pk for external_id
+            //   console.log('usertags', media._params.usertags.in);
+            // }
             console.log('deviceTimestamp:', media._params.deviceTimestamp);
-            var postDate = new Date(media._params.deviceTimestamp * 1000);
+            const timeStamp = media._params.deviceTimestamp;
+            var postDate = timeStamp > 1500000000 ? new Date(timeStamp) : new Date(timeStamp * 1000);
             console.log('converted date:', postDate.formatMMDDYYYY());
-            if (postDate > dateRange) {
+            if (postDate > dateRange || postDate < errorDate) {
               medias.push(media._params); 
             } else {
+              console.log('date out of range');
               validDate = false;
             }
           });
-          if (feed.isMoreAvailable && validDate) {
-            retrieve();
+          if (feed.moreAvailable && validDate) {
+            setTimeout(() => {
+              retrieve();
+            }, 1200);
           } else {
             resolve(medias);
           }
