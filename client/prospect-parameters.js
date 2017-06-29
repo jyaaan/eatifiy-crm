@@ -30,7 +30,7 @@ friendOptions = [
 ]
 
 const handleProspect = event => {
-
+  console.log(store.getState().prospectParameters)
 }
 
 const handleDropdown = (event, { value }) => {
@@ -59,6 +59,7 @@ const handleTest = (event, {value}) => {
   parameters[name] = subb;
   store.dispatch({
     type: 'UPDATE_PARAMETERS',
+    name: name,
     parameters: parameters
   })
 
@@ -77,6 +78,7 @@ const handleInput = event => {
   if ($check.checked) {
     store.dispatch({
       type: 'UPDATE_PARAMETERS',
+      name: name,
       parameters: parameters
     })
   } else {
@@ -104,68 +106,110 @@ const ProspectParameters = props => {
       <div className="inline field">
         <div className="ui checkbox">
           <input
-            type="checkbox" />
+            type="checkbox"
+            id="min-follower_count-check"
+            value="min-follower_count"
+            onClick={ handleTest } />
           <label>Min Followers</label>
         </div>
         <div className="ui input">
-          <input type="text" value="5,000" />
+          <input type="text"
+            placeholder="5,000"
+            id="min-follower_count"
+            onChange={ handleInput } />
         </div>
         <div className="ui checkbox">
           <input
-            type="checkbox" />
+            type="checkbox"
+            id="max-follower_count-check"
+            value="max-follower_count"
+            onClick={ handleTest } />
           <label>Max Followers</label>
         </div>
         <div className="ui input">
-          <input type="text" value="250,000" />
+          <input type="text"
+            placeholder="250,000"
+            id="max-follower_count"
+            onChange={ handleInput } />
         </div>
       </div>
 
       <div className="inline field">
         <div className="ui checkbox">
           <input
-            type="checkbox" />
+            type="checkbox"
+            id="min-following_count-check"
+            value="min-following_count"
+            onClick={ handleTest } />
           <label>Min Following</label>
         </div>
         <div className="ui input">
-          <input type="text" value="0" />
+          <input type="text"
+            placeholder="0"
+            id="min-following_count"
+            onChange={ handleInput } />
         </div>
         <div className="ui checkbox">
           <input
-            type="checkbox" />
+            type="checkbox"
+            id="max-following_count-check"
+            value="max-following_count"
+            onClick={ handleTest } />
           <label>Max Following</label>
         </div>
         <div className="ui input">
-          <input type="text" value="2,000" />
+          <input type="text"
+            placeholder="2,000"
+            id="max-following_count"
+            onChange={ handleInput } />
         </div>
       </div>
 
       <div className="inline field">
         <div className="ui checkbox">
           <input
-            type="checkbox" />
+            type="checkbox"
+            id="min-ratio-check"
+            value="min-ratio"
+            onClick={ handleTest } />
           <label>Min Following/Follower Ratio</label>
         </div>
         <div className="ui input">
-          <input type="text" value="0.00" />
+          <input type="text" 
+            placeholder="0.00"
+            id="min-ratio"
+            onChange={ handleInput } />
         </div>
         <div className="ui checkbox">
           <input
-            type="checkbox" />
+            type="checkbox"
+            id="max-ratio-check"
+            value="max-ratio"
+            onClick={ handleTest } />
           <label>Max Following/Follower Ratio</label>
         </div>
         <div className="ui input">
-          <input type="text" value="0.2" />
+          <input type="text"
+            placeholder="0.2"
+            id="max-ratio"
+            onChange={ handleInput } />
         </div>
       </div>
 
       <div className="inline field">
         <div className="ui checkbox">
           <input
-            type="checkbox" />
+            type="checkbox" 
+            id="min-engagement-check" 
+            value="min-engagement" 
+            onClick={ handleTest }/>
           <label>Min EngagementRate</label>
         </div>
         <div className="ui input">
-          <input type="text" value="0.02" />
+          <input type="text" 
+            id="min-engagement"
+            placeholder="0.02"
+            onChange={ handleInput } />
         </div>
         <div className="ui checkbox">
           <input
@@ -198,11 +242,6 @@ const ProspectParameters = props => {
         <button
           className="ui button"
           onClick={ handleProspect }>Begin Prospectin'</button>
-      </div>
-
-      <div>
-        <Button content='focus' onClick={this.focus} />
-        <Input ref={this.handleRef} placeholder='Search...' />
       </div>
 
     </div>

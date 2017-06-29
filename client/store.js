@@ -27,16 +27,29 @@ const userProfile = (state = { profile: { id: -1 }, followingBtn: false }, actio
 
 const defaultParameters = {
   engagement: {
-    active: false
+  },
+  follower_count: {
+
+  },
+  following_count: {
+
+  },
+  external_url: {
+
+  },
+  ratio: {
+    
   }
 }
 
 const prospectParameters = (state = defaultParameters, action) => {
   switch (action.type) {
     case 'UPDATE_PARAMETERS':
-      console.log(state);
-
-      return action.parameters;
+      const newObj = Object.assign({}, state[action.name], action.parameters[action.name]);
+      const masterObj = {};
+      masterObj[action.name] = newObj;
+      console.log(newObj);
+      return Object.assign({}, state, masterObj);
     default:
       return state;
   }
