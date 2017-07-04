@@ -1,10 +1,10 @@
 const React = require('react');
 const store = require('./store');
-const async = require('async');
 const Dropdown = require('semantic-ui-react').Dropdown;
 const Button = require('semantic-ui-react').Button;
 const Input = require('semantic-ui-react').Input;
 
+// Methods of prospect gathering
 prospectOptions = [
   {
     text: 'Likers of Recent Posts',
@@ -20,18 +20,20 @@ prospectOptions = [
   }
 ]
 
+// Handler for requiring websites
 const handleToggle = event => {
-    const parameters = {
-      external_url: {
-        min: 0
-      }
+  const parameters = {
+    external_url: {
+      min: 0 // defaults to not caring ;(
     }
+  };
+
   if (event.target.checked) {
     parameters['external_url'] = {
       min: 1
     }
   };
-  console.log('toggle parameters:', parameters);
+
   store.dispatch({
     type: 'UPDATE_PARAMETERS',
     name: 'external_url',
@@ -39,6 +41,7 @@ const handleToggle = event => {
   });
 }
 
+// When you hit go!
 const handleProspect = event => {
   store.dispatch({
     type: 'UPDATE_TYPE',
@@ -51,6 +54,7 @@ const handleProspect = event => {
   });
 }
 
+// Selecting between methods. This can't be blank.
 const handleDropdown = (event, { value }) => {
   store.dispatch({
     type: 'UPDATE_TYPE',
@@ -60,35 +64,40 @@ const handleDropdown = (event, { value }) => {
   });
 }
 
+// Maybe not the best way to do this, but I'm pretty proud of the way it's done
+// Allows for changes to not affect parameters if checkbox not checked
+// When checked, will place value or, if null, placeholder into parameter reducer
 const handleCheckbox = (event, {value}) => {
   const idSlug = event.target.value;
   let $temp = document.querySelector('#' + idSlug)
   if ($temp.value == '') {
-    console.log('blanker!');
     $temp.value = $temp.placeholder;
   }
-  const spec = idSlug.substr(0, idSlug.indexOf('-'));
-  const name = idSlug.substr(idSlug.indexOf('-') + 1, idSlug.length);
+  
+  const spec = idSlug.substr(0, idSlug.indexOf('-')); // min or max, generally
+  const name = idSlug.substr(idSlug.indexOf('-') + 1, idSlug.length); // key for parameter
   const subb = {};
+
   if (event.target.checked) {
     subb[spec] = $temp.value;
   } else {
     subb[spec] = null;
   }
+
   const parameters = {};
   parameters[name] = subb;
+
   store.dispatch({
     type: 'UPDATE_PARAMETERS',
     name: name,
     parameters: parameters
-  })
-
-  console.log($temp.value);
+  });
 }
 
+// Similar updating method as handleCheckbox, but will verify if parameter is checked and dispatch changes accordingly
 const handleInput = event => {
   const idSlug = event.target.id;
-  const $check = document.querySelector('#' + idSlug + '-check');
+  const $check = document.querySelector('#' + idSlug + '-check'); // Load corresponding checkbox element
   const spec = idSlug.substr(0, idSlug.indexOf('-'));
   const name = idSlug.substr(idSlug.indexOf('-') + 1, idSlug.length);
   const parameters = {};
@@ -105,6 +114,8 @@ const handleInput = event => {
     console.log('Field not enabled; changes will not be considered when generating prospects.');
   }
 }
+
+// Currently too verbose. When refactoring, learn React a bit better to replace this mess.
 const ProspectParameters = props => {
   return (
     <div className="ui form">
