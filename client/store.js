@@ -29,16 +29,13 @@ const defaultParameters = {
   engagement: {
   },
   follower_count: {
-
   },
   following_count: {
-
   },
   external_url: {
     min: 0
   },
   ratio: {
-    
   }
 }
 
@@ -46,11 +43,15 @@ const prospectParameters = (state = {parameters: defaultParameters, type: {test:
   switch (action.type) {
     case 'UPDATE_PARAMETERS':
       const newObj = Object.assign({}, state.parameters[action.name], action.parameters[action.name]);
-      const masterObj = {};
-      masterObj[action.name] = newObj;
-      return {parameters: Object.assign({}, state.parameters, masterObj), type: state.type};
+      const paramObj = {};
+      paramObj[action.name] = newObj;
+      return {parameters: Object.assign({}, state.parameters, paramObj), type: state.type};
     case 'RENDER_PARAMETER_OBJECT':
-
+      console.log(state);
+    return state;
+    case 'UPDATE_TYPE':
+      const typeObj = Object.assign({}, state.type, action.parameters);
+      return { parameters: state.parameters, type: typeObj };
     default:
       return state;
   }

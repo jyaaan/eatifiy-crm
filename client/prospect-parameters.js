@@ -4,9 +4,23 @@ const async = require('async');
 const Dropdown = require('semantic-ui-react').Dropdown;
 const Button = require('semantic-ui-react').Button;
 const Input = require('semantic-ui-react').Input;
+
+prospectOptions = [
+  {
+    text: 'Likers of Recent Posts',
+    value: 'likers'
+  },
+  {
+    text: 'Followers of Account',
+    value: 'followers'
+  },
+  {
+    text: 'Following of Account',
+    value: 'following'
+  }
+]
+
 const handleToggle = event => {
-  console.log('toggled');
-  console.log('value:', event.target.checked);
     const parameters = {
       external_url: {
         min: 0
@@ -25,33 +39,28 @@ const handleToggle = event => {
   });
 }
 
-friendOptions = [
-  {
-    text: 'Likers of Recent Posts',
-    value: 'likers'
-  },
-  {
-    text: 'Followers of Account',
-    value: 'followers'
-  },
-  {
-    text: 'Following of Account',
-    value: 'following'
-  }
-]
-
 const handleProspect = event => {
-  console.log(store.getState().prospectParameters)
+  store.dispatch({
+    type: 'UPDATE_TYPE',
+    parameters: {
+      username: store.getState().usernameInput
+    }
+  });
+  store.dispatch({
+    type: 'RENDER_PARAMETER_OBJECT'
+  });
 }
 
 const handleDropdown = (event, { value }) => {
-  console.log(event.target);
-  console.log(value);
+  store.dispatch({
+    type: 'UPDATE_TYPE',
+    parameters: {
+      method: value
+    }
+  });
 }
 
-const handleTest = (event, {value}) => {
-  console.log(event.target.checked);
-  console.log(event.target);
+const handleCheckbox = (event, {value}) => {
   const idSlug = event.target.value;
   let $temp = document.querySelector('#' + idSlug)
   if ($temp.value == '') {
@@ -93,25 +102,10 @@ const handleInput = event => {
       parameters: parameters
     })
   } else {
-    console.log('not checked');
+    console.log('Field not enabled; changes will not be considered when generating prospects.');
   }
 }
 const ProspectParameters = props => {
-  console.log('prospect paramters');
-  // store.dispatch({
-  //   type: 'SHOW_PARAMETERS'
-  // });
-
-  handleRef = c => {
-    this.inputRef = c;
-    console.log(c);
-  }
-
-  focus = () => {
-    console.log(this.inputRef);
-    this.inputRef.focus();
-  }
-
   return (
     <div className="ui form">
       <div className="inline field">
@@ -120,7 +114,7 @@ const ProspectParameters = props => {
             type="checkbox"
             id="min-follower_count-check"
             value="min-follower_count"
-            onClick={ handleTest } />
+            onClick={ handleCheckbox } />
           <label>Min Followers</label>
         </div>
         <div className="ui input">
@@ -134,7 +128,7 @@ const ProspectParameters = props => {
             type="checkbox"
             id="max-follower_count-check"
             value="max-follower_count"
-            onClick={ handleTest } />
+            onClick={ handleCheckbox } />
           <label>Max Followers</label>
         </div>
         <div className="ui input">
@@ -151,7 +145,7 @@ const ProspectParameters = props => {
             type="checkbox"
             id="min-following_count-check"
             value="min-following_count"
-            onClick={ handleTest } />
+            onClick={ handleCheckbox } />
           <label>Min Following</label>
         </div>
         <div className="ui input">
@@ -165,7 +159,7 @@ const ProspectParameters = props => {
             type="checkbox"
             id="max-following_count-check"
             value="max-following_count"
-            onClick={ handleTest } />
+            onClick={ handleCheckbox } />
           <label>Max Following</label>
         </div>
         <div className="ui input">
@@ -182,7 +176,7 @@ const ProspectParameters = props => {
             type="checkbox"
             id="min-ratio-check"
             value="min-ratio"
-            onClick={ handleTest } />
+            onClick={ handleCheckbox } />
           <label>Min Following/Follower Ratio</label>
         </div>
         <div className="ui input">
@@ -196,7 +190,7 @@ const ProspectParameters = props => {
             type="checkbox"
             id="max-ratio-check"
             value="max-ratio"
-            onClick={ handleTest } />
+            onClick={ handleCheckbox } />
           <label>Max Following/Follower Ratio</label>
         </div>
         <div className="ui input">
@@ -213,7 +207,7 @@ const ProspectParameters = props => {
             type="checkbox" 
             id="min-engagement-check" 
             value="min-engagement" 
-            onClick={ handleTest }/>
+            onClick={ handleCheckbox }/>
           <label>Min EngagementRate</label>
         </div>
         <div className="ui input">
@@ -227,7 +221,7 @@ const ProspectParameters = props => {
             type="checkbox" 
             id="max-engagement-check"
             value="max-engagement"
-            onClick={ handleTest }/>
+            onClick={ handleCheckbox }/>
           <label>Max EngagementRate</label>
         </div>
         <div className="ui input">
@@ -239,7 +233,7 @@ const ProspectParameters = props => {
       </div>
 
       <div className="inline field four columns">
-        <Dropdown placeholder='Prospecting Method' fluid selection options={friendOptions} 
+        <Dropdown placeholder='Prospecting Method' fluid selection options={prospectOptions} 
           onChange={handleDropdown}/>
       </div>
       <div className="inline field">
