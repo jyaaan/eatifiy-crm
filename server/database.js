@@ -22,7 +22,7 @@ const exampleSettings = {
     min: 1
   },
   ratio: {
-    max: 0.1
+    max: 0.3
   },
   terms: {
     bio: ['john'],

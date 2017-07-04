@@ -384,43 +384,36 @@ app.get('/lookup/:username', (req, res) => {
           })
       }
     })
-});
+})
 
 app.get('/tf-lookup/:username', (req, res) => {
-  database.usernameExists(req.params.username)
-    .then(result => {
-      if (result) {
-        database.getUserByUsername(req.params.username)
-          .then(user => {
-            res.json({
-                  username: user.username,
-                  follower_count: user.follower_count,
-                  following_count: user.following_count,
-                  post_count: user.post_count,
-                  like_count: user.recent_like_count / user.recent_post_count,
-                  comment_count: user.recent_comment_count / user.recent_post_count,
-                  like_ratio: (user.recent_like_count / user.recent_post_count) / user.follower_count
-                });
-          })
-      } else {
-        scrapeSave(req.params.username)
-          .then(scrape => {
-            database.getUserByEId(scrape.id)
-              .then(user => {
-                res.json({
-                  username: user.username,
-                  follower_count: user.follower_count,
-                  following_count: user.following_count,
-                  post_count: user.post_count,
-                  like_count: user.recent_like_count / user.recent_post_count,
-                  comment_count: user.recent_comment_count / user.recent_post.count,
-                  like_ratio: (user.recent_like_count / user.recent_post_count) / user.follower_count
-                });
-              })
-          })
-      }
-    })
+  scrapeSave(req.params.username)
+    .then(scrape => {
+      // res.send(scrape)
+      database.getUserByEId(scrape.id)
+        .then(user => {
+          res.json({
+            external_id: user.external_id,
+            username: user.username,
+            follower_count: user.follower_count,
+            following_count: user.following_count,
+            engagement_ratio: user.following_count / user.follower_count,
+            post_count: user.post_count,
+            recent_av_like: user.recent_like_count / user.recent_post_count,
+            recent_av_comment: user.recent_comment_count / user.recent_post_count,
+            like_ratio: (user.recent_like_count / user.recent_post_count) / user.follower_count
+          });
+        });
+    });
 });
+
+app.get('/deep-lookup/:username', (req, res) => {
+  // res.send('deep lookup: ' + req.params.username);
+  ig.getUser(req.params.username, currentSession.session)
+    .then(user => {
+      res.send(user._params);
+    });
+})
 
 const scrapeSave = (username, bypass=false) => { // now with more resume-ability!
   console.log('scraping', username);
