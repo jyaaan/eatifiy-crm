@@ -35,21 +35,22 @@ const defaultParameters = {
 
   },
   external_url: {
-
+    min: 0
   },
   ratio: {
     
   }
 }
 
-const prospectParameters = (state = defaultParameters, action) => {
+const prospectParameters = (state = {parameters: defaultParameters, type: {test: 'here?'}}, action) => {
   switch (action.type) {
     case 'UPDATE_PARAMETERS':
-      const newObj = Object.assign({}, state[action.name], action.parameters[action.name]);
+      const newObj = Object.assign({}, state.parameters[action.name], action.parameters[action.name]);
       const masterObj = {};
       masterObj[action.name] = newObj;
-      console.log(newObj);
-      return Object.assign({}, state, masterObj);
+      return {parameters: Object.assign({}, state.parameters, masterObj), type: state.type};
+    case 'RENDER_PARAMETER_OBJECT':
+
     default:
       return state;
   }

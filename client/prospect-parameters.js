@@ -7,11 +7,22 @@ const Input = require('semantic-ui-react').Input;
 const handleToggle = event => {
   console.log('toggled');
   console.log('value:', event.target.checked);
-  // if (event.target.value == 'on') {
-  //   event.target.value = 'off';
-  // } else {
-  //   event.target.value = 'on';
-  // }
+    const parameters = {
+      external_url: {
+        min: 0
+      }
+    }
+  if (event.target.checked) {
+    parameters['external_url'] = {
+      min: 1
+    }
+  };
+  console.log('toggle parameters:', parameters);
+  store.dispatch({
+    type: 'UPDATE_PARAMETERS',
+    name: 'external_url',
+    parameters: parameters
+  });
 }
 
 friendOptions = [
