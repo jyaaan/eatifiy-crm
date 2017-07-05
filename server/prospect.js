@@ -23,8 +23,8 @@ function Prospect() {
 
 }
 
-Prospect.prototype.likers = function (params) { // can be broken into 5 functions
-  const { username, days, mediaLimit, filterParams } = params;
+Prospect.prototype.likers = function (params, filterParams) { // can be broken into 5 functions
+  const { username, days, mediaLimit } = params;
   console.log('likers:', username, days, mediaLimit);
   const lookback = days > 0 ? days : 30;
 
@@ -85,7 +85,7 @@ Prospect.prototype.likers = function (params) { // can be broken into 5 function
                     })
                 })
             }, err => {
-              database.getInfluencers(publicLikerIds)
+              database.getInfluencers(publicLikerIds, filterParams)
                 .then(influencers => {
                   const headers = ['id', 'externalId', 'username', 'postCount', 'followerCount', 'followingCount', 'following/follower ratio', 'recentAvLikes', 'recentAvComments', 'engagementRatio', 'postFrequency(Hr)', 'likesCount', 'website'];
                   var influencerData = influencers.map(influencer => { // refactor this mess
@@ -107,6 +107,10 @@ Prospect.prototype.likers = function (params) { // can be broken into 5 function
                       //     fileHandler.writeToCSV(consumerData, username + '-consumer-data', headers);
                       //   })
                     })
+                })
+                .catch(err => {
+                  console.log('getInfluencers failure');
+                  console.error(err);
                 })
             });
           })

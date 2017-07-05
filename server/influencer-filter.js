@@ -1,6 +1,7 @@
 class InfluencerFilter { // comments, please.
   constructor(settings) {
-    const { follower_count, following_count, external_url, ratio, terms } = settings;
+    console.log('influencer filter params:', settings);
+    const { follower_count, following_count, external_url, ratio, terms, engagement } = settings;
 
     this.follower_count = follower_count;
     this.follower_count.filter = function(user) {

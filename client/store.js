@@ -24,7 +24,6 @@ const userProfile = (state = { profile: { id: -1 }, followingBtn: false }, actio
       return state;
   }
 }
-
 const defaultParameters = {
   engagement: {
   },
@@ -36,6 +35,8 @@ const defaultParameters = {
     min: 0
   },
   ratio: {
+  },
+  terms: {
   }
 }
 
