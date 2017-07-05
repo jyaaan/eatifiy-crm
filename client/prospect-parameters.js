@@ -120,6 +120,35 @@ const handleInput = event => {
   }
 }
 
+const progressTest = event => {
+  if (store.getState().prospectProgress.show) {
+    store.dispatch({
+      type: 'HIDE_PROGRESS'
+    });
+  } else {
+    store.dispatch({
+      type: 'SHOW_PROGRESS'
+    });
+  }
+}
+
+const progress = event => {
+  store.dispatch({
+    type: 'CHANGE_STAGE',
+    stage: event.target.value
+  });
+}
+
+const testValues = event => {
+  store.dispatch({
+    type: 'UPDATE_STATUS',
+    status: {
+      progress: 10,
+      total: 80
+    }
+  })
+}
+
 // Currently too verbose. When refactoring, learn React a bit better to replace this mess.
 const ProspectParameters = props => {
   return (
@@ -271,6 +300,19 @@ const ProspectParameters = props => {
           onClick={ handleProspect }>Begin Prospectin'</button>
       </div>
 
+      <div>
+        <button
+          className="ui button"
+          onClick= { progressTest }>Progress Test</button>
+        <button
+          className="ui button"
+          value="medias"
+          onClick= { progress }>Medias</button>
+        <button
+          className="ui button"
+          value="medias"
+          onClick= { testValues }>Progress Bar</button>
+      </div>
     </div>
   )
 }

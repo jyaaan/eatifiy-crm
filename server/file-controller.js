@@ -17,7 +17,7 @@ fileHandler.prototype.writeToCSV = (data, filename, headers = []) => {
     const csvContent = lineArray.join('\n');
 
     fs.writeFile(
-      './' + filename + '.csv',
+      './server/public/csv/' + filename + '.csv',
       csvContent,
       err => {
         if (err) {

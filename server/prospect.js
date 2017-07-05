@@ -4,9 +4,11 @@ const ig = new Ig();
 const Database = require('./database').Database;
 const database = new Database();
 const Scraper = require('./scraper');
+const store = require('../client/store');
 
 const FileHandler = require('./file-controller.js');
 const fileHandler = new FileHandler();
+
 const currentSession = { initialized: false, session: {} };
 
 ig.initialize()
@@ -32,13 +34,19 @@ Prospect.prototype.likers = function (params, filterParams) { // can be broken i
   const publicLikerIds = [];
   var publicLikerNames = [];
   var counter = 0;
+  // initializing
   scrapeSave(username, true)
     .then(scraped => {
+      // start medias gathering
       console.log(scraped);
       ig.getMedias(scraped.external_id, currentSession.session, lookback)
         .then(medias => {
           console.log('medias count:', medias.length);
+          let mediaCounter = 0;
+          // gathering likers of medias.length posts
           async.mapSeries(medias, (media, next) => {
+            mediaCounter++;
+            // gathering likers for mediaCounter of medias.length posts
             ig.getLikers(media, currentSession.session)
               .then(likers => {
                 arrLikers = arrLikers.concat(...likers);
@@ -85,6 +93,7 @@ Prospect.prototype.likers = function (params, filterParams) { // can be broken i
                     })
                 })
             }, err => {
+              // filtering users for influencers
               database.getInfluencers(publicLikerIds, filterParams)
                 .then(influencers => {
                   const headers = ['id', 'externalId', 'username', 'postCount', 'followerCount', 'followingCount', 'following/follower ratio', 'recentAvLikes', 'recentAvComments', 'engagementRatio', 'postFrequency(Hr)', 'likesCount', 'website'];
@@ -94,6 +103,7 @@ Prospect.prototype.likers = function (params, filterParams) { // can be broken i
                     (influencer.recent_comment_count / influencer.recent_post_count) + ',' + (influencer.recent_like_count / influencer.recent_post_count) / influencer.follower_count + ',' + ((influencer.recent_post_duration / 3600) / influencer.recent_post_count) + ',' +
                     publicLikerNames.filter(likerName => { return likerName == influencer.username; }).length + ',' + influencer.external_url;
                   });
+                  // writing to file
                   fileHandler.writeToCSV(influencerData, username + '-influencer-data', headers)
                     .then(result => {
                       // database.getConsumers(publicLikerIds)
@@ -106,6 +116,7 @@ Prospect.prototype.likers = function (params, filterParams) { // can be broken i
                       //     })
                       //     fileHandler.writeToCSV(consumerData, username + '-consumer-data', headers);
                       //   })
+                      // complete!!
                     })
                 })
                 .catch(err => {
@@ -127,7 +138,7 @@ const scrapeSave = (username, bypass=false) => { // now with more resume-ability
     database.getUserByUsername(username)
       .then(user => {
         // console.log('user:', user);
-        if (!user || bypass || user.recent_like_count == 0) {
+        if (!user || bypass || user.recent_like_count == 0 || user.recent_like_count == null) {
           Scraper(username)
             .then(user => {
               database.upsertUser(user)
