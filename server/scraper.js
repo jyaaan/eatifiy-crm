@@ -11,6 +11,7 @@ function Scraper(username) {
       });
 
       res.on('uncaughtException', err => {
+        console.log('uncaught');
         reject(err);
       });
 
@@ -21,6 +22,7 @@ function Scraper(username) {
       });
 
     }).on('error', err => {
+      console.log('scraper error 2');
       reject(err);
     });
   });
