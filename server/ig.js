@@ -42,6 +42,15 @@ Date.prototype.formatMMDDYYYY = function(){
 	return ((this.getMonth()+1)+"/"+this.getDate()+"/"+this.getFullYear());
 };
 
+IG.prototype.getUser = function (username, session) {
+  return new Promise((resolve, reject) => {
+    new Client.Account.searchForUser(session, username)
+      .then((result) => {
+        resolve(result);
+      });
+  });
+}
+
 IG.prototype.getMedias = function (userId, session, days=30) {
   const medias = [];
   var dateRange = new Date();
@@ -98,7 +107,7 @@ IG.prototype.getLikers = function (media, session) {
 }
 
 IG.prototype.initialize = function () {
-  return new Client.Session.create(device, storage, 'jakeydenton', 'instagram123')
+  return new Client.Session.create(device, storage, 'eatifyjohn', 'occsbootcamp')
     .then(session => {
       return session;
     })

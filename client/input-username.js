@@ -17,11 +17,7 @@ const UsernameInput = props => {
   const handleSubmit = event => {
     event.preventDefault();
     const username = store.getState().usernameInput;
-    fetch('/lookup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: username })
-    })
+    fetch('/lookup/' + username)
       .then(result => result.json())
       .then(user => {
         console.log(user);
@@ -36,7 +32,7 @@ const UsernameInput = props => {
       });
   };
   return (
-    <div className='four column centered row'>
+    <div className='ui four column centered row'>
       <div className='ui action input'>
         <input
           type='text'

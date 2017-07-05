@@ -1,6 +1,5 @@
 const React = require('react');
 const store = require('./store');
-const async = require('async');
 
 const UserProfile = props => {
   const profile = store.getState().userProfile.profile;

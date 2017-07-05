@@ -8,8 +8,8 @@ const database = new Database();
 const ParseScrape = require('./parse-scrape');
 const Scraper = require('./scraper');
 const async = require('async');
-const AutoBrowser = require('./auto-browser');
-const autoBrowser = new AutoBrowser();
+// const AutoBrowser = require('./auto-browser');
+// const autoBrowser = new AutoBrowser();
 const fs = require('fs');
 const http = require('http');
 const request = require('request');
@@ -148,25 +148,25 @@ app.get('/analyze/:username/:days', (req, res) => {
             }, err => {
               database.getInfluencers(publicLikerIds)
                 .then(influencers => {
-                  const headers = ['id', 'externalId', 'username', 'followerCount', 'followingCount', 'following/follower ratio', 'recentPosts', 'recentLikeCount', 'recentCommentCount', 'postFrequency', 'likesCount', 'website'];
+                  const headers = ['id', 'externalId', 'username', 'followerCount', 'followingCount', 'following/follower ratio', 'recentAvLikes', 'recentAvComments', 'engagementRatio', 'postFrequency(Hr)', 'likesCount', 'website'];
                   var influencerData = influencers.map(influencer => {
                     return influencer.id +',' + influencer.external_id + ',' + influencer.username + ',' + influencer.follower_count + ',' + 
-                    influencer.following_count + ',' + (influencer.following_count / influencer.follower_count) + ',' + 
-                    influencer.recent_post_count + ',' + influencer.recent_like_count + ',' + influencer.recent_comment_count + ',' + ((influencer.recent_post_duration / 3600) / influencer.recent_post_count) + ',' +
+                    influencer.following_count + ',' + (influencer.following_count / influencer.follower_count) + ',' + (influencer.recent_like_count / influencer.recent_post_count) + ',' +
+                    (influencer.recent_comment_count / influencer.recent_post_count) + ',' + (influencer.recent_like_count / influencer.recent_post_count) / influencer.follower_count + ',' + ((influencer.recent_post_duration / 3600) / influencer.recent_post_count) + ',' +
                     publicLikerNames.filter(likerName => { return likerName == influencer.username; }).length + ',' + influencer.external_url;
                   });
                   fileHandler.writeToCSV(influencerData, focusUsername + '-influencer-data', headers)
                     .then(result => {
-                      database.getConsumers(publicLikerIds)
-                        .then(consumers => {
-                          var consumerData = consumers.map(consumer => {
-                            return consumer.id +',' + consumer.external_id + ',' + consumer.username + ',' + consumer.follower_count + ',' + 
-                            consumer.following_count + ',' + (consumer.following_count / consumer.follower_count) + ',' + 
-                            consumer.recent_post_count + ',' + consumer.recent_like_count + ',' + consumer.recent_comment_count + ',' + ((consumer.recent_post_duration / 3600) / consumer.recent_post_count) + ',' +
-                            publicLikerNames.filter(likerName => { return likerName == consumer.username; }).length + ',' + consumer.external_url;
-                          })
-                          fileHandler.writeToCSV(consumerData, focusUsername + '-consumer-data', headers);
-                        })
+                      // database.getConsumers(publicLikerIds)
+                      //   .then(consumers => {
+                      //     var consumerData = consumers.map(consumer => {
+                      //       return consumer.id +',' + consumer.external_id + ',' + consumer.username + ',' + consumer.follower_count + ',' + 
+                      //       consumer.following_count + ',' + (consumer.following_count / consumer.follower_count) + ',' + 
+                      //       consumer.recent_post_count + ',' + consumer.recent_like_count + ',' + consumer.recent_comment_count + ',' + ((consumer.recent_post_duration / 3600) / consumer.recent_post_count) + ',' +
+                      //       publicLikerNames.filter(likerName => { return likerName == consumer.username; }).length + ',' + consumer.external_url;
+                      //     })
+                      //     fileHandler.writeToCSV(consumerData, focusUsername + '-consumer-data', headers);
+                      //   })
                     })
                 })
             });
@@ -197,14 +197,14 @@ app.post('/get-following', (req, res) => {
           async.mapSeries(result, (user, next) => {
             database.userSuggestionsLoaded(user.username)
               .then(loaded => {
-                if (!loaded) {
-                  autoBrowser.process(user)
-                    .then(processed => {
-                      setTimeout(next, 1000);
-                    })
-                } else {
+                // if (!loaded) {
+                //   autoBrowser.process(user)
+                //     .then(processed => {
+                //       setTimeout(next, 1000);
+                //     })
+                // } else {
                   next();
-                }
+                // }
               })
           }, err => {
             console.log('complete');
@@ -216,60 +216,60 @@ app.post('/get-following', (req, res) => {
     })
 });
 
+// Commented out in order to load onto digital ocean
 
+// app.get('/get-suggested', (req, res) => {
+//   console.log('getting suggested');
+//   const userEIds = [];
+//   var suggestedUsers = [];
 
-app.get('/get-suggested', (req, res) => {
-  console.log('getting suggested');
-  const userEIds = [];
-  var suggestedUsers = [];
+//   async.mapSeries(suggestionTestUsers, (test, next) => {
+//     database.getUserByUsername(test)
+//       .then(user => {
+//         userEIds.push(user.id);
+//         database.clearSuggestionRank(user.id)
+//           .then(cleared => {
+//             autoBrowser.process(user)
+//               .then(result => {
+//                 next();
+//               })
+//           })
+//       })
+//   }, err => {
+//     async.mapSeries(userEIds, (eid, next) => {
+//       // console.log('eid under investigation:', eid);
+//       database.getFirst(eid, 3)
+//         .then(suggestions => {
+//           suggestedUsers = suggestedUsers.concat(suggestions);
+//           next();
+//         })
 
-  async.mapSeries(suggestionTestUsers, (test, next) => {
-    database.getUserByUsername(test)
-      .then(user => {
-        userEIds.push(user.id);
-        database.clearSuggestionRank(user.id)
-          .then(cleared => {
-            autoBrowser.process(user)
-              .then(result => {
-                next();
-              })
-          })
-      })
-  }, err => {
-    async.mapSeries(userEIds, (eid, next) => {
-      // console.log('eid under investigation:', eid);
-      database.getFirst(eid, 3)
-        .then(suggestions => {
-          suggestedUsers = suggestedUsers.concat(suggestions);
-          next();
-        })
+//     }, err => {
+//       var lineArray = [];
+//       lineArray.push('data:text/csv;charset=utf-8,');
+//       var tempstore = suggestedUsers.map(suggested => {
+//         return suggested.concat(',');
+//       })
+//       lineArray = lineArray.concat(...tempstore);
 
-    }, err => {
-      var lineArray = [];
-      lineArray.push('data:text/csv;charset=utf-8,');
-      var tempstore = suggestedUsers.map(suggested => {
-        return suggested.concat(',');
-      })
-      lineArray = lineArray.concat(...tempstore);
+//       var csvContent = lineArray.join("\n");
 
-      var csvContent = lineArray.join("\n");
+//       fs.writeFile(
 
-      fs.writeFile(
+//           './users.csv',
 
-          './users.csv',
+//           csvContent,
 
-          csvContent,
-
-          function (err) {
-              if (err) {
-                  console.error('Crap happens');
-              }
-          }
-      );
-      // console.log(suggestedUsers);
-    })
-  })
-});
+//           function (err) {
+//               if (err) {
+//                   console.error('Crap happens');
+//               }
+//           }
+//       );
+//       // console.log(suggestedUsers);
+//     })
+//   })
+// });
 
 app.get('/update-viewrecipes', (req, res) => {
   console.log('starting viewrecip.es update');
@@ -372,35 +372,48 @@ app.get('/lookup/:username', (req, res) => {
       if (result) {
         database.getUserByUsername(req.params.username)
           .then(user => {
-            res.json({
-                  username: user.username,
-                  follower_count: user.follower_count,
-                  following_count: user.following_count,
-                  post_count: user.post_count,
-                  like_count: user.recent_like_count / user.recent_post_count,
-                  comment_count: user.recent_comment_count / user.recent_post_count,
-                  like_ratio: (user.recent_like_count / user.recent_post_count) / user.follower_count
-                });
+            res.json(user);
           })
       } else {
         scrapeSave(req.params.username)
           .then(scrape => {
             database.getUserByEId(scrape.id)
               .then(user => {
-                res.json({
-                  username: user.username,
-                  follower_count: user.follower_count,
-                  following_count: user.following_count,
-                  post_count: user.post_count,
-                  like_count: user.recent_like_count / user.recent_post_count,
-                  comment_count: user.recent_comment_count / user.recent_post.count,
-                  like_ratio: (user.recent_like_count / user.recent_post_count) / user.follower_count
-                });
+                res.json(user);
               })
           })
       }
     })
+})
+
+app.get('/tf-lookup/:username', (req, res) => {
+  scrapeSave(req.params.username)
+    .then(scrape => {
+      // res.send(scrape)
+      database.getUserByEId(scrape.id)
+        .then(user => {
+          res.json({
+            external_id: user.external_id,
+            username: user.username,
+            follower_count: user.follower_count,
+            following_count: user.following_count,
+            engagement_ratio: user.following_count / user.follower_count,
+            post_count: user.post_count,
+            recent_av_like: user.recent_like_count / user.recent_post_count,
+            recent_av_comment: user.recent_comment_count / user.recent_post_count,
+            like_ratio: (user.recent_like_count / user.recent_post_count) / user.follower_count
+          });
+        });
+    });
 });
+
+app.get('/deep-lookup/:username', (req, res) => {
+  // res.send('deep lookup: ' + req.params.username);
+  ig.getUser(req.params.username, currentSession.session)
+    .then(user => {
+      res.send(user._params);
+    });
+})
 
 const scrapeSave = (username, bypass=false) => { // now with more resume-ability!
   console.log('scraping', username);
@@ -409,7 +422,7 @@ const scrapeSave = (username, bypass=false) => { // now with more resume-ability
     database.getUserByUsername(username)
       .then(user => {
         // console.log('user:', user);
-        if (!user || bypass || user.following_count == 0) {
+        if (!user || bypass || user.recent_like_count == 0) {
           Scraper(username)
             .then(user => {
               database.upsertUser(user)

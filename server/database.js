@@ -12,8 +12,8 @@ const InfluencerFilter = require('./influencer-filter');
 
 const exampleSettings = {
   follower_count: {
-    max: 250000,
-    min: 1000
+    max: 500000,
+    min: 10000
   },
   following_count: {
 
@@ -22,7 +22,7 @@ const exampleSettings = {
     min: 1
   },
   ratio: {
-    max: 0.1
+    max: 0.3
   },
   terms: {
     bio: ['john'],
