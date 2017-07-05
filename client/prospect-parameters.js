@@ -43,10 +43,15 @@ const handleToggle = event => {
 
 // When you hit go!
 const handleProspect = event => {
+  const $lookback = document.querySelector('#lookback');
+  if ($lookback.value == '') {
+    $lookback.value = $lookback.placeholder;
+  }
   store.dispatch({
     type: 'UPDATE_TYPE',
     parameters: {
-      username: store.getState().usernameInput
+      username: store.getState().usernameInput,
+      days: $lookback.value
     }
   });
   store.dispatch({
@@ -254,6 +259,12 @@ const ProspectParameters = props => {
             tabIndex="0" 
             onClick={ handleToggle } />
           <label>Require Website</label>
+        </div>
+        <div className="ui input">
+          <label>Lookback(days)</label>
+          <input type="text" 
+            id="lookback"
+            placeholder="30" />
         </div>
         <button
           className="ui button"

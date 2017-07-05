@@ -47,11 +47,15 @@ const prospectParameters = (state = {parameters: defaultParameters, type: {}}, a
       paramObj[action.name] = newObj;
       return {parameters: Object.assign({}, state.parameters, paramObj), type: state.type};
     case 'RENDER_PARAMETER_OBJECT': // What happens when you hit go
-      console.log(state);
-      fetch('/analyze/' + 'hopefoods' + '/' + '30')
-        .then(buzz => {
-          console.log('status:', buzz.status);
-        })
+      console.log('username:', state.type.username);
+      console.log('method:', state.type.method);
+      console.log('days:', state.type.days);
+      console.log('filter parameters:', state.parameters);
+      fetch('/ui-analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(state)
+      })
       return state;
     case 'UPDATE_TYPE': // same as UPDATE_PARAMETER but just not as complex
       const typeObj = Object.assign({}, state.type, action.parameters);

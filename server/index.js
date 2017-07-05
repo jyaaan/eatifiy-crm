@@ -100,6 +100,18 @@ app.get('/analyze/:username/:days', (req, res) => {
   prospect.likers(params);
 });
 
+app.post('/ui-analyze', (req, res) => {
+  res.send('request received');
+  console.log('type:', req.body.type);
+  console.log('parameters:', req.body.parameters);
+  const params = {
+    username: req.body.type.username,
+    days: req.body.type.days
+  };
+  const filterParams = req.body.parameters;
+  prospect.likers(params, filterParams);
+})
+
 app.get('/get-me', (req, res) => {
   res.send('kay');
   ig.getFollowing('52139312', currentSession.session)

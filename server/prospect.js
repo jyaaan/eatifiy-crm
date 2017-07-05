@@ -24,7 +24,7 @@ function Prospect() {
 }
 
 Prospect.prototype.likers = function (params) { // can be broken into 5 functions
-  const { username, days, mediaLimit } = params;
+  const { username, days, mediaLimit, filterParams } = params;
   console.log('likers:', username, days, mediaLimit);
   const lookback = days > 0 ? days : 30;
 
@@ -62,24 +62,26 @@ Prospect.prototype.likers = function (params) { // can be broken into 5 function
             publicLikerNames = publicLikers.map(liker => { return liker.username; });
             const dedupedPublicLikers = spliceDuplicates(publicLikerNames); // this will be useful for monitoring progress
             console.log('deduped public only:', dedupedPublicLikers.length);
-            async.mapSeries(dedupedPublicLikers, (liker, next) => {
+            async.mapSeries(dedupedPublicLikers, (liker, followup) => {
               counter++;
               console.log('progress:', (counter / dedupedPublicLikers.length * 100).toFixed(2));
               scrapeSave(liker)
                 .then(user => {
                   publicLikerIds.push(user.id);
-                  next();
+                  followup();
                 })
                 .catch(err => { // light-weight error handling. not very effective. read up on try/catch and implement further upstream
                   console.log('error detected, trying again...');
+                  console.error(err);
                   scrapeSave(liker)
                     .then(likerIds => {
+                      console.log('second attempt successful');
                       publicLikerIds.push(likerIds.id);
-                      next();
+                      followup();
                     })
                     .catch(err => {
                       console.log('second error, continuing');
-                      next();
+                      followup();
                     })
                 })
             }, err => {
@@ -132,10 +134,12 @@ const scrapeSave = (username, bypass=false) => { // now with more resume-ability
                     })
                 })
                 .catch(err => {
+                  console.log('upsert attemp failure');
                   reject(err);
                 })
             })
             .catch(err => {
+              console.log('scraper failure');
               reject(err);
             })
         } else {
@@ -143,6 +147,10 @@ const scrapeSave = (username, bypass=false) => { // now with more resume-ability
           resolve({ id: user.id, external_id: user.external_id });
         }
       })
+    .catch(err => {
+      console.log('get user by username failure');
+      reject(err);
+    })
   });
 }
 module.exports = Prospect
