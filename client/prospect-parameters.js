@@ -54,6 +54,9 @@ const handleProspect = event => {
       days: $lookback.value
     }
   });
+  // store.dispatch({
+  //   type: 'SHOW_PROGRESS'
+  // });
   store.dispatch({
     type: 'RENDER_PARAMETER_OBJECT'
   });

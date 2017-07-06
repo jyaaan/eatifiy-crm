@@ -63,7 +63,7 @@ const prospectParameters = (state = {parameters: defaultParameters, type: {}}, a
 }
 
 const initProgress = {
-  show: false,
+  show: true,
   stage: 'init',
   total: null,
   progress: null
@@ -76,9 +76,9 @@ const prospectProgress = (state = initProgress, action) => {
     case 'SHOW_PROGRESS':
       return Object.assign({}, state, { show: true });
     case 'CHANGE_STAGE':
-      return Object.assign({}, state, { stage: action.stage });
+      return Object.assign(state, action.stage);
     case 'UPDATE_STATUS':
-      return Object.assign({}, state, action.status);
+      return Object.assign(state, action.status);
     default:
       return state;
   }

@@ -35,18 +35,43 @@ Prospect.prototype.likers = function (params, filterParams) { // can be broken i
   var publicLikerNames = [];
   var counter = 0;
   // initializing
+  store.dispatch({
+    type: 'CHANGE_STAGE',
+    stage: 'medias'
+  });
   scrapeSave(username, true)
     .then(scraped => {
       // start medias gathering
+      console.log('trying to dispatch');
+      store.dispatch({
+        type: 'CHANGE_STAGE',
+        stage: 'medias'
+      });
       console.log(scraped);
       ig.getMedias(scraped.external_id, currentSession.session, lookback)
         .then(medias => {
           console.log('medias count:', medias.length);
           let mediaCounter = 0;
-          // gathering likers of medias.length posts
+          store.dispatch({
+            type: 'UPDATE_STATUS',
+            status: {
+              progress: 0,
+              total: medias.length
+            }
+          });
+          store.dispatch({
+            type: 'CHANGE_STAGE',
+            stage: 'likers'
+          });
           async.mapSeries(medias, (media, next) => {
             mediaCounter++;
             // gathering likers for mediaCounter of medias.length posts
+            store.dispatch({
+              type: 'UPDATE_STATUS',
+              status: {
+                progress: mediaCounter
+              }
+            });
             ig.getLikers(media, currentSession.session)
               .then(likers => {
                 arrLikers = arrLikers.concat(...likers);
@@ -70,9 +95,25 @@ Prospect.prototype.likers = function (params, filterParams) { // can be broken i
             publicLikerNames = publicLikers.map(liker => { return liker.username; });
             const dedupedPublicLikers = spliceDuplicates(publicLikerNames); // this will be useful for monitoring progress
             console.log('deduped public only:', dedupedPublicLikers.length);
+            store.dispatch({
+              type: 'UPDATE_STATUS',
+              status: {
+                progress: 0,
+                total: dedupedPublicLikers.length
+              }
+            });
+            store.dispatch({
+              type: 'CHANGE_STAGE',
+              stage: 'users'
+            });
             async.mapSeries(dedupedPublicLikers, (liker, followup) => {
               counter++;
-              console.log('progress:', (counter / dedupedPublicLikers.length * 100).toFixed(2));
+              store.dispatch({
+                type: 'UPDATE_STATUS',
+                status: {
+                  progress: counter
+                }
+              });
               scrapeSave(liker)
                 .then(user => {
                   publicLikerIds.push(user.id);
@@ -94,6 +135,10 @@ Prospect.prototype.likers = function (params, filterParams) { // can be broken i
                 })
             }, err => {
               // filtering users for influencers
+              store.dispatch({
+                type: 'CHANGE_STAGE',
+                stage: 'filter'
+              });
               database.getInfluencers(publicLikerIds, filterParams)
                 .then(influencers => {
                   const headers = ['id', 'externalId', 'username', 'postCount', 'followerCount', 'followingCount', 'following/follower ratio', 'recentAvLikes', 'recentAvComments', 'engagementRatio', 'postFrequency(Hr)', 'likesCount', 'website'];
@@ -104,6 +149,10 @@ Prospect.prototype.likers = function (params, filterParams) { // can be broken i
                     publicLikerNames.filter(likerName => { return likerName == influencer.username; }).length + ',' + influencer.external_url;
                   });
                   // writing to file
+                  store.dispatch({
+                    type: 'CHANGE_STAGE',
+                    stage: 'write'
+                  });
                   fileHandler.writeToCSV(influencerData, username + '-influencer-data', headers)
                     .then(result => {
                       // database.getConsumers(publicLikerIds)
