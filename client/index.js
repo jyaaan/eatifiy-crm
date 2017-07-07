@@ -6,6 +6,17 @@ const UserProfile = require('./user-profile');
 const ProspectParameters = require('./prospect-parameters');
 const ProspectProgress = require('./prospect-progress');
 
+var io = require('socket.io-client');
+var socket = io('/');
+
+socket.on('welcome', data => {
+  console.log(data);
+})
+
+socket.on('dispatch', data => {
+  store.dispatch(data);
+})
+console.log(socket);
 const render = () => {
   const state = store.getState();
   ReactDOM.render(

@@ -64,7 +64,7 @@ const prospectParameters = (state = {parameters: defaultParameters, type: {}}, a
 
 const initProgress = {
   show: true,
-  stage: 'likers',
+  stage: 'init',
   total: null,
   progress: null
 };
@@ -80,8 +80,21 @@ const prospectProgress = (state = initProgress, action) => {
       console.log('currently:', state);
       return Object.assign(state, {stage: action.stage});
     case 'UPDATE_STATUS':
-      console.log('currently:', state);
       return Object.assign(state, action.status);
+    default:
+      return state;
+  }
+}
+
+const enrichCSV = (state = {}, action) => {
+  switch (action.type) {
+    case 'ENRICH_CSV':
+      fetch('/enrich', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(action.users)
+      });
+      return state;
     default:
       return state;
   }
@@ -91,7 +104,8 @@ const reducer = combineReducers({
   usernameInput,
   userProfile,
   prospectParameters,
-  prospectProgress
+  prospectProgress,
+  enrichCSV
 });
 
 const store = createStore(reducer);

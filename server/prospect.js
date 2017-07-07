@@ -5,7 +5,6 @@ const Database = require('./database').Database;
 const database = new Database();
 const Scraper = require('./scraper');
 const store = require('../client/store');
-
 const FileHandler = require('./file-controller.js');
 const fileHandler = new FileHandler();
 const currentSession = { initialized: false, session: {} };
@@ -15,6 +14,7 @@ ig.initialize()
     console.log('initializing session');
     currentSession.session = result;
   });
+
 function spliceDuplicates(users) {
   return users.filter((user, index, collection) => {
     return collection.indexOf(user) == index;
@@ -23,6 +23,14 @@ function spliceDuplicates(users) {
 function Prospect() {
 
 }
+
+// const dispatchClient = data => {
+//   fetch('/dispatch', {
+//     method: 'POST',
+//     headers: { 'Content-Type': 'application/json' },
+//     body: JSON.stringify(data)
+//   })
+// }
 
 Prospect.prototype.likers = function (params, filterParams) { // can be broken into 5 functions
   const { username, days, mediaLimit } = params;
@@ -35,42 +43,49 @@ Prospect.prototype.likers = function (params, filterParams) { // can be broken i
   var counter = 0;
   // initializing
   store.dispatch({
-    type: 'CHANGE_STAGE',
-    stage: 'medias'
+    type: 'GLOBAL_DISPATCH',
+    dispatch: {
+      type: 'CHANGE_STAGE',
+      stage: 'medias'
+    }
   });
+  // dispatchClient({
+  //   type: 'CHANGE_STAGE',
+  //   stage: 'medias'
+  // })
   scrapeSave(username, true)
     .then(scraped => {
       // start medias gathering
       console.log('trying to dispatch');
-      store.dispatch({
-        type: 'CHANGE_STAGE',
-        stage: 'medias'
-      });
+      // store.dispatch({
+      //   type: 'CHANGE_STAGE',
+      //   stage: 'medias'
+      // });
       console.log(scraped);
       ig.getMedias(scraped.external_id, currentSession.session, lookback)
         .then(medias => {
           console.log('medias count:', medias.length);
           let mediaCounter = 0;
-          store.dispatch({
-            type: 'UPDATE_STATUS',
-            status: {
-              progress: 0,
-              total: medias.length
-            }
-          });
-          store.dispatch({
-            type: 'CHANGE_STAGE',
-            stage: 'likers'
-          });
+          // store.dispatch({
+          //   type: 'UPDATE_STATUS',
+          //   status: {
+          //     progress: 0,
+          //     total: medias.length
+          //   }
+          // });
+          // store.dispatch({
+          //   type: 'CHANGE_STAGE',
+          //   stage: 'likers'
+          // });
           async.mapSeries(medias, (media, next) => {
             mediaCounter++;
             // gathering likers for mediaCounter of medias.length posts
-            store.dispatch({
-              type: 'UPDATE_STATUS',
-              status: {
-                progress: mediaCounter
-              }
-            });
+            // store.dispatch({
+            //   type: 'UPDATE_STATUS',
+            //   status: {
+            //     progress: mediaCounter
+            //   }
+            // });
             ig.getLikers(media, currentSession.session)
               .then(likers => {
                 arrLikers = arrLikers.concat(...likers);
@@ -94,26 +109,26 @@ Prospect.prototype.likers = function (params, filterParams) { // can be broken i
             publicLikerNames = publicLikers.map(liker => { return liker.username; });
             const dedupedPublicLikers = spliceDuplicates(publicLikerNames); // this will be useful for monitoring progress
             console.log('deduped public only:', dedupedPublicLikers.length);
-            store.dispatch({
-              type: 'UPDATE_STATUS',
-              status: {
-                progress: 0,
-                total: dedupedPublicLikers.length
-              }
-            });
-            store.dispatch({
-              type: 'CHANGE_STAGE',
-              stage: 'users'
-            });
+            // store.dispatch({
+            //   type: 'UPDATE_STATUS',
+            //   status: {
+            //     progress: 0,
+            //     total: dedupedPublicLikers.length
+            //   }
+            // });
+            // store.dispatch({
+            //   type: 'CHANGE_STAGE',
+            //   stage: 'users'
+            // });
             async.mapSeries(dedupedPublicLikers, (liker, followup) => {
               counter++;
               console.log((counter / dedupedPublicLikers.length * 100).toFixed(2));
-              store.dispatch({
-                type: 'UPDATE_STATUS',
-                status: {
-                  progress: counter
-                }
-              });
+              // store.dispatch({
+              //   type: 'UPDATE_STATUS',
+              //   status: {
+              //     progress: counter
+              //   }
+              // });
               scrapeSave(liker)
                 .then(user => {
                   publicLikerIds.push(user.id);
@@ -135,10 +150,10 @@ Prospect.prototype.likers = function (params, filterParams) { // can be broken i
                 })
             }, err => {
               // filtering users for influencers
-              store.dispatch({
-                type: 'CHANGE_STAGE',
-                stage: 'filter'
-              });
+              // store.dispatch({
+              //   type: 'CHANGE_STAGE',
+              //   stage: 'filter'
+              // });
               database.getInfluencers(publicLikerIds, filterParams)
                 .then(influencers => {
                   const headers = ['id', 'externalId', 'username', 'postCount', 'followerCount', 'followingCount', 'following/follower ratio', 'recentPostCount', 'recentAvLikes', 'recentAvComments', 'engagementRatio', 'postFrequency(Hr)', 'likesCount', 'website'];
@@ -146,7 +161,7 @@ Prospect.prototype.likers = function (params, filterParams) { // can be broken i
                     return influencer.id +',' + influencer.external_id + ',' + influencer.username + ',' + influencer.post_count + ',' + influencer.follower_count + ',' + 
                     influencer.following_count + ',' + (influencer.following_count / influencer.follower_count) + ',' + influencer.recent_post_count + ',' + (influencer.recent_like_count / influencer.recent_post_count) + ',' +
                     (influencer.recent_comment_count / influencer.recent_post_count) + ',' + (influencer.recent_like_count / influencer.recent_post_count) / influencer.follower_count + ',' + ((influencer.recent_post_duration / 3600) / influencer.recent_post_count) + ',' +
-                    publicLikerNames.filter(likerName => { return likerName == influencer.username; }).length + ',' + influencer.external_url;
+                    publicLikerNames.filter(likerName => { return likerName == influencer.username; }).length + ',' + influencer.external_url + ',"' + influencer.bio + '"';
                   });
                   // writing to file
                   store.dispatch({

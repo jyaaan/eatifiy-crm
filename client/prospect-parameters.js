@@ -41,6 +41,37 @@ const handleToggle = event => {
   });
 }
 
+const handleFile = event => {
+  var data = null;
+  var file = event.target.files[0];
+  var reader = new FileReader();
+  var usernames = [];
+
+  reader.readAsText(file);
+  reader.onload = function (loadEvent) {
+    var csvData = loadEvent.target.result;
+    // data = $.csv.toArrays(csvData);
+    var testArray = csvData.split('\n');
+    console.log(testArray.length);
+    console.log(testArray.slice(-1));
+    console.log(testArray.length);
+    testArray.splice(-1, 1);
+    console.log(testArray);
+    // if (data && data.length > 0) {
+    //   alert('Imported' + ' ' + data.length + ' ' + 'rows.');
+    //   console.log(data);
+    // }
+    // reader.onerror = function () {
+    //   alert('Unable to read' + ' ' + file.fileName);
+    // }
+    store.dispatch({
+      type: 'ENRICH_CSV',
+      users: testArray
+    })
+  }
+}
+
+
 // When you hit go!
 const handleProspect = event => {
   const $lookback = document.querySelector('#lookback');
@@ -325,6 +356,15 @@ const ProspectParameters = props => {
           className="ui button"
           value="medias"
           onClick= { testValues }>Progress Bar</button>
+      </div>
+
+      <div>
+        <legend>Upload your CSV File</legend>
+        <input type="file" 
+          name="File Upload" 
+          id="csv-upload" 
+          accept=".csv"
+          onChange={ handleFile } />
       </div>
     </div>
   )
