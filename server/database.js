@@ -73,6 +73,21 @@ Database.prototype.getInfluencers = function (userEIds, filterParams) {
   })
 }
 
+Database.prototype.getUsers = function (userEIds) {
+  const users = [];
+  return new Promise((resolve, reject) => {
+    async.mapSeries(userEIds, (userId, next) => {
+      this.getUserByEId(userId)
+        .then(user => {
+          users.push(user);
+          next();
+        })
+    }, err => {
+      resolve(users);
+    })
+  })
+}
+
 Database.prototype.clearSuggestionRank = function (userEId) {
   return knex('suggestions')
     .where('user_id', userEId)

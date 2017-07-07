@@ -8,10 +8,7 @@ const database = new Database();
 const ParseScrape = require('./parse-scrape');
 const Scraper = require('./scraper');
 const async = require('async');
-// const AutoBrowser = require('./auto-browser');
-// const autoBrowser = new AutoBrowser();
 const fs = require('fs');
-const http = require('http');
 const request = require('request');
 const FileHandler = require('./file-controller');
 const fileHandler = new FileHandler();
@@ -22,8 +19,19 @@ const app = express();
 const currentSession = { initialized: false, session: {} };
 const Prospect = require('./prospect');
 const prospect = new Prospect();
+
+const http = require('http').createServer(app);
+var io = require('socket.io')(http);
+
 app.use(staticMiddleware);
 app.use(bodyParser.json());
+
+// socket.io stuff
+io.on('connection', socket => {
+  socket.emit('welcome', {message: 'Connection to Truefluence established', id: socket.id});
+});
+
+
 
 function spliceDuplicates(users) {
   return users.filter((user, index, collection) => {
@@ -42,6 +50,62 @@ app.get('/discovery', (req, res) => {
   ig.discoveryTest(currentSession.session);
 })
 
+app.post('/dispatch', (req, res) => {
+  io.emit('dispatch', req.body);
+})
+
+app.post('/enrich', (req, res) => {
+  console.log('starting enrich process');
+  const usernames = req.body;
+  const userIds = [];
+  var counter = 0;
+  async.mapSeries(usernames, (user, followup) => {
+    counter++;
+    console.log((counter / usernames.length * 100).toFixed(2));
+    scrapeSave(user)
+      .then(profile => {
+        userIds.push(profile.id);
+        followup();
+      })
+      .catch(err => { // light-weight error handling. not very effective. read up on try/catch and implement further upstream
+        console.log('error detected, trying again...');
+        console.error(err);
+        scrapeSave(user)
+          .then(userIds => {
+            console.log('second attempt successful');
+            userrIds.push(userIds.id);
+            followup();
+          })
+          .catch(err => {
+            console.log('second error, continuing');
+            followup();
+          })
+      })
+  }, err => {
+    // filtering users for influencers
+    // store.dispatch({
+    //   type: 'CHANGE_STAGE',
+    //   stage: 'filter'
+    // });
+    database.getUsers(userIds)
+      .then(influencers => {
+        const headers = ['id', 'externalId', 'username', 'postCount', 'followerCount', 'followingCount', 'following/follower ratio', 'recentPostCount', 'recentAvLikes', 'recentAvComments', 'engagementRatio', 'postFrequency(Hr)', 'website', 'bio'];
+        var influencerData = influencers.map(influencer => { // refactor this mess
+          return influencer.id +',' + influencer.external_id + ',' + influencer.username + ',' + influencer.post_count + ',' + influencer.follower_count + ',' + 
+          influencer.following_count + ',' + (influencer.following_count / influencer.follower_count) + ',' + influencer.recent_post_count + ',' + (influencer.recent_like_count / influencer.recent_post_count) + ',' +
+          (influencer.recent_comment_count / influencer.recent_post_count) + ',' + (influencer.recent_like_count / influencer.recent_post_count) / influencer.follower_count + ',' + ((influencer.recent_post_duration / 3600) / influencer.recent_post_count) + ',' +
+          influencer.external_url + ',"' + influencer.bio + '"';
+        });
+        fileHandler.writeToCSV(influencerData, 'csv-enrich-data', headers)
+          .then(result => {
+          })
+      })
+      .catch(err => {
+        console.log('getUsers failure');
+        console.error(err);
+      })
+  });
+})
 
 // Marked for deletion
 // app.get('/tf-test', (req, res) => {
@@ -350,13 +414,14 @@ app.get('/deep-lookup/:username', (req, res) => {
 })
 
 const scrapeSave = (username, bypass=false) => { // now with more resume-ability!
+  username = username.trim();
   console.log('scraping', username);
   var thisId;
   return new Promise((resolve, reject) => {
     database.getUserByUsername(username)
       .then(user => {
         // console.log('user:', user);
-        if (!user || bypass || user.recent_like_count == 0) {
+        if (!user || bypass || user.recent_like_count == 0 || user.recent_like_count == null) {
           Scraper(username)
             .then(user => {
               database.upsertUser(user)
@@ -367,10 +432,12 @@ const scrapeSave = (username, bypass=false) => { // now with more resume-ability
                     })
                 })
                 .catch(err => {
+                  console.log('upsert attemp failure');
                   reject(err);
                 })
             })
             .catch(err => {
+              console.log('scraper failure');
               reject(err);
             })
         } else {
@@ -378,6 +445,10 @@ const scrapeSave = (username, bypass=false) => { // now with more resume-ability
           resolve({ id: user.id, external_id: user.external_id });
         }
       })
+    .catch(err => {
+      console.log('get user by username failure');
+      reject(err);
+    })
   });
 }
 
@@ -440,8 +511,9 @@ const queueFollowing = (following, primaryUserEId) => {
   })
 }
 
+
 const PORT = 5760;
 
-app.listen(PORT, () => {
+http.listen(PORT, () => {
   console.log('listening on port:', PORT);
 });
