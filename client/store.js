@@ -64,7 +64,7 @@ const prospectParameters = (state = {parameters: defaultParameters, type: {}}, a
 
 const initProgress = {
   show: true,
-  stage: 'init',
+  stage: 'likers',
   total: null,
   progress: null
 };
@@ -76,13 +76,15 @@ const prospectProgress = (state = initProgress, action) => {
     case 'SHOW_PROGRESS':
       return Object.assign({}, state, { show: true });
     case 'CHANGE_STAGE':
-      return Object.assign(state, action.stage);
+      console.log('attempting to change stage to', action.stage);
+      console.log('currently:', state);
+      return Object.assign(state, {stage: action.stage});
     case 'UPDATE_STATUS':
+      console.log('currently:', state);
       return Object.assign(state, action.status);
     default:
       return state;
   }
-
 }
 
 const reducer = combineReducers({

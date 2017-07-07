@@ -6,8 +6,8 @@ const Input = require('semantic-ui-react').Input;
 const Progress = require('semantic-ui-react').Progress;
 
 const ProspectProgress = params => {
-  var { stage, total, show, progress } = params;
-  console.log('deez params:', params);
+  var { stage, total, show, progress } = store.getState().prospectProgress;
+  console.log('deez params:', store.getState().prospectProgress);
   var progressPercent = total > 0 ? (progress / total * 100).toFixed(2) : 0;
   if (!show) return null;
   switch (stage) {

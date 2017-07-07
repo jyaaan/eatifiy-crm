@@ -8,7 +8,6 @@ const store = require('../client/store');
 
 const FileHandler = require('./file-controller.js');
 const fileHandler = new FileHandler();
-
 const currentSession = { initialized: false, session: {} };
 
 ig.initialize()
@@ -29,7 +28,7 @@ Prospect.prototype.likers = function (params, filterParams) { // can be broken i
   const { username, days, mediaLimit } = params;
   console.log('likers:', username, days, mediaLimit);
   const lookback = days > 0 ? days : 30;
-
+  
   var arrLikers = [];
   const publicLikerIds = [];
   var publicLikerNames = [];
@@ -108,6 +107,7 @@ Prospect.prototype.likers = function (params, filterParams) { // can be broken i
             });
             async.mapSeries(dedupedPublicLikers, (liker, followup) => {
               counter++;
+              console.log((counter / dedupedPublicLikers.length * 100).toFixed(2));
               store.dispatch({
                 type: 'UPDATE_STATUS',
                 status: {
@@ -141,10 +141,10 @@ Prospect.prototype.likers = function (params, filterParams) { // can be broken i
               });
               database.getInfluencers(publicLikerIds, filterParams)
                 .then(influencers => {
-                  const headers = ['id', 'externalId', 'username', 'postCount', 'followerCount', 'followingCount', 'following/follower ratio', 'recentAvLikes', 'recentAvComments', 'engagementRatio', 'postFrequency(Hr)', 'likesCount', 'website'];
+                  const headers = ['id', 'externalId', 'username', 'postCount', 'followerCount', 'followingCount', 'following/follower ratio', 'recentPostCount', 'recentAvLikes', 'recentAvComments', 'engagementRatio', 'postFrequency(Hr)', 'likesCount', 'website'];
                   var influencerData = influencers.map(influencer => { // refactor this mess
                     return influencer.id +',' + influencer.external_id + ',' + influencer.username + ',' + influencer.post_count + ',' + influencer.follower_count + ',' + 
-                    influencer.following_count + ',' + (influencer.following_count / influencer.follower_count) + ',' + (influencer.recent_like_count / influencer.recent_post_count) + ',' +
+                    influencer.following_count + ',' + (influencer.following_count / influencer.follower_count) + ',' + influencer.recent_post_count + ',' + (influencer.recent_like_count / influencer.recent_post_count) + ',' +
                     (influencer.recent_comment_count / influencer.recent_post_count) + ',' + (influencer.recent_like_count / influencer.recent_post_count) / influencer.follower_count + ',' + ((influencer.recent_post_duration / 3600) / influencer.recent_post_count) + ',' +
                     publicLikerNames.filter(likerName => { return likerName == influencer.username; }).length + ',' + influencer.external_url;
                   });

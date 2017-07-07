@@ -124,21 +124,22 @@ const handleInput = event => {
 }
 
 const progressTest = event => {
-  if (store.getState().prospectProgress.show) {
-    store.dispatch({
-      type: 'HIDE_PROGRESS'
-    });
-  } else {
-    store.dispatch({
-      type: 'SHOW_PROGRESS'
-    });
-  }
+  // if (store.getState().prospectProgress.show) {
+  //   store.dispatch({
+  //     type: 'HIDE_PROGRESS'
+  //   });
+  // } else {
+  //   store.dispatch({
+  //     type: 'SHOW_PROGRESS'
+  //   });
+  // }
+  console.log(store.getState().prospectProgress);
 }
 
 const progress = event => {
   store.dispatch({
     type: 'CHANGE_STAGE',
-    stage: event.target.value
+    stage: 'likers'
   });
 }
 
@@ -154,6 +155,15 @@ const testValues = event => {
 
 // Currently too verbose. When refactoring, learn React a bit better to replace this mess.
 const ProspectParameters = props => {
+  this.storeTest = function() {
+    store.dispatch({
+      type: 'UPDATE_STATUS',
+      status: {
+        progress: 10,
+        total: 80
+      }
+    })
+  }
   return (
     <div className="ui form">
       <div className="inline field">
