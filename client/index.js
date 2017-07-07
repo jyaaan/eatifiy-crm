@@ -4,6 +4,7 @@ const store = require('./store');
 const UsernameInput = require('./input-username');
 const UserProfile = require('./user-profile');
 const ProspectParameters = require('./prospect-parameters');
+const ProspectProgress = require('./prospect-progress');
 
 const render = () => {
   const state = store.getState();
@@ -12,6 +13,7 @@ const render = () => {
       <UsernameInput text={ state.usernameInput } />
       <UserProfile { ...state.userProfile } />
       <ProspectParameters />
+      <ProspectProgress { ...state.prospectProgress } />
     </div>,
     document.querySelector('#container')
   );

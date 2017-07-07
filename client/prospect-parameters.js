@@ -43,12 +43,20 @@ const handleToggle = event => {
 
 // When you hit go!
 const handleProspect = event => {
+  const $lookback = document.querySelector('#lookback');
+  if ($lookback.value == '') {
+    $lookback.value = $lookback.placeholder;
+  }
   store.dispatch({
     type: 'UPDATE_TYPE',
     parameters: {
-      username: store.getState().usernameInput
+      username: store.getState().usernameInput,
+      days: $lookback.value
     }
   });
+  // store.dispatch({
+  //   type: 'SHOW_PROGRESS'
+  // });
   store.dispatch({
     type: 'RENDER_PARAMETER_OBJECT'
   });
@@ -115,8 +123,47 @@ const handleInput = event => {
   }
 }
 
+const progressTest = event => {
+  // if (store.getState().prospectProgress.show) {
+  //   store.dispatch({
+  //     type: 'HIDE_PROGRESS'
+  //   });
+  // } else {
+  //   store.dispatch({
+  //     type: 'SHOW_PROGRESS'
+  //   });
+  // }
+  console.log(store.getState().prospectProgress);
+}
+
+const progress = event => {
+  store.dispatch({
+    type: 'CHANGE_STAGE',
+    stage: 'likers'
+  });
+}
+
+const testValues = event => {
+  store.dispatch({
+    type: 'UPDATE_STATUS',
+    status: {
+      progress: 10,
+      total: 80
+    }
+  })
+}
+
 // Currently too verbose. When refactoring, learn React a bit better to replace this mess.
 const ProspectParameters = props => {
+  this.storeTest = function() {
+    store.dispatch({
+      type: 'UPDATE_STATUS',
+      status: {
+        progress: 10,
+        total: 80
+      }
+    })
+  }
   return (
     <div className="ui form">
       <div className="inline field">
@@ -255,11 +302,30 @@ const ProspectParameters = props => {
             onClick={ handleToggle } />
           <label>Require Website</label>
         </div>
+        <div className="ui input">
+          <label>Lookback(days)</label>
+          <input type="text" 
+            id="lookback"
+            placeholder="30" />
+        </div>
         <button
           className="ui button"
           onClick={ handleProspect }>Begin Prospectin'</button>
       </div>
 
+      <div>
+        <button
+          className="ui button"
+          onClick= { progressTest }>Progress Test</button>
+        <button
+          className="ui button"
+          value="medias"
+          onClick= { progress }>Medias</button>
+        <button
+          className="ui button"
+          value="medias"
+          onClick= { testValues }>Progress Bar</button>
+      </div>
     </div>
   )
 }

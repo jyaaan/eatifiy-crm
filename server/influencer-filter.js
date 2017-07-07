@@ -1,6 +1,7 @@
-class InfluencerFilter {
+class InfluencerFilter { // comments, please.
   constructor(settings) {
-    const { follower_count, following_count, external_url, ratio, terms } = settings;
+    console.log('influencer filter params:', settings);
+    const { follower_count, following_count, external_url, ratio, terms, engagement } = settings;
 
     this.follower_count = follower_count;
     this.follower_count.filter = function(user) {
@@ -40,11 +41,11 @@ class InfluencerFilter {
   }
 }
 
-const eval = (val, paramObj) => {
-  if (typeof paramObj.max != 'undefined' && val > paramObj.max) {
+const eval = (val, paramObj) => { // fix null handling once DO server is functional.
+  if ((typeof paramObj.max != 'undefined' && paramObj.max != null) && val > paramObj.max) {
     return false;
   }
-  if (typeof paramObj.min != 'undefined' && val < paramObj.min) {
+  if ((typeof paramObj.min != 'undefined' && paramObj.min != null) && val < paramObj.min) {
     return false;
   }
   return true;

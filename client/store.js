@@ -24,7 +24,6 @@ const userProfile = (state = { profile: { id: -1 }, followingBtn: false }, actio
       return state;
   }
 }
-
 const defaultParameters = {
   engagement: {
   },
@@ -36,22 +35,53 @@ const defaultParameters = {
     min: 0
   },
   ratio: {
+  },
+  terms: {
   }
 }
 
 const prospectParameters = (state = {parameters: defaultParameters, type: {}}, action) => {
-  switch (action.type) {
+  switch (action.type) { // simplify Object.assign logic
     case 'UPDATE_PARAMETERS': // will effectively merge incoming parameter object with existing, overwriting any changes
       const newObj = Object.assign({}, state.parameters[action.name], action.parameters[action.name]);
       const paramObj = {};
       paramObj[action.name] = newObj;
       return {parameters: Object.assign({}, state.parameters, paramObj), type: state.type};
-    case 'RENDER_PARAMETER_OBJECT': // What happens when you hit go
-      console.log(state);
-    return state;
     case 'UPDATE_TYPE': // same as UPDATE_PARAMETER but just not as complex
       const typeObj = Object.assign({}, state.type, action.parameters);
       return { parameters: state.parameters, type: typeObj };
+    case 'RENDER_PARAMETER_OBJECT': // What happens when you hit go
+      fetch('/ui-analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(state)
+      })
+      return state;
+    default:
+      return state;
+  }
+}
+
+const initProgress = {
+  show: true,
+  stage: 'likers',
+  total: null,
+  progress: null
+};
+
+const prospectProgress = (state = initProgress, action) => {
+  switch (action.type) {
+    case 'HIDE_PROGRESS':
+      return Object.assign({}, state, { show: false });
+    case 'SHOW_PROGRESS':
+      return Object.assign({}, state, { show: true });
+    case 'CHANGE_STAGE':
+      console.log('attempting to change stage to', action.stage);
+      console.log('currently:', state);
+      return Object.assign(state, {stage: action.stage});
+    case 'UPDATE_STATUS':
+      console.log('currently:', state);
+      return Object.assign(state, action.status);
     default:
       return state;
   }
@@ -60,7 +90,8 @@ const prospectParameters = (state = {parameters: defaultParameters, type: {}}, a
 const reducer = combineReducers({
   usernameInput,
   userProfile,
-  prospectParameters
+  prospectParameters,
+  prospectProgress
 });
 
 const store = createStore(reducer);

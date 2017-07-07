@@ -10,28 +10,27 @@ const knex = require('knex')({
 const async = require('async');
 const InfluencerFilter = require('./influencer-filter');
 
-const exampleSettings = {
-  follower_count: {
-    max: 500000,
-    min: 10000
-  },
-  following_count: {
+// const exampleSettings = { // flagged for removal
+//   follower_count: {
+//     max: 500000,
+//     min: 10000
+//   },
+//   following_count: {
 
-  },
-  external_url: {
-    min: 1
-  },
-  ratio: {
-    max: 0.3
-  },
-  terms: {
-    bio: ['john'],
-    mention: ['john'],
-    tag: ['eatifyjohn']
-  }
-}
+//   },
+//   external_url: {
+//     min: 1
+//   },
+//   ratio: {
+//     max: 0.3
+//   },
+//   terms: {
+//     bio: ['john'],
+//     mention: ['john'],
+//     tag: ['eatifyjohn']
+//   }
+// }
 
-const currentFilter = new InfluencerFilter(exampleSettings);
 
 function Database() {
 
@@ -56,7 +55,8 @@ Database.prototype.getConsumers = function (userEIds) {
   })
 }
 
-Database.prototype.getInfluencers = function (userEIds) {
+Database.prototype.getInfluencers = function (userEIds, filterParams) {
+  const currentFilter = new InfluencerFilter(filterParams);
   const influencers = [];
   return new Promise((resolve, reject) => {
     async.mapSeries(userEIds, (userId, next) => {
