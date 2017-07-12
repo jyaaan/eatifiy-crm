@@ -100,12 +100,68 @@ const enrichCSV = (state = {}, action) => {
   }
 }
 
+const easyFilterTest = {
+  user: {
+    username: '123chocula',
+    follower_count: 2048347,
+    following_count: 14,
+    post_count: 62,
+    recent_post_count: 12,
+    recent_like_count: 67123,
+    recent_comment_count: 524,
+    picture_url: 'https://instagram.fsnc1-4.fna.fbcdn.net/t51.2885-19/12230863_691359027630917_506377473_a.jpg',
+    bio: 'had dream I was king \n woke up, still king'
+  },
+  medias: [
+    {
+      media_url: 'https://www.instagram.com/p/BBLzj56w2VV/',
+      like_count: 4593,
+      comment_count: 154,
+      date: 1468209392,
+      caption: 'Spooners!',
+      picture_url: 'https://instagram.fsnc1-4.fna.fbcdn.net/t51.2885-15/e15/12446140_954659371270187_996150836_n.jpg'
+    },
+    {
+      media_url: 'https://www.instagram.com/p/BBLzj56w2VV/',
+      like_count: 4593,
+      comment_count: 154,
+      date: 1468209392,
+      caption: 'Spooners!',
+      picture_url: 'https://instagram.fsnc1-4.fna.fbcdn.net/t51.2885-15/e15/12446140_954659371270187_996150836_n.jpg'
+    },
+    {
+      media_url: 'https://www.instagram.com/p/BBLzj56w2VV/',
+      like_count: 4593,
+      comment_count: 154,
+      date: 1468209392,
+      caption: 'Spooners!',
+      picture_url: 'https://instagram.fsnc1-4.fna.fbcdn.net/t51.2885-15/e15/12446140_954659371270187_996150836_n.jpg'
+    },
+    {
+      media_url: 'https://www.instagram.com/p/BBLzj56w2VV/',
+      like_count: 4593,
+      comment_count: 154,
+      date: 1468209392,
+      caption: 'Spooners!',
+      picture_url: 'https://instagram.fsnc1-4.fna.fbcdn.net/t51.2885-15/e15/12446140_954659371270187_996150836_n.jpg'
+    }
+  ]
+}
+
+const easyFilter = (state = easyFilterTest, action) => {
+  switch (action.type) {
+    default:
+      return state;
+  }
+}
+
 const reducer = combineReducers({
   usernameInput,
   userProfile,
   prospectParameters,
   prospectProgress,
-  enrichCSV
+  enrichCSV,
+  easyFilter
 });
 
 const store = createStore(reducer);
