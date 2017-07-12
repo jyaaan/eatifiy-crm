@@ -5,6 +5,7 @@ const UsernameInput = require('./input-username');
 const UserProfile = require('./user-profile');
 const ProspectParameters = require('./prospect-parameters');
 const ProspectProgress = require('./prospect-progress');
+const EasyFilter = require('./easy-filter');
 
 var io = require('socket.io-client');
 var socket = io('/');
@@ -25,6 +26,7 @@ const render = () => {
       <UserProfile { ...state.userProfile } />
       <ProspectParameters />
       <ProspectProgress { ...state.prospectProgress } />
+      <EasyFilter { ...state.easyFilter } />
     </div>,
     document.querySelector('#container')
   );
