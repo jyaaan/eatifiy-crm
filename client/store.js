@@ -100,7 +100,7 @@ const enrichCSV = (state = {}, action) => {
   }
 }
 
-const easyFilterTest = {
+var easyFilterTest = {
   user: {
     username: '123chocula',
     follower_count: 2048347,
@@ -148,8 +148,22 @@ const easyFilterTest = {
   ]
 }
 
+var scraped = false;
+
 const easyFilter = (state = easyFilterTest, action) => {
   switch (action.type) {
+    case 'LOAD_USER':
+      if (!scraped) {
+        scraped = true;
+        fetch('/load-user/123chocula/')
+          .then(resp => resp.json())
+          .then(data => {
+            easyFilterTest = data;
+          })
+      }
+      return state;
+    case 'REFRESH_USER':
+      return easyFilterTest;
     default:
       return state;
   }

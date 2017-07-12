@@ -7,6 +7,7 @@ const Database = require('./database').Database;
 const database = new Database();
 const ParseScrape = require('./parse-scrape');
 const Scraper = require('./scraper');
+const ScraperMedia = require('./scraper-media');
 const async = require('async');
 const fs = require('fs');
 const request = require('request');
@@ -31,7 +32,26 @@ io.on('connection', socket => {
   socket.emit('welcome', {message: 'Connection to Truefluence established', id: socket.id});
 });
 
+app.get('/load-user/:username', (req, res) => {
+  loadUser(req.params.username)
+    .then(slug => {
+      res.json(slug);
+    })
+})
 
+const loadUser = (username) => { // now with more resume-ability!
+  console.log('loading', username);
+  return new Promise((resolve, reject) => {
+    ScraperMedia(username)
+      .then(slug => {
+        resolve(slug);
+      })
+      .catch(err => {
+        console.log('ScraperMedia error');
+        reject(err);
+      })
+  });
+}
 
 function spliceDuplicates(users) {
   return users.filter((user, index, collection) => {

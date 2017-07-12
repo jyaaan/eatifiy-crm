@@ -1,4 +1,5 @@
 const ParseScrape = objJSON => {
+  var medias = [];
   const user = {
       username: objJSON.user.username,
       picture_url: objJSON.user.profile_pic_url,
@@ -39,10 +40,29 @@ const ParseScrape = objJSON => {
           return Math.min(low, curr);
       }, 99999999999999);
       user.recent_post_duration = youngestPost - oldestPost;
+
+    medias = objJSON.user.media.nodes.map(media => {
+        const formattedMedia = {
+            media_url: 'https://instagram.com/p/' + media.code,
+            date: media.date,
+            picture_url: media.thumbnail_src,
+            external_id: media.id,
+            user_id: media.owner.id,
+            image_standard: media.display_src,
+            image_thumbnail: media.thumbnail_src,
+            caption: media.caption,
+            link: 'https://www.instagram.com/p/' + media.code,
+            like_count: media.likes.count,
+            comment_count: media.comments.count,
+            user_tags: []
+        }
+        return formattedMedia;
+    });
   }
 //   console.log('user:', user);
   return {
-      user: user
+      user: user,
+      medias: medias
   };
 };
 

@@ -187,6 +187,17 @@ Database.prototype.getUserByEId = function (eId) {
   });
 }
 
+Database.prototype.getUserByExternalId = function (id) {
+  return new Promise((resolve, reject) => {
+    knex('users')
+      .select('*')
+      .where('external_id', id)
+      .then(result => {
+        resolve(result[0]);
+      });
+  });
+}
+
 Database.prototype.getEIdFromExternalId = function (externalId, tableName) {
   return knex(tableName)
     .where('external_id', externalId)

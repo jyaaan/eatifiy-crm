@@ -1,11 +1,16 @@
 const React = require('react');
 const store = require('./store');
+const ScraperMedia = require('../server/scraper');
+
+
 const Segment = require('semantic-ui-react').Segment;
 const Statistic = require('semantic-ui-react').Statistic;
 const Image = require('semantic-ui-react').Image;
 const Item = require('semantic-ui-react').Item;
 const Label = require('semantic-ui-react').Label;
 const Icon = require('semantic-ui-react').Icon;
+const Button = require('semantic-ui-react').Button;
+
 
 Date.prototype.formatMMDDYYYY = function(){
 	return ((this.getMonth()+1)+"/"+this.getDate()+"/"+this.getFullYear());
@@ -87,6 +92,22 @@ const userMedias = (medias) => {
   );
 }
 
+const loadTest = () => {
+  store.dispatch({
+    type: 'LOAD_USER'
+  })
+}
+
+const stateTest = () => {
+  console.log('state:', store.getState().easyFilter);
+}
+
+const refreshTest = () => {
+  store.dispatch({
+    type: 'REFRESH_USER'
+  })
+}
+
 const pageRender = (user, medias) => {
   const profile = userProfile(user);
   const posts = userMedias(medias);
@@ -94,16 +115,39 @@ const pageRender = (user, medias) => {
     <div>
       {profile}
       {posts}
+      <button
+        className="ui button"
+        onClick= { loadTest }>Load Test</button>
+      <button
+        className="ui button"
+        onClick= { stateTest }>Get State</button>
+      <button
+        className="ui button"
+        onClick= { refreshTest }>Refresh State</button>
     </div>
   )
 }
 
 const EasyFilter = params => {
+  console.log('params:', params);
   const { user, medias } = params;
-
   return (
     pageRender(user, medias)
   )
+}
+
+const loadUser = (username) => { // now with more resume-ability!
+  console.log('scraping', username);
+  return new Promise((resolve, reject) => {
+    ScraperMedia(username)
+      .then(slug => {
+        resolve({ user: slug.user, medias: slug.medias });
+      })
+      .catch(err => {
+        console.log('ScraperMedia error');
+        reject(err);
+      })
+  });
 }
 
 module.exports = EasyFilter;
