@@ -250,6 +250,7 @@ Database.prototype.createProspect = function (primary, username) {
     username: username,
     primary_username: primary,
     created_at: timeNow,
+    updated_at: timeNow,
     prospect: true,
     category: 'P'
   }

@@ -42,49 +42,107 @@ window.addEventListener('keydown', event => {
     switch (event.key) {
       case 'w':
         store.dispatch({
-          type: 'ACCEPT_PROSPECT',
+          type: 'UPDATE_PROSPECT',
+          id: currentProspect.id,
           params: {
-            accepted: true,
-            id: currentProspect.id,
-
+            accepted: true
           }
         });
+        prospects[position].accepted = true;
+        currentProspect = prospects[position];
+        setTimeout(() => {
+          store.dispatch({
+            type: 'REFRESH_USER'
+          });
+        }, 500);
         break;
       case 'a':
+        if (position == 0) {
+          position = prospects.length - 1;
+        } else {
+          position--;
+        }
+        currentProspect = prospects[position];
+        console.log('new prospect:', currentProspect);
         store.dispatch({
-          type: 'PREVIOUS_PROSPECT'
-        });
+          type: 'LOAD_USER',
+          username: currentProspect.username
+        })
+        setTimeout(() => {
+          store.dispatch({
+            type: 'REFRESH_USER'
+          });
+        }, 500);
         break;
       case 's':
         store.dispatch({
-          type: 'REJECT_PROSPECT',
+          type: 'UPDATE_PROSPECT',
+          id: currentProspect.id,
           params: {
-            accepted: false,
-            id: currentProspect.id
+            accepted: false
           }
         });
+        prospects[position].accepted = false;
+        currentProspect = prospects[position];
+        setTimeout(() => {
+          store.dispatch({
+            type: 'REFRESH_USER'
+          });
+        }, 500);
         break;
       case 'd':
+        if (position < prospects.length - 1) {
+          position++;
+        } else {
+          position = 0;
+        }
+        currentProspect = prospects[position];
+        console.log('new prospect:', currentProspect);
         store.dispatch({
-          type: 'NEXT_PROSPECT'
-        });
+          type: 'LOAD_USER',
+          username: currentProspect.username
+        })
+        setTimeout(() => {
+          store.dispatch({
+            type: 'REFRESH_USER'
+          });
+        }, 500);
         break;
       case 'b':
         store.dispatch({
-          type: 'LABEL_AS_BRAND',
+          type: 'UPDATE_PROSPECT',
+          id: currentProspect.id,
           params: {
-            id: currentProspect.id,
             category: 'B'
           }
         });
+        prospects[position].category = 'B';
+        currentProspect = prospects[position];
+        setTimeout(() => {
+          store.dispatch({
+            type: 'REFRESH_USER'
+          });
+        }, 500);
         break;
       case 't':
         store.dispatch({
-          type: 'LABEL_AS_CONSUMER',
+          type: 'UPDATE_PROSPECT',
+          id: currentProspect.id,
           params: {
-            id: currentProspect.id,
             category: 'C'
           }
+        });
+        prospects[position].category = 'C';
+        currentProspect = prospects[position];
+        setTimeout(() => {
+          store.dispatch({
+            type: 'REFRESH_USER'
+          });
+        }, 500);
+        break;
+      case 'f':
+        store.dispatch({
+          type: 'REFRESH_USER'
         });
         break;
     }
@@ -92,7 +150,8 @@ window.addEventListener('keydown', event => {
 });
 
 var currentProspect = {};
-
+var prospects = [];
+var position = 0;
 const userProfile = user => {
   const engagement = ((user.recent_like_count + user.recent_comment_count) / user.recent_post_count / user.follower_count * 100).toFixed(2);
   const items = [
@@ -102,7 +161,11 @@ const userProfile = user => {
     { label: 'Following', value: (user.following_count).toLocaleString() },
     { label: 'Av. Likes', value: ((user.recent_like_count / user.recent_post_count).toFixed(1)).toLocaleString() },
     { label: 'Av. Comments', value: ((user.recent_comment_count / user.recent_post_count).toFixed(1)).toLocaleString() },
-    { label: 'Engagement Rate', value: engagement + '%'}
+    { label: 'Engagement Rate', value: engagement + '%' },
+    { label: 'Category', value: currentProspect.category },
+    { label: 'Position', value: position + 1 },
+    { label: 'Total', value: prospects.length },
+    { label: '', value: currentProspect.accepted ? 'ACCEPTED' : ''}
   ]
   const profileLink = 'http://www.instagram.com/' + user.username;
   return (
@@ -140,11 +203,34 @@ const userMedias = (medias) => {
 }
 
 const loadTest = event => {
-  console.log('loading:', event.target.username);
-  store.dispatch({
-    type: 'LOAD_USER',
-    username: 'gamegrumps'
-  })
+  console.log('loading:', event.target.id);
+  position = 0;
+  // store.dispatch({
+  //   type: 'LOAD_USER',
+  //   username: 'gamegrumps'
+  // })
+  fetch('/prospect-list/' + event.target.id)
+    .then(resp => resp.json())
+    .then(data => {
+      prospects = data;
+    })
+    .then(() => {
+      currentProspect = prospects[position];
+      console.log('currentProspect:', currentProspect);
+    })
+    .then(() => {
+      store.dispatch({
+        type: 'LOAD_USER',
+        username: currentProspect.username
+      })
+    })
+    .then(() => {
+      setTimeout(() => {
+        store.dispatch({
+          type: 'REFRESH_USER'
+        });
+      }, 1000);
+    })
 }
 
 const stateTest = () => {
@@ -164,15 +250,15 @@ const pageRender = (user, medias) => {
     <div>
       <button
         className="ui button"
-        username='kodiakcakes'
+        id='kodiakcakes'
         onClick= { loadTest }>kodiakcakes</button>
       <button
         className="ui button"
-        username='polkadot_pr'
+        id='polkadot_pr'
         onClick= { loadTest }>polkadot_pr</button>
       <button
         className="ui button"
-        username='rxbar'
+        id='rxbar'
         onClick= { loadTest }>rxbar</button>
       {profile}
       {posts}

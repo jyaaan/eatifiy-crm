@@ -161,7 +161,7 @@ const easyFilter = (state = easyFilterTest, action) => {
   switch (action.type) {
     case 'LOAD_USER':
       if (!scraped) {
-        scraped = true;
+        // scraped = true;
         fetch('/load-user/' + action.username)
           .then(resp => resp.json())
           .then(data => {
@@ -198,6 +198,14 @@ const prospectList = (state = {}, action) => {
       return state;
     case 'LABEL_AS_CONSUMER':
       return state;
+    case 'UPDATE_PROSPECT':
+      console.log('trying to update prospect:', action);
+      fetch('/update-prospect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: action.id, params: action.params })
+      });
+      return state;
     default:
       return state;
   }
@@ -209,7 +217,8 @@ const reducer = combineReducers({
   prospectParameters,
   prospectProgress,
   enrichCSV,
-  easyFilter
+  easyFilter,
+  prospectList
 });
 
 const store = createStore(reducer);

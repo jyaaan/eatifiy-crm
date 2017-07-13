@@ -33,9 +33,19 @@ io.on('connection', socket => {
 });
 
 app.get('/prospect-list/:primaryUsername', (req, res) => {
+  console.log('trying to get prospects of:', req.params.primaryUsername);
   database.getProspects(req.params.primaryUsername)
     .then(prospects => {
-      console.log(prospects[0]);
+      res.json(prospects);
+    })
+})
+
+app.post('/update-prospect', (req, res) => {
+  console.log('attempting to update:', req.body.id, 'params:', req.body.params);
+  const id = req.body.id;
+  database.updateProspect(id, req.body.params)
+    .then(result => {
+      console.log('prospect updated');
     })
 })
 
