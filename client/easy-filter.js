@@ -124,6 +124,22 @@ window.addEventListener('keydown', event => {
           });
         }, 500);
         break;
+      case 'e':
+        store.dispatch({
+          type: 'UPDATE_PROSPECT',
+          id: currentProspect.id,
+          params: {
+            category: 'P'
+          }
+        });
+        prospects[position].category = 'P';
+        currentProspect = prospects[position];
+        setTimeout(() => {
+          store.dispatch({
+            type: 'REFRESH_USER'
+          });
+        }, 500);
+        break;
       case 't':
         store.dispatch({
           type: 'UPDATE_PROSPECT',
