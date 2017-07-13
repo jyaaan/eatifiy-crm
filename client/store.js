@@ -95,6 +95,13 @@ const enrichCSV = (state = {}, action) => {
         body: JSON.stringify(action.users)
       });
       return state;
+    case 'UPLOAD_PROSPECTS':
+      fetch('/preload-prospects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usernames: action.prospects, primaryUsername: action.primaryUsername })
+      });
+      return state;
     default:
       return state;
   }
@@ -155,7 +162,7 @@ const easyFilter = (state = easyFilterTest, action) => {
     case 'LOAD_USER':
       if (!scraped) {
         scraped = true;
-        fetch('/load-user/123chocula/')
+        fetch('/load-user/' + action.username)
           .then(resp => resp.json())
           .then(data => {
             easyFilterTest = data;
@@ -164,6 +171,33 @@ const easyFilter = (state = easyFilterTest, action) => {
       return state;
     case 'REFRESH_USER':
       return easyFilterTest;
+    default:
+      return state;
+  }
+}
+
+const prospectListTest = {
+  primaryUsername: '',
+  prospectId: '',
+  position: null
+}
+// state will have username, position
+const prospectList = (state = {}, action) => {
+  switch (action.type) {
+    case 'LOAD_PROSPECTS':
+      return state;
+    case 'NEXT_PROSPECT':
+      return state;
+    case 'PREVIOUS_PROSPECT':
+      return state;
+    case 'ACCEPT_PROSPECT':
+      return state;
+    case 'REJECT_PROSPECT':
+      return state;
+    case 'LABEL_AS_BRAND':
+      return state;
+    case 'LABEL_AS_CONSUMER':
+      return state;
     default:
       return state;
   }

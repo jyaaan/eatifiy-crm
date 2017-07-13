@@ -32,6 +32,13 @@ io.on('connection', socket => {
   socket.emit('welcome', {message: 'Connection to Truefluence established', id: socket.id});
 });
 
+app.get('/prospect-list/:primaryUsername', (req, res) => {
+  database.getProspects(req.params.primaryUsername)
+    .then(prospects => {
+      console.log(prospects[0]);
+    })
+})
+
 app.get('/load-user/:username', (req, res) => {
   loadUser(req.params.username)
     .then(slug => {
@@ -72,6 +79,25 @@ app.get('/discovery', (req, res) => {
 
 app.post('/dispatch', (req, res) => {
   io.emit('dispatch', req.body);
+})
+
+app.post('/preload-prospects', (req, res) => {
+  console.log('loading prospects');
+  const usernames = req.body.usernames;
+  const primaryUsername = req.body.primaryUsername;
+  
+  async.mapSeries(usernames, (username, next) => {
+    database.createProspect(primaryUsername, username)
+      .then(result => {
+        next();
+      })
+      .catch(err => {
+        console.error(err);
+        next();
+      })
+  }, err => {
+    res.send(200, 'loaded');
+  });
 })
 
 app.post('/enrich', (req, res) => {

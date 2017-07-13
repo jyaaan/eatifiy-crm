@@ -162,7 +162,7 @@ Prospect.prototype.likers = function (params, filterParams) { // can be broken i
                     return influencer.id +',' + influencer.external_id + ',' + influencer.username + ',' + influencer.post_count + ',' + influencer.follower_count + ',' + 
                     influencer.following_count + ',' + (influencer.following_count / influencer.follower_count) + ',' + influencer.recent_post_count + ',' + (influencer.recent_like_count / influencer.recent_post_count) + ',' +
                     (influencer.recent_comment_count / influencer.recent_post_count) + ',' + ((influencer.recent_like_count + influencer.recent_comment_count) / influencer.recent_post_count) / influencer.follower_count + ',' + ((influencer.recent_post_duration / 3600) / influencer.recent_post_count) + ',' +
-                    publicLikerNames.filter(likerName => { return likerName == influencer.username; }).length + ',' + influencer.external_url + ',"' + influencer.bio + '"';
+                    publicLikerNames.filter(likerName => { return likerName == influencer.username; }).length + ',' + influencer.external_url;
                   });
                   // writing to file
                   store.dispatch({

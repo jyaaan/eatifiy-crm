@@ -64,10 +64,15 @@ const handleFile = event => {
     // reader.onerror = function () {
     //   alert('Unable to read' + ' ' + file.fileName);
     // }
+    // store.dispatch({
+    //   type: 'ENRICH_CSV',
+    //   users: testArray
+    // })
     store.dispatch({
-      type: 'ENRICH_CSV',
-      users: testArray
-    })
+      type: 'UPLOAD_PROSPECTS',
+      prospects: testArray,
+      primaryUsername: store.getState().usernameInput
+    });
   }
 }
 

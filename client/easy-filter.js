@@ -35,13 +35,63 @@ const MediaItem = (media) => {
   )
 }
 
-const handleButton = () => {
-  console.log('whee');
-}
-
+// labels: (P)rospect (B)rand (C)onsumer
 window.addEventListener('keydown', event => {
   console.log(event.key);
+  if (typeof currentProspect.id != 'undefined') {
+    switch (event.key) {
+      case 'w':
+        store.dispatch({
+          type: 'ACCEPT_PROSPECT',
+          params: {
+            accepted: true,
+            id: currentProspect.id,
+
+          }
+        });
+        break;
+      case 'a':
+        store.dispatch({
+          type: 'PREVIOUS_PROSPECT'
+        });
+        break;
+      case 's':
+        store.dispatch({
+          type: 'REJECT_PROSPECT',
+          params: {
+            accepted: false,
+            id: currentProspect.id
+          }
+        });
+        break;
+      case 'd':
+        store.dispatch({
+          type: 'NEXT_PROSPECT'
+        });
+        break;
+      case 'b':
+        store.dispatch({
+          type: 'LABEL_AS_BRAND',
+          params: {
+            id: currentProspect.id,
+            category: 'B'
+          }
+        });
+        break;
+      case 't':
+        store.dispatch({
+          type: 'LABEL_AS_CONSUMER',
+          params: {
+            id: currentProspect.id,
+            category: 'C'
+          }
+        });
+        break;
+    }
+  }
 });
+
+var currentProspect = {};
 
 const userProfile = user => {
   const engagement = ((user.recent_like_count + user.recent_comment_count) / user.recent_post_count / user.follower_count * 100).toFixed(2);
@@ -71,9 +121,6 @@ const userProfile = user => {
       </div>
       <div className='ui centered row'>
         <p>{ user.bio }</p>
-        <button
-          className='ui button analyzebtn'
-          onClick={ handleButton }>And Whee!</button>
       </div>
     </div>
   )
@@ -92,9 +139,11 @@ const userMedias = (medias) => {
   );
 }
 
-const loadTest = () => {
+const loadTest = event => {
+  console.log('loading:', event.target.username);
   store.dispatch({
-    type: 'LOAD_USER'
+    type: 'LOAD_USER',
+    username: 'gamegrumps'
   })
 }
 
@@ -113,14 +162,20 @@ const pageRender = (user, medias) => {
   const posts = userMedias(medias);
   return (
     <div>
+      <button
+        className="ui button"
+        username='kodiakcakes'
+        onClick= { loadTest }>kodiakcakes</button>
+      <button
+        className="ui button"
+        username='polkadot_pr'
+        onClick= { loadTest }>polkadot_pr</button>
+      <button
+        className="ui button"
+        username='rxbar'
+        onClick= { loadTest }>rxbar</button>
       {profile}
       {posts}
-      <button
-        className="ui button"
-        onClick= { loadTest }>Load Test</button>
-      <button
-        className="ui button"
-        onClick= { stateTest }>Get State</button>
       <button
         className="ui button"
         onClick= { refreshTest }>Refresh State</button>
