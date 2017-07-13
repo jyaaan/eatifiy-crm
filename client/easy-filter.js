@@ -140,6 +140,22 @@ window.addEventListener('keydown', event => {
           });
         }, 500);
         break;
+      case 'e':
+        store.dispatch({
+          type: 'UPDATE_PROSPECT',
+          id: currentProspect.id,
+          params: {
+            category: 'U'
+          }
+        });
+        prospects[position].category = 'U';
+        currentProspect = prospects[position];
+        setTimeout(() => {
+          store.dispatch({
+            type: 'REFRESH_USER'
+          });
+        }, 500);
+        break;
       case 't':
         store.dispatch({
           type: 'UPDATE_PROSPECT',
