@@ -11,7 +11,6 @@ const Label = require('semantic-ui-react').Label;
 const Icon = require('semantic-ui-react').Icon;
 const Button = require('semantic-ui-react').Button;
 
-
 Date.prototype.formatMMDDYYYY = function(){
 	return ((this.getMonth()+1)+"/"+this.getDate()+"/"+this.getFullYear());
 };
@@ -162,7 +161,7 @@ window.addEventListener('keydown', event => {
           });
         }, 500);
         break;
-      case 'e':
+      case 'u':
         store.dispatch({
           type: 'UPDATE_PROSPECT',
           id: currentProspect.id,
@@ -206,6 +205,7 @@ window.addEventListener('keydown', event => {
 
 var currentProspect = {};
 var prospects = [];
+var masterProspects = [];
 var position = 0;
 const userProfile = user => {
   const engagement = ((user.recent_like_count + user.recent_comment_count) / user.recent_post_count / user.follower_count * 100).toFixed(2);
@@ -233,10 +233,23 @@ const userProfile = user => {
           <a href={ profileLink }>
             <img className='ui small image centered column' src={ user.picture_url } />
           </a>
-          <h3> Accepted: { acceptedCount.length }
-          Rejected: { prospects.filter(prospect => { return prospect.accepted == false }).length }
-          Remain: { prospects.filter(prospect => { return prospect.accepted == null }).length } </h3>
+          <h3><input
+            type="checkbox" 
+            id="accepted-check"
+            defaultChecked="true"
+            onClick={ toggleFilter }/>Accepted: { acceptedCount.length }
+          , <input
+            type="checkbox" 
+            id="rejected-check"
+            defaultChecked="true"
+            onClick={ toggleFilter }/>Rejected: { prospects.filter(prospect => { return prospect.accepted == false }).length } 
+          , <input
+            type="checkbox" 
+            id="remain-check"
+            defaultChecked="true"
+            onClick={ toggleFilter }/>Remain: { prospects.filter(prospect => { return prospect.accepted == null }).length } </h3>
         </div>
+
         <div>
           <Segment inverted>
             <Statistic.Group items={items} size='small' inverted color='green' />
@@ -245,10 +258,70 @@ const userProfile = user => {
       </div>
       <div className='ui centered row'>
         <p>{ user.bio }</p>
+        <button
+          className="ui button"
+          id='tester'
+          onClick= { resetFilters }>reset filter</button>
+        <button
+          className="ui button"
+          id='trester'
+          onClick= { downloadCSV }>Download Accepted</button>
       </div>
     </div>
   )
 }
+
+const resetFilters = () => {
+  document.querySelector('#accepted-check').checked = true;
+  document.querySelector('#rejected-check').checked = true;
+  document.querySelector('#remain-check').checked = true;
+  position = 0;
+  prospects = masterProspects;
+  currentProspect = prospects[0];
+  store.dispatch({
+    type: 'LOAD_USER',
+    username: currentProspect.username
+  })
+  setTimeout(() => {
+    store.dispatch({
+      type: 'REFRESH_USER'
+    });
+  }, 500);
+}
+
+const toggleFilter = () => {
+  var filteredProspects = [];
+  if (document.querySelector('#accepted-check').checked) {
+    console.log('accepted checked');
+    filteredProspects = filteredProspects.concat(masterProspects.filter(prospect => { return prospect.accepted == true }));
+    // console.log(masterProspects.filter(prospect => { return prospect.accepted == true }));
+    // console.log('filtered prospects:', filteredProspects);
+  }
+  if (document.querySelector('#rejected-check').checked) {
+    console.log('rejected checked');
+    filteredProspects = filteredProspects.concat(masterProspects.filter(prospect => { return prospect.accepted == false }));
+  }
+  if (document.querySelector('#remain-check').checked) {
+    filteredProspects = filteredProspects.concat(masterProspects.filter(prospect => { return prospect.accepted == null }));
+  }
+  // console.log('here are the filtered:', filteredProspects);
+  position = 0;
+  prospects = filteredProspects;
+  currentProspect = prospects[0];
+    store.dispatch({
+    type: 'LOAD_USER',
+    username: currentProspect.username
+  })
+  setTimeout(() => {
+    store.dispatch({
+      type: 'REFRESH_USER'
+    });
+  }, 500);
+}
+
+/*
+toggle > check state > apply filters to state > 
+*/
 
 const userMedias = (medias) => {
   const result = medias.map(media => {
@@ -274,6 +347,7 @@ const loadTest = event => {
     .then(resp => resp.json())
     .then(data => {
       prospects = data;
+      masterProspects = prospects;
     })
     .then(() => {
       currentProspect = prospects[position];
@@ -328,11 +402,57 @@ const pageRender = (user, medias) => {
         onClick= { loadTest }>gomacro</button>
       {profile}
       {posts}
-      <button
-        className="ui button"
-        onClick= { refreshTest }>Refresh State</button>
     </div>
   )
+}
+
+const downloadCSV = () => {
+  const toSave = prospects.filter(prospect => { return prospect.accepted == true; }).map(prospect => { return prospect.username });
+  console.log('trying to save:', toSave);
+  exportToCsv('test.csv', toSave);
+}
+
+function exportToCsv(filename, rows) {
+  var processRow = function (row) {
+    var finalVal = '';
+    finalVal += row;
+    finalVal += ',';
+    // for (var j = 0; j < row.length; j++) {
+    //   var innerValue = row[j] === null ? '' : row[j].toString();
+    //   if (row[j] instanceof Date) {
+    //     innerValue = row[j].toLocaleString();
+    //   };
+    //   var result = innerValue.replace(/"/g, '""');
+    //   if (result.search(/("|,|\n)/g) >= 0)
+    //     result = '"' + result + '"';
+    //   if (j > 0)
+    //       finalVal += ',';
+    //   finalVal += result;
+    // }
+    return finalVal + '\n';
+  };
+
+  var csvFile = '';
+  for (var i = 0; i < rows.length; i++) {
+    csvFile += processRow(rows[i]);
+  }
+
+  var blob = new Blob([csvFile], { type: 'text/csv;charset=utf-8;' });
+  if (navigator.msSaveBlob) { // IE 10+
+    navigator.msSaveBlob(blob, filename);
+  } else {
+    var link = document.createElement("a");
+    if (link.download !== undefined) { // feature detection
+      // Browsers that support HTML5 download attribute
+      var url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }
 }
 
 const EasyFilter = params => {
