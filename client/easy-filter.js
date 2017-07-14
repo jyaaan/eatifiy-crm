@@ -292,6 +292,10 @@ const pageRender = (user, medias) => {
         className="ui button"
         id='rxbar'
         onClick= { loadTest }>rxbar</button>
+      <button
+        className="ui button"
+        id='gomacro'
+        onClick= { loadTest }>gomacro</button>
       {profile}
       {posts}
       <button
