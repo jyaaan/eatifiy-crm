@@ -233,9 +233,9 @@ const userProfile = user => {
           <a href={ profileLink }>
             <img className='ui small image centered column' src={ user.picture_url } />
           </a>
-          <h3> Accepted: { acceptedCount.length }</h3>
-          <h3> Rejected: { prospects.filter(prospect => { return prospect.accepted == false }).length }</h3>
-          <h3> Remain: { prospects.filter(prospect => { return prospect.accepted == null }).length }</h3>
+          <h3> Accepted: { acceptedCount.length }
+          Rejected: { prospects.filter(prospect => { return prospect.accepted == false }).length }
+          Remain: { prospects.filter(prospect => { return prospect.accepted == null }).length } </h3>
         </div>
         <div>
           <Segment inverted>
