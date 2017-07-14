@@ -37,6 +37,7 @@ const MediaItem = (media) => {
 // labels: (P)rospect (B)rand (C)onsumer
 window.addEventListener('keydown', event => {
   console.log(event.key);
+  console.log('failure at id?', currentProspect.id);
   if (typeof currentProspect.id != 'undefined') {
     switch (event.key) {
       case 'w':
@@ -59,7 +60,6 @@ window.addEventListener('keydown', event => {
           });
           prospects[position].accepted = true;
         }
-        currentProspect = prospects[position];
         setTimeout(() => {
           store.dispatch({
             type: 'REFRESH_USER'
@@ -104,7 +104,6 @@ window.addEventListener('keydown', event => {
           });
           prospects[position].accepted = false;
         }
-        currentProspect = prospects[position];
         setTimeout(() => {
           store.dispatch({
             type: 'REFRESH_USER'
@@ -138,7 +137,6 @@ window.addEventListener('keydown', event => {
           }
         });
         prospects[position].category = 'B';
-        currentProspect = prospects[position];
         setTimeout(() => {
           store.dispatch({
             type: 'REFRESH_USER'
@@ -154,7 +152,6 @@ window.addEventListener('keydown', event => {
           }
         });
         prospects[position].category = 'P';
-        currentProspect = prospects[position];
         setTimeout(() => {
           store.dispatch({
             type: 'REFRESH_USER'
@@ -170,7 +167,6 @@ window.addEventListener('keydown', event => {
           }
         });
         prospects[position].category = 'U';
-        currentProspect = prospects[position];
         setTimeout(() => {
           store.dispatch({
             type: 'REFRESH_USER'
@@ -186,7 +182,6 @@ window.addEventListener('keydown', event => {
           }
         });
         prospects[position].category = 'C';
-        currentProspect = prospects[position];
         setTimeout(() => {
           store.dispatch({
             type: 'REFRESH_USER'
@@ -198,6 +193,8 @@ window.addEventListener('keydown', event => {
           type: 'REFRESH_USER'
         });
         console.log('current prospect:', currentProspect);
+        break;
+      default:
         break;
     }
   }
