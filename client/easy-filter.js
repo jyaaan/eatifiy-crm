@@ -308,7 +308,7 @@ const toggleFilter = () => {
   position = 0;
   prospects = filteredProspects;
   currentProspect = prospects[0];
-    store.dispatch({
+  store.dispatch({
     type: 'LOAD_USER',
     username: currentProspect.username
   })
@@ -373,6 +373,10 @@ const stateTest = () => {
 }
 
 const refreshTest = () => {
+  store.dispatch({
+    type: 'LOAD_USER',
+    username: currentProspect.username
+  })
   store.dispatch({
     type: 'REFRESH_USER'
   })
