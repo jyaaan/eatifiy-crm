@@ -41,14 +41,25 @@ window.addEventListener('keydown', event => {
   if (typeof currentProspect.id != 'undefined') {
     switch (event.key) {
       case 'w':
-        store.dispatch({
-          type: 'UPDATE_PROSPECT',
-          id: currentProspect.id,
-          params: {
-            accepted: true
-          }
-        });
-        prospects[position].accepted = true;
+        if(currentProspect.accepted == true) {
+          store.dispatch({
+            type: 'UPDATE_PROSPECT',
+            id: currentProspect.id,
+            params: {
+              accepted: null
+            }
+          });
+          prospects[position].accepted = null;
+        } else {
+          store.dispatch({
+            type: 'UPDATE_PROSPECT',
+            id: currentProspect.id,
+            params: {
+              accepted: true
+            }
+          });
+          prospects[position].accepted = true;
+        }
         currentProspect = prospects[position];
         setTimeout(() => {
           store.dispatch({
@@ -75,14 +86,25 @@ window.addEventListener('keydown', event => {
         }, 500);
         break;
       case 's':
-        store.dispatch({
-          type: 'UPDATE_PROSPECT',
-          id: currentProspect.id,
-          params: {
-            accepted: false
-          }
-        });
-        prospects[position].accepted = false;
+        if(currentProspect.accepted == false) {
+          store.dispatch({
+            type: 'UPDATE_PROSPECT',
+            id: currentProspect.id,
+            params: {
+              accepted: null
+            }
+          });
+          prospects[position].accepted = null;
+        } else {
+          store.dispatch({
+            type: 'UPDATE_PROSPECT',
+            id: currentProspect.id,
+            params: {
+              accepted: false
+            }
+          });
+          prospects[position].accepted = false;
+        }
         currentProspect = prospects[position];
         setTimeout(() => {
           store.dispatch({
@@ -176,6 +198,7 @@ window.addEventListener('keydown', event => {
         store.dispatch({
           type: 'REFRESH_USER'
         });
+        console.log('current prospect:', currentProspect);
         break;
     }
   }
@@ -197,8 +220,11 @@ const userProfile = user => {
     { label: 'Category', value: currentProspect.category },
     { label: 'Position', value: position + 1 },
     { label: 'Total', value: prospects.length },
-    { label: '', value: currentProspect.accepted ? 'ACCEPTED' : ''}
+    { label: '', value: currentProspect.accepted == true ? 'ACCEPTED' : currentProspect.accepted == null ? '' : 'REJECTED' },
   ]
+  var acceptedCount = prospects.filter(prospect => {
+    return prospect.accepted == true;
+  });
   const profileLink = 'http://www.instagram.com/' + user.username;
   return (
     <div className='ui centered row'>
@@ -207,6 +233,9 @@ const userProfile = user => {
           <a href={ profileLink }>
             <img className='ui small image centered column' src={ user.picture_url } />
           </a>
+          <h3> Accepted: { acceptedCount.length }</h3>
+          <h3> Rejected: { prospects.filter(prospect => { return prospect.accepted == false }).length }</h3>
+          <h3> Remain: { prospects.filter(prospect => { return prospect.accepted == null }).length }</h3>
         </div>
         <div>
           <Segment inverted>
@@ -273,6 +302,7 @@ const refreshTest = () => {
   store.dispatch({
     type: 'REFRESH_USER'
   })
+  console.log('current prospect:', currentProspect);
 }
 
 const pageRender = (user, medias) => {
