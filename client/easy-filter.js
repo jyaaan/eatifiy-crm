@@ -387,25 +387,29 @@ const pageRender = (user, medias) => {
     <div>
       <button
         className="ui button"
-        id='kodiakcakes'
-        onClick= { loadTest }>kodiakcakes</button>
-      <button
-        className="ui button"
-        id='polkadot_pr'
-        onClick= { loadTest }>polkadot_pr</button>
-      <button
-        className="ui button"
-        id='rxbar'
-        onClick= { loadTest }>rxbar</button>
-      <button
-        className="ui button"
-        id='gomacro'
-        onClick= { loadTest }>gomacro</button>
+        id='headlineshirts'
+        onClick= { loadTest }>headlineshirts</button>
       {profile}
       {posts}
     </div>
   )
 }
+      // <button
+      //   className="ui button"
+      //   id='kodiakcakes'
+      //   onClick= { loadTest }>kodiakcakes</button>
+      // <button
+      //   className="ui button"
+      //   id='polkadot_pr'
+      //   onClick= { loadTest }>polkadot_pr</button>
+      // <button
+      //   className="ui button"
+      //   id='rxbar'
+      //   onClick= { loadTest }>rxbar</button>
+      // <button
+      //   className="ui button"
+      //   id='gomacro'
+      //   onClick= { loadTest }>gomacro</button>
 
 const downloadCSV = () => {
   const toSave = prospects.filter(prospect => { return prospect.accepted == true; }).map(prospect => { return prospect.username });
