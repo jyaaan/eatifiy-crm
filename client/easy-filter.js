@@ -207,7 +207,6 @@ var position = 0;
 const userProfile = user => {
   const engagement = ((user.recent_like_count + user.recent_comment_count) / user.recent_post_count / user.follower_count * 100).toFixed(2);
   const items = [
-    { label: 'Username', value: user.username },
     { label: 'Posts', value: (user.post_count).toLocaleString() },
     { label: 'Followers', value: (user.follower_count).toLocaleString() },
     { label: 'Following', value: (user.following_count).toLocaleString() },
@@ -226,9 +225,10 @@ const userProfile = user => {
   return (
     <div className='ui centered row'>
       <div>
-        <div>
+        <div classame='ui centered'>
           <a href={ profileLink }>
             <img className='ui small image centered column' src={ user.picture_url } />
+            <h2>{ user.username }</h2>
           </a>
           <h3><input
             type="checkbox" 
@@ -387,12 +387,8 @@ const pageRender = (user, medias) => {
     <div>
       <button
         className="ui button"
-        id='okokocosmetiques'
-        onClick= { loadTest }>okokocosmetiques</button>
-      <button
-        className="ui button"
-        id='honeymamas'
-        onClick= { loadTest }>honeymamas</button>
+        id='eatpilinuts'
+        onClick= { loadTest }>eatpilinuts</button>
       {profile}
       {posts}
     </div>
