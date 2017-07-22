@@ -120,38 +120,6 @@ var easyFilterTest = {
     bio: 'had dream I was king \n woke up, still king'
   },
   medias: [
-    {
-      media_url: 'https://www.instagram.com/p/BBLzj56w2VV/',
-      like_count: 4593,
-      comment_count: 154,
-      date: 1468209392,
-      caption: 'Spooners!',
-      picture_url: 'https://instagram.fsnc1-4.fna.fbcdn.net/t51.2885-15/e15/12446140_954659371270187_996150836_n.jpg'
-    },
-    {
-      media_url: 'https://www.instagram.com/p/BBLzj56w2VV/',
-      like_count: 4593,
-      comment_count: 154,
-      date: 1468209392,
-      caption: 'Spooners!',
-      picture_url: 'https://instagram.fsnc1-4.fna.fbcdn.net/t51.2885-15/e15/12446140_954659371270187_996150836_n.jpg'
-    },
-    {
-      media_url: 'https://www.instagram.com/p/BBLzj56w2VV/',
-      like_count: 4593,
-      comment_count: 154,
-      date: 1468209392,
-      caption: 'Spooners!',
-      picture_url: 'https://instagram.fsnc1-4.fna.fbcdn.net/t51.2885-15/e15/12446140_954659371270187_996150836_n.jpg'
-    },
-    {
-      media_url: 'https://www.instagram.com/p/BBLzj56w2VV/',
-      like_count: 4593,
-      comment_count: 154,
-      date: 1468209392,
-      caption: 'Spooners!',
-      picture_url: 'https://instagram.fsnc1-4.fna.fbcdn.net/t51.2885-15/e15/12446140_954659371270187_996150836_n.jpg'
-    }
   ]
 }
 
