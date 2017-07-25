@@ -157,12 +157,13 @@ Prospect.prototype.likers = function (params, filterParams) { // can be broken i
               // });
               database.getInfluencers(publicLikerIds, filterParams)
                 .then(influencers => {
-                  const headers = ['id', 'externalId', 'username', 'postCount', 'followerCount', 'followingCount', 'following/follower ratio', 'recentPostCount', 'recentAvLikes', 'recentAvComments', 'engagementRatio', 'postFrequency(Hr)', 'likesCount', 'website'];
+                  const headers = ['id', 'externalId', 'username', 'postCount', 'followerCount', 'followingCount', 'following/follower ratio', 'recentPostCount', 'recentAvLikes', 'recentAvComments', 'engagementRatio', 'commentRatio', 'postFrequency(Hr)', 'likesCount', 'website'];
                   var influencerData = influencers.map(influencer => { // refactor this mess
                     return influencer.id +',' + influencer.external_id + ',' + influencer.username + ',' + influencer.post_count + ',' + influencer.follower_count + ',' + 
                     influencer.following_count + ',' + (influencer.following_count / influencer.follower_count) + ',' + influencer.recent_post_count + ',' + (influencer.recent_like_count / influencer.recent_post_count) + ',' +
-                    (influencer.recent_comment_count / influencer.recent_post_count) + ',' + ((influencer.recent_like_count + influencer.recent_comment_count) / influencer.recent_post_count) / influencer.follower_count + ',' + ((influencer.recent_post_duration / 3600) / influencer.recent_post_count) + ',' +
-                    publicLikerNames.filter(likerName => { return likerName == influencer.username; }).length + ',' + influencer.external_url + ',"' + influencer.bio + '"';
+                    (influencer.recent_comment_count / influencer.recent_post_count) + ',' + ((influencer.recent_like_count + influencer.recent_comment_count) / influencer.recent_post_count) / influencer.follower_count + ',' +
+                    influencer.recent_comment_count / influencer.follower_count + ',' + ((influencer.recent_post_duration / 3600) / influencer.recent_post_count) + ',' +
+                    publicLikerNames.filter(likerName => { return likerName == influencer.username; }).length + ',' + influencer.external_url;
                   });
                   // writing to file
                   store.dispatch({

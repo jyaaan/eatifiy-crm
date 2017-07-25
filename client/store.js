@@ -95,12 +95,19 @@ const enrichCSV = (state = {}, action) => {
         body: JSON.stringify(action.users)
       });
       return state;
+    case 'UPLOAD_PROSPECTS':
+      fetch('/preload-prospects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usernames: action.prospects, primaryUsername: action.primaryUsername })
+      });
+      return state;
     default:
       return state;
   }
 }
 
-const easyFilterTest = {
+var easyFilterTest = {
   user: {
     username: '123chocula',
     follower_count: 2048347,
@@ -113,43 +120,60 @@ const easyFilterTest = {
     bio: 'had dream I was king \n woke up, still king'
   },
   medias: [
-    {
-      media_url: 'https://www.instagram.com/p/BBLzj56w2VV/',
-      like_count: 4593,
-      comment_count: 154,
-      date: 1468209392,
-      caption: 'Spooners!',
-      picture_url: 'https://instagram.fsnc1-4.fna.fbcdn.net/t51.2885-15/e15/12446140_954659371270187_996150836_n.jpg'
-    },
-    {
-      media_url: 'https://www.instagram.com/p/BBLzj56w2VV/',
-      like_count: 4593,
-      comment_count: 154,
-      date: 1468209392,
-      caption: 'Spooners!',
-      picture_url: 'https://instagram.fsnc1-4.fna.fbcdn.net/t51.2885-15/e15/12446140_954659371270187_996150836_n.jpg'
-    },
-    {
-      media_url: 'https://www.instagram.com/p/BBLzj56w2VV/',
-      like_count: 4593,
-      comment_count: 154,
-      date: 1468209392,
-      caption: 'Spooners!',
-      picture_url: 'https://instagram.fsnc1-4.fna.fbcdn.net/t51.2885-15/e15/12446140_954659371270187_996150836_n.jpg'
-    },
-    {
-      media_url: 'https://www.instagram.com/p/BBLzj56w2VV/',
-      like_count: 4593,
-      comment_count: 154,
-      date: 1468209392,
-      caption: 'Spooners!',
-      picture_url: 'https://instagram.fsnc1-4.fna.fbcdn.net/t51.2885-15/e15/12446140_954659371270187_996150836_n.jpg'
-    }
   ]
 }
 
+var scraped = false;
+
 const easyFilter = (state = easyFilterTest, action) => {
   switch (action.type) {
+    case 'LOAD_USER':
+      if (!scraped) {
+        // scraped = true;
+        fetch('/load-user/' + action.username)
+          .then(resp => resp.json())
+          .then(data => {
+            easyFilterTest = data;
+          })
+      }
+      return state;
+    case 'REFRESH_USER':
+      return easyFilterTest;
+    default:
+      return state;
+  }
+}
+
+const prospectListTest = {
+  primaryUsername: '',
+  prospectId: '',
+  position: null
+}
+// state will have username, position
+const prospectList = (state = {}, action) => {
+  switch (action.type) {
+    case 'LOAD_PROSPECTS':
+      return state;
+    case 'NEXT_PROSPECT':
+      return state;
+    case 'PREVIOUS_PROSPECT':
+      return state;
+    case 'ACCEPT_PROSPECT':
+      return state;
+    case 'REJECT_PROSPECT':
+      return state;
+    case 'LABEL_AS_BRAND':
+      return state;
+    case 'LABEL_AS_CONSUMER':
+      return state;
+    case 'UPDATE_PROSPECT':
+      console.log('trying to update prospect:', action);
+      fetch('/update-prospect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: action.id, params: action.params })
+      });
+      return state;
     default:
       return state;
   }
@@ -161,7 +185,8 @@ const reducer = combineReducers({
   prospectParameters,
   prospectProgress,
   enrichCSV,
-  easyFilter
+  easyFilter,
+  prospectList
 });
 
 const store = createStore(reducer);

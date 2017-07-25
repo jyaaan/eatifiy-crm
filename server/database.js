@@ -187,6 +187,17 @@ Database.prototype.getUserByEId = function (eId) {
   });
 }
 
+Database.prototype.getUserByExternalId = function (id) {
+  return new Promise((resolve, reject) => {
+    knex('users')
+      .select('*')
+      .where('external_id', id)
+      .then(result => {
+        resolve(result[0]);
+      });
+  });
+}
+
 Database.prototype.getEIdFromExternalId = function (externalId, tableName) {
   return knex(tableName)
     .where('external_id', externalId)
@@ -233,6 +244,36 @@ Database.prototype.userSuggestionsLoaded = function (username) {
   })
 }
 
+Database.prototype.createProspect = function (primary, username) {
+  const timeNow = new Date(Date.now()).toISOString();
+  const prospect = {
+    username: username,
+    primary_username: primary,
+    created_at: timeNow,
+    updated_at: timeNow,
+    prospect: true,
+    category: 'P'
+  }
+  return knex('prospects')
+    .returning('id')
+    .insert(prospect);
+}
+
+Database.prototype.getProspects = function (primary) {
+  return knex('prospects')
+    .select('*')
+    .where('primary_username', primary)
+    .andWhere('prospect', true)
+}
+
+Database.prototype.updateProspect = function (id, param) {
+  const timeNow = new Date(Date.now()).toISOString();
+  const prospect = Object.assign({}, param, { updated_at: timeNow });
+
+  return knex('prospects')
+    .where('id', id)
+    .update(prospect);
+}
 // MODIFY FUNCTIONS
 
 // USERS

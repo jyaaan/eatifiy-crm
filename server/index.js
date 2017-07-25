@@ -7,6 +7,7 @@ const Database = require('./database').Database;
 const database = new Database();
 const ParseScrape = require('./parse-scrape');
 const Scraper = require('./scraper');
+const ScraperMedia = require('./scraper-media');
 const async = require('async');
 const fs = require('fs');
 const request = require('request');
@@ -31,7 +32,44 @@ io.on('connection', socket => {
   socket.emit('welcome', {message: 'Connection to Truefluence established', id: socket.id});
 });
 
+app.get('/prospect-list/:primaryUsername', (req, res) => {
+  console.log('trying to get prospects of:', req.params.primaryUsername);
+  database.getProspects(req.params.primaryUsername)
+    .then(prospects => {
+      res.json(prospects);
+    })
+})
 
+app.post('/update-prospect', (req, res) => {
+  console.log('attempting to update:', req.body.id, 'params:', req.body.params);
+  const id = req.body.id;
+  database.updateProspect(id, req.body.params)
+    .then(result => {
+      res.send('updated');
+      console.log('prospect updated');
+    })
+})
+
+app.get('/load-user/:username', (req, res) => {
+  loadUser(req.params.username)
+    .then(slug => {
+      res.json(slug);
+    })
+})
+
+const loadUser = (username) => { // now with more resume-ability!
+  console.log('loading', username);
+  return new Promise((resolve, reject) => {
+    ScraperMedia(username)
+      .then(slug => {
+        resolve(slug);
+      })
+      .catch(err => {
+        console.log('ScraperMedia error');
+        reject(err);
+      })
+  });
+}
 
 function spliceDuplicates(users) {
   return users.filter((user, index, collection) => {
@@ -52,6 +90,25 @@ app.get('/discovery', (req, res) => {
 
 app.post('/dispatch', (req, res) => {
   io.emit('dispatch', req.body);
+})
+
+app.post('/preload-prospects', (req, res) => {
+  console.log('loading prospects');
+  const usernames = req.body.usernames;
+  const primaryUsername = req.body.primaryUsername;
+  
+  async.mapSeries(usernames, (username, next) => {
+    database.createProspect(primaryUsername, username)
+      .then(result => {
+        next();
+      })
+      .catch(err => {
+        console.error(err);
+        next();
+      })
+  }, err => {
+    res.send(200, 'loaded');
+  });
 })
 
 app.post('/enrich', (req, res) => {
@@ -89,12 +146,12 @@ app.post('/enrich', (req, res) => {
     // });
     database.getUsers(userIds)
       .then(influencers => {
-        const headers = ['id', 'externalId', 'username', 'postCount', 'followerCount', 'followingCount', 'following/follower ratio', 'recentPostCount', 'recentAvLikes', 'recentAvComments', 'engagementRatio', 'postFrequency(Hr)', 'website', 'bio'];
+        const headers = ['id', 'externalId', 'username', 'postCount', 'followerCount', 'followingCount', 'following/follower ratio', 'recentPostCount', 'recentAvLikes', 'recentAvComments', 'engagementRatio', 'postFrequency(Hr)', 'website'];
         var influencerData = influencers.map(influencer => { // refactor this mess
           return influencer.id +',' + influencer.external_id + ',' + influencer.username + ',' + influencer.post_count + ',' + influencer.follower_count + ',' + 
           influencer.following_count + ',' + (influencer.following_count / influencer.follower_count) + ',' + influencer.recent_post_count + ',' + (influencer.recent_like_count / influencer.recent_post_count) + ',' +
           (influencer.recent_comment_count / influencer.recent_post_count) + ',' + (influencer.recent_like_count / influencer.recent_post_count) / influencer.follower_count + ',' + ((influencer.recent_post_duration / 3600) / influencer.recent_post_count) + ',' +
-          influencer.external_url + ',"' + influencer.bio + '"';
+          influencer.external_url;
         });
         fileHandler.writeToCSV(influencerData, 'csv-enrich-data', headers)
           .then(result => {

@@ -57,6 +57,9 @@ const handleFile = event => {
     console.log(testArray.length);
     testArray.splice(-1, 1);
     console.log(testArray);
+    var latestArray = testArray.map(arr => {
+      return arr.replace('\r', '');
+    })
     // if (data && data.length > 0) {
     //   alert('Imported' + ' ' + data.length + ' ' + 'rows.');
     //   console.log(data);
@@ -64,10 +67,15 @@ const handleFile = event => {
     // reader.onerror = function () {
     //   alert('Unable to read' + ' ' + file.fileName);
     // }
+    // store.dispatch({
+    //   type: 'ENRICH_CSV',
+    //   users: testArray
+    // })
     store.dispatch({
-      type: 'ENRICH_CSV',
-      users: testArray
-    })
+      type: 'UPLOAD_PROSPECTS',
+      prospects: latestArray,
+      primaryUsername: store.getState().usernameInput
+    });
   }
 }
 

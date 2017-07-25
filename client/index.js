@@ -6,6 +6,7 @@ const UserProfile = require('./user-profile');
 const ProspectParameters = require('./prospect-parameters');
 const ProspectProgress = require('./prospect-progress');
 const EasyFilter = require('./easy-filter');
+const ProspectList = require('./prospect-list');
 
 var io = require('socket.io-client');
 var socket = io('/');
@@ -22,16 +23,16 @@ const render = () => {
   const state = store.getState();
   ReactDOM.render(
     <div className='ui container'>
-      <UsernameInput text={ state.usernameInput } />
-      <UserProfile { ...state.userProfile } />
-      <ProspectParameters />
-      <ProspectProgress { ...state.prospectProgress } />
       <EasyFilter { ...state.easyFilter } />
     </div>,
     document.querySelector('#container')
   );
 }
-
+      // <UsernameInput text={ state.usernameInput } />
+      // <UserProfile { ...state.userProfile } />
+      // <ProspectParameters />
+      // <ProspectList { ...state.prospectList } />
+      // <ProspectProgress { ...state.prospectProgress } />
 store.subscribe(render);
 
 render();
