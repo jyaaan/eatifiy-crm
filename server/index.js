@@ -45,6 +45,7 @@ app.post('/update-prospect', (req, res) => {
   const id = req.body.id;
   database.updateProspect(id, req.body.params)
     .then(result => {
+      res.send('updated');
       console.log('prospect updated');
     })
 })
@@ -145,12 +146,12 @@ app.post('/enrich', (req, res) => {
     // });
     database.getUsers(userIds)
       .then(influencers => {
-        const headers = ['id', 'externalId', 'username', 'postCount', 'followerCount', 'followingCount', 'following/follower ratio', 'recentPostCount', 'recentAvLikes', 'recentAvComments', 'engagementRatio', 'postFrequency(Hr)', 'website', 'bio'];
+        const headers = ['id', 'externalId', 'username', 'postCount', 'followerCount', 'followingCount', 'following/follower ratio', 'recentPostCount', 'recentAvLikes', 'recentAvComments', 'engagementRatio', 'postFrequency(Hr)', 'website'];
         var influencerData = influencers.map(influencer => { // refactor this mess
           return influencer.id +',' + influencer.external_id + ',' + influencer.username + ',' + influencer.post_count + ',' + influencer.follower_count + ',' + 
           influencer.following_count + ',' + (influencer.following_count / influencer.follower_count) + ',' + influencer.recent_post_count + ',' + (influencer.recent_like_count / influencer.recent_post_count) + ',' +
           (influencer.recent_comment_count / influencer.recent_post_count) + ',' + (influencer.recent_like_count / influencer.recent_post_count) / influencer.follower_count + ',' + ((influencer.recent_post_duration / 3600) / influencer.recent_post_count) + ',' +
-          influencer.external_url + ',"' + influencer.bio + '"';
+          influencer.external_url;
         });
         fileHandler.writeToCSV(influencerData, 'csv-enrich-data', headers)
           .then(result => {

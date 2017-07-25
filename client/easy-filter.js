@@ -36,9 +36,7 @@ const MediaItem = (media) => {
 
 // labels: (P)rospect (B)rand (C)onsumer
 window.addEventListener('keydown', event => {
-  console.log(event.key);
-  console.log('failure at id?', currentProspect.id);
-  if (typeof currentProspect.id != 'undefined') {
+  if (currentProspect) {
     switch (event.key) {
       case 'w':
         if(currentProspect.accepted == true) {
@@ -387,8 +385,8 @@ const pageRender = (user, medias) => {
     <div>
       <button
         className="ui button"
-        id='eatpilinuts'
-        onClick= { loadTest }>eatpilinuts</button>
+        id='pacificissue'
+        onClick= { loadTest }>pacificissue</button>
       {profile}
       {posts}
     </div>
