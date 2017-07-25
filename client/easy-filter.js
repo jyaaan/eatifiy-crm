@@ -385,8 +385,29 @@ const pageRender = (user, medias) => {
     <div>
       <button
         className="ui button"
+<<<<<<< Updated upstream
         id='pacificissue'
         onClick= { loadTest }>pacificissue</button>
+=======
+        id='naplesbayresort'
+        onClick= { loadTest }>naplesbayresort</button>
+      <button
+        className="ui button"
+        id='headlineshirts'
+        onClick= { loadTest }>headlineshirts</button>
+      <button
+        className="ui button"
+        id='snorgtees'
+        onClick= { loadTest }>snorgtees</button>
+      <button
+        className="ui button"
+        id='crazydogtshirts'
+        onClick= { loadTest }>crazydogtshirts</button>
+      <button
+        className="ui button"
+        id='moneylinetees'
+        onClick= { loadTest }>moneylinetees</button>
+>>>>>>> Stashed changes
       {profile}
       {posts}
     </div>
