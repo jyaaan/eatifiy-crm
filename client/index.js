@@ -23,14 +23,14 @@ const render = () => {
   const state = store.getState();
   ReactDOM.render(
     <div className='ui container'>
+      <UsernameInput text={ state.usernameInput } />
+      <UserProfile { ...state.userProfile } />
+      <ProspectParameters />
       <EasyFilter { ...state.easyFilter } />
     </div>,
     document.querySelector('#container')
   );
 }
-      // <UsernameInput text={ state.usernameInput } />
-      // <UserProfile { ...state.userProfile } />
-      // <ProspectParameters />
       // <ProspectList { ...state.prospectList } />
       // <ProspectProgress { ...state.prospectProgress } />
 store.subscribe(render);

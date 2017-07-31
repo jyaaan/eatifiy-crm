@@ -45,11 +45,7 @@ app.post('/update-prospect', (req, res) => {
   const id = req.body.id;
   database.updateProspect(id, req.body.params)
     .then(result => {
-<<<<<<< Updated upstream
-      res.send('updated');
-=======
       res.send('clear');
->>>>>>> Stashed changes
       console.log('prospect updated');
     })
 })
