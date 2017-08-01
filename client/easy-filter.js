@@ -223,7 +223,7 @@ const userProfile = user => {
   return (
     <div className='ui centered row'>
       <div>
-        <div classame='ui centered'>
+        <div className='ui centered'>
           <a href={ profileLink }>
             <img className='ui small image centered column' src={ user.picture_url } />
             <h2>{ user.username }</h2>

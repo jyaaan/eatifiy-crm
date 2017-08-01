@@ -32,6 +32,14 @@ io.on('connection', socket => {
   socket.emit('welcome', {message: 'Connection to Truefluence established', id: socket.id});
 });
 
+app.get('/brands', (req, res) => {
+  console.log('exporting brands');
+  database.getBrands()
+    .then(brands => {
+      res.json(brands);
+    })
+})
+
 app.get('/prospect-list/:primaryUsername', (req, res) => {
   console.log('trying to get prospects of:', req.params.primaryUsername);
   database.getProspects(req.params.primaryUsername)

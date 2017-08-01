@@ -38,6 +38,12 @@ function Database() {
 
 // QUERY FUNCTIONS
 
+Database.prototype.getBrands = function () {
+  return knex('prospects')
+    .select('username')
+    .where('category', 'B')
+}
+
 Database.prototype.getConsumers = function (userEIds) {
   const consumers = [];
   return new Promise((resolve, reject) => {

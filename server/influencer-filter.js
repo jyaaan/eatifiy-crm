@@ -5,24 +5,24 @@ class InfluencerFilter { // comments, please.
 
     this.follower_count = follower_count;
     this.follower_count.filter = function(user) {
-      return eval(user.follower_count, this);
+      return evaluate(user.follower_count, this);
     }
 
     this.following_count = following_count;
     this.following_count.filter = function(user) {
-      return eval(user.following_count, this);
+      return evaluate(user.following_count, this);
     }
 
     this.external_url = external_url;
     this.external_url.filter = function(user) {
       const webCount = user.external_url == '' ? 0 : 1;
-      return eval(webCount, this);
+      return evaluate(webCount, this);
     }
 
     this.ratio = ratio;
     this.ratio.filter = function(user) {
       const userRatio = user.following_count / user.follower_count;
-      return eval(userRatio, this);
+      return evaluate(userRatio, this);
     }
 
     this.terms = terms;
@@ -41,7 +41,7 @@ class InfluencerFilter { // comments, please.
   }
 }
 
-const eval = (val, paramObj) => { // fix null handling once DO server is functional.
+const evaluate = (val, paramObj) => { // fix null handling once DO server is functional.
   if ((typeof paramObj.max != 'undefined' && paramObj.max != null) && val > paramObj.max) {
     return false;
   }
