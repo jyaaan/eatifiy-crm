@@ -36,6 +36,7 @@ app.get('/brands', (req, res) => {
   console.log('exporting brands');
   database.getBrands()
     .then(brands => {
+      // console.log(brands);
       res.json(brands);
     })
 })

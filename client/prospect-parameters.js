@@ -85,7 +85,11 @@ const exportBrands = event => {
   fetch('/brands')
     .then(resp => resp.json())
     .then(brands => {
-      downloadCSV(brands)
+      // console.log(brands[0]);
+      const allBrands = brands.map(brand => {
+        return brand.username;
+      })
+      downloadCSV(allBrands);
     })
 }
 
