@@ -12,7 +12,7 @@ function tfScore(user, params) {
   const postFrequency = ((user.recent_post_duration / 3600) / user.recent_post_count);
 
   score += graduatedScore(user.post_count, 60, 120, 4000, 15);
-  score += graduatedScore(user.follower_count, 10000, 80000, 250000, 20);
+  score += graduatedScore(user.follower_count, 5000, 40000, 250000, 20);
   score += graduatedScore(ffRatio, 0.0005, 0.1, 0.5, 20);
   score += graduatedScore(engagementRatio, 0.00, 0.4, 0.6, 30);
   score += graduatedScore(postFrequency, 6, 72, 300, 15);

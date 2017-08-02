@@ -16,9 +16,14 @@ function Scraper(username) {
       });
 
       res.on('end', () => {
-        var dataJSON = JSON.parse(dataQueue);
-        const { user } = ParseScrape(dataJSON);
-        resolve(user);
+        try {
+          var dataJSON = JSON.parse(dataQueue); // add exception handling
+          const { user } = ParseScrape(dataJSON);
+          resolve(user);
+        }
+        catch(err){
+          reject(err);
+        }
       });
 
     }).on('error', err => {

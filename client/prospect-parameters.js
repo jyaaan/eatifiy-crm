@@ -68,15 +68,15 @@ const handleFile = event => {
     // reader.onerror = function () {
     //   alert('Unable to read' + ' ' + file.fileName);
     // }
-    store.dispatch({
-      type: 'ENRICH_CSV',
-      users: testArray
-    })
     // store.dispatch({
-    //   type: 'UPLOAD_PROSPECTS',
-    //   prospects: latestArray,
-    //   primaryUsername: store.getState().usernameInput
-    // });
+    //   type: 'ENRICH_CSV',
+    //   users: testArray
+    // })
+    store.dispatch({
+      type: 'UPLOAD_PROSPECTS',
+      prospects: latestArray,
+      primaryUsername: store.getState().usernameInput
+    });
   }
 }
 
@@ -268,7 +268,7 @@ const ProspectParameters = props => {
     <div className="ui form">
       <div className="inline field">
         <div className="ui checkbox">
-          <Input
+          <input
             type="checkbox"
             id="min-follower_count-check"
             value="min-follower_count"
@@ -276,13 +276,13 @@ const ProspectParameters = props => {
           <label>Min Followers</label>
         </div>
         <div className="ui input">
-          <Input type="text"
+          <input type="text"
             placeholder="5,000"
             id="min-follower_count"
             onChange={ handleInput } />
         </div>
         <div className="ui checkbox">
-          <Input
+          <input
             type="checkbox"
             id="max-follower_count-check"
             value="max-follower_count"
@@ -290,7 +290,7 @@ const ProspectParameters = props => {
           <label>Max Followers</label>
         </div>
         <div className="ui input">
-          <Input type="text"
+          <input type="text"
             placeholder="250,000"
             id="max-follower_count"
             onChange={ handleInput } />
