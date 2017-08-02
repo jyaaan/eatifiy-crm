@@ -67,15 +67,15 @@ const handleFile = event => {
     // reader.onerror = function () {
     //   alert('Unable to read' + ' ' + file.fileName);
     // }
-    // store.dispatch({
-    //   type: 'ENRICH_CSV',
-    //   users: testArray
-    // })
     store.dispatch({
-      type: 'UPLOAD_PROSPECTS',
-      prospects: latestArray,
-      primaryUsername: store.getState().usernameInput
-    });
+      type: 'ENRICH_CSV',
+      users: testArray
+    })
+    // store.dispatch({
+    //   type: 'UPLOAD_PROSPECTS',
+    //   prospects: latestArray,
+    //   primaryUsername: store.getState().usernameInput
+    // });
   }
 }
 

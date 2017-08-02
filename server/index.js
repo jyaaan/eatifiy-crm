@@ -45,7 +45,7 @@ app.post('/update-prospect', (req, res) => {
   const id = req.body.id;
   database.updateProspect(id, req.body.params)
     .then(result => {
-      res.send('updated');
+      res.send('clear');
       console.log('prospect updated');
     })
 })
