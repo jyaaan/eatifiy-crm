@@ -47,6 +47,14 @@ io.on('connection', socket => {
 //   }
 // }
 
+
+app.post('/prospect', (req, res) => {
+  console.log('incoming prospecting request');
+  console.log('JSON Body:', req.body);
+  res.json('received');
+  prospect.likers(req.body.username, req.body);
+})
+
 // what's being processed.
 // fetch('/ui-analyze', {
 //   method: 'POST',
@@ -54,11 +62,34 @@ io.on('connection', socket => {
 //   body: JSON.stringify(state)
 // })
 
-app.post('/prospect', (req, res) => {
-  console.log('incoming prospecting request');
-  console.log('JSON Body:', req.body);
-  res.json('received');
-  prospect.likers(req.body.username, req.body);
+app.put('/test-url', (req, res) => {
+  console.log('test-url received');
+  console.log('csv contents:', req.body);
+})
+app.post('/test-transmission', (req, res) => {
+  console.log('testing csv send');
+  var lineArray = [];
+  var rows = [
+    ['external_id', 'username', 'score'],
+    ['123', 'john', '101']
+  ];
+  var processRow = function (row) {
+    var finalVal = '';
+    finalVal += row;
+    // finalVal += ',';
+    return finalVal + '\n';
+  };
+  var csvFile = '';
+  rows.map(row => {
+    csvFile += processRow(row);
+  })
+  console.log(csvFile);
+  res.send(csvFile);
+  fetch('192.241.192.44:5760/test-url', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/csv'},
+    body: csvFile
+  })
 })
 
 app.post('/ui-analyze', (req, res) => {
