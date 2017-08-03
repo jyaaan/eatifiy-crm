@@ -47,11 +47,30 @@ io.on('connection', socket => {
 //   }
 // }
 
+// what's being processed.
+// fetch('/ui-analyze', {
+//   method: 'POST',
+//   headers: { 'Content-Type': 'application/json' },
+//   body: JSON.stringify(state)
+// })
 
 app.post('/prospect', (req, res) => {
   console.log('incoming prospecting request');
   console.log('JSON Body:', req.body);
-  res.send('received');
+  res.json('received');
+  prospect.likers(req.body.username, req.body);
+})
+
+app.post('/ui-analyze', (req, res) => {
+  res.send('request received');
+  console.log('type:', req.body.type);
+  console.log('parameters:', req.body.parameters);
+  const params = {
+    username: req.body.type.username,
+    days: req.body.type.days
+  };
+  const filterParams = req.body.parameters;
+  prospect.likers(params, filterParams);
 })
 
 app.get('/brands', (req, res) => {
@@ -235,17 +254,6 @@ app.get('/analyze/:username/:days', (req, res) => {
   prospect.likers(params);
 });
 
-app.post('/ui-analyze', (req, res) => {
-  res.send('request received');
-  console.log('type:', req.body.type);
-  console.log('parameters:', req.body.parameters);
-  const params = {
-    username: req.body.type.username,
-    days: req.body.type.days
-  };
-  const filterParams = req.body.parameters;
-  prospect.likers(params, filterParams);
-})
 
 app.get('/get-me', (req, res) => {
   res.send('kay');
