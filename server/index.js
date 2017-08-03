@@ -32,6 +32,28 @@ io.on('connection', socket => {
   socket.emit('welcome', {message: 'Connection to Truefluence established', id: socket.id});
 });
 
+
+// incoming JSON template.
+// {
+//   username: “asddafs”,
+//   upload_url: “https://app.truefluence.io/users/{USERNAME}/prospects/{ID}.csv?token=ASDF”
+//   follower_count: { min: 234, ideal: 234, max:234 },
+//   follower_following_ratio: { min: 234, ideal: 234, max:234 },
+//   recent_average_like_rate: { min: 234, ideal: 234, max:234 },
+//   recent_average_comment_rate: { min: 234, ideal: 234, max:234 },
+//   terms: {
+//     aligned: [“asdf”, “asdf” …],
+//       misaligned: […]
+//   }
+// }
+
+
+app.post('/prospect', (req, res) => {
+  console.log('incoming prospecting request');
+  console.log('JSON Body:', req.body);
+  res.send('received');
+})
+
 app.get('/brands', (req, res) => {
   console.log('exporting brands');
   database.getBrands()
@@ -172,23 +194,6 @@ app.post('/enrich', (req, res) => {
       })
   });
 })
-
-// Marked for deletion
-// app.get('/tf-test', (req, res) => {
-//   res.send('truefluence test');
-//   database.getTFFormatUsers()
-//     .then(users => {
-//       request.post(
-//         'http://192.168.0.106:9292/users/sourtoe/favorites/batch',
-//         { json: {instagram_users: users} },
-//         (error, res, body) => {
-//           if (!error && res.statusCode == 200) {
-//             console.log(body);
-//           }
-//         }
-//       );
-//     });
-// })
 
 app.get('/mentions/:username/:mention', (req, res) => {
   const focusUsername = req.params.username;
