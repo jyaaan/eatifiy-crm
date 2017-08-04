@@ -65,13 +65,14 @@ app.post('/prospect', (req, res) => {
 app.put('/test-url', (req, res) => {
   console.log('test-url received');
   console.log('csv contents:', req.body);
+  res.send('thanks');
 })
 app.post('/test-transmission', (req, res) => {
   console.log('testing csv send');
   var lineArray = [];
   var rows = [
     ['external_id', 'username', 'score'],
-    ['123', 'john', '101']
+    ['42583188', 'vegancuts', '50']
   ];
   var processRow = function (row) {
     var finalVal = '';
@@ -84,13 +85,26 @@ app.post('/test-transmission', (req, res) => {
     csvFile += processRow(row);
   })
   console.log(csvFile);
+  signal(csvFile);
   res.send(csvFile);
-  fetch('192.241.192.44:5760/test-url', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/csv'},
-    body: csvFile
-  })
 })
+
+const signal = csvFile => {
+  //http://localhost:3000/users/sourtoe/prospects/14.csv?token=7qgU9Qha8KzuKZVv2Pj8pzd7
+  // 'http://192.241.192.44:5760/test-url'
+  var options = {
+    url: 'http://192.168.0.107:80/users/sourtoe/prospects/14.csv?token=7qgU9Qha8KzuKZVv2Pj8pzd7',
+    method: 'PUT',
+    headers: [
+      {
+      name: 'Content-Type',
+      value: 'application/csv'
+      }
+    ],
+    body: csvFile
+  };
+  request(options);
+}
 
 app.post('/ui-analyze', (req, res) => {
   res.send('request received');
