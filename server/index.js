@@ -637,7 +637,7 @@ const queueFollowing = (following, primaryUserEId) => {
 }
 
 
-const PORT = 5760;
+const PORT = 80;
 
 http.listen(PORT, () => {
   console.log('listening on port:', PORT);

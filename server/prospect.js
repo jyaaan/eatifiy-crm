@@ -99,88 +99,88 @@ Prospect.prototype.likers = function (username, params) { // can be broken into 
           retrieve();
         })
     })
-  // scrapeSave(username, true)
-  //   .then(scraped => {
-  //     console.log(scraped);
-  //     ig.getMedias(scraped.external_id, currentSession.session, lookback)
-  //       .then(medias => {
-  //         console.log('medias count:', medias.length);
-  //         let mediaCounter = 0;
-  //         async.mapSeries(medias, (media, next) => {
-  //           mediaCounter++;
-  //           ig.getLikers(media, currentSession.session)
-  //             .then(likers => {
-  //               arrLikers = arrLikers.concat(...likers);
-  //               setTimeout(() => {
-  //                 next();
-  //               }, 1000)
-  //             })
-  //             .catch(err => {
-  //               setTimeout(() => {
-  //                 next();
-  //               })
-  //             })
-  //         }, err => {
-  //           console.log('likers count:', arrLikers.length);
+  scrapeSave(username, true)
+    .then(scraped => {
+      console.log(scraped);
+      ig.getMedias(scraped.external_id, currentSession.session, lookback)
+        .then(medias => {
+          console.log('medias count:', medias.length);
+          let mediaCounter = 0;
+          async.mapSeries(medias, (media, next) => {
+            mediaCounter++;
+            ig.getLikers(media, currentSession.session)
+              .then(likers => {
+                arrLikers = arrLikers.concat(...likers);
+                setTimeout(() => {
+                  next();
+                }, 1000)
+              })
+              .catch(err => {
+                setTimeout(() => {
+                  next();
+                })
+              })
+          }, err => {
+            console.log('likers count:', arrLikers.length);
 
-  //           var likerNames = arrLikers.map(liker => { return liker.username; });
-  //           var dedupedLikers = spliceDuplicates(likerNames);
-  //           console.log('after dedupe:', dedupedLikers.length);
+            var likerNames = arrLikers.map(liker => { return liker.username; });
+            var dedupedLikers = spliceDuplicates(likerNames);
+            console.log('after dedupe:', dedupedLikers.length);
 
-  //           var publicLikers = arrLikers.filter(liker => { return liker.isPrivate == false; });
-  //           publicLikerNames = publicLikers.map(liker => { return liker.username; });
-  //           const dedupedPublicLikers = spliceDuplicates(publicLikerNames); // this will be useful for monitoring progress
-  //           console.log('deduped public only:', dedupedPublicLikers.length);
-  //           async.mapSeries(dedupedPublicLikers, (liker, followup) => {
-  //             counter++;
-  //             console.log((counter / dedupedPublicLikers.length * 100).toFixed(2));
-  //             scrapeSave(liker)
-  //               .then(user => {
-  //                 publicLikerIds.push(user.id);
-  //                 followup();
-  //               })
-  //               .catch(err => { // light-weight error handling. not very effective. read up on try/catch and implement further upstream
-  //                 console.log('error detected, trying again...');
-  //                 console.error(err);
-  //                 scrapeSave(liker)
-  //                   .then(likerIds => {
-  //                     console.log('second attempt successful');
-  //                     publicLikerIds.push(likerIds.id);
-  //                     followup();
-  //                   })
-  //                   .catch(err => {
-  //                     console.log('second error, continuing');
-  //                     followup();
-  //                   })
-  //               })
-  //           }, err => {
-  //             database.getInfluencers(publicLikerIds, filterParams)
-  //               .then(influencers => {
-  //                 const headers = ['id', 'externalId', 'username', 'postCount', 'TFScore', 'bullshitScore', 'followerCount', 'followingCount', 'following/follower ratio', 'recentPostCount', 'recentAvLikes', 'recentAvComments', 'likeRatio', 'commentRatio', 'postFrequency(Hr)', 'likesCount', 'website'];
-  //                 var influencerData = influencers.map(influencer => { // refactor this mess
-  //                   return influencer.id +',' + influencer.external_id + ',' + influencer.username + ',' + influencer.post_count + ',' + 
-  //                   tfScore(influencer, { followers: 'hi', posts: 'hello'}) + ',' + bullshit(influencer) + ',' +
-  //                   influencer.follower_count + ',' + 
-  //                   influencer.following_count + ',' + (influencer.following_count / influencer.follower_count) + ',' + influencer.recent_post_count + ',' + (influencer.recent_like_count / influencer.recent_post_count) + ',' +
-  //                   (influencer.recent_comment_count / influencer.recent_post_count) + ',' + ((influencer.recent_like_count) / influencer.recent_post_count) / influencer.follower_count + ',' +
-  //                   (influencer.recent_comment_count / influencer.recent_post_count) / influencer.follower_count + ',' + ((influencer.recent_post_duration / 3600) / influencer.recent_post_count) + ',' +
-  //                   publicLikerNames.filter(likerName => { return likerName == influencer.username; }).length + ',' + influencer.external_url;
-  //                 });
-  //                 fileHandler.writeToCSV(influencerData, username + '-influencer-data', headers)
-  //                   .then(result => {
-  //                   })
-  //               })
-  //               .catch(err => {
-  //                 console.log('getInfluencers failure');
-  //                 console.error(err);
-  //               })
-  //           });
-  //         })
-  //       });
-  //   })
-  //   .catch(err => {
-  //     console.error(err);
-  //   });
+            var publicLikers = arrLikers.filter(liker => { return liker.isPrivate == false; });
+            publicLikerNames = publicLikers.map(liker => { return liker.username; });
+            const dedupedPublicLikers = spliceDuplicates(publicLikerNames); // this will be useful for monitoring progress
+            console.log('deduped public only:', dedupedPublicLikers.length);
+            async.mapSeries(dedupedPublicLikers, (liker, followup) => {
+              counter++;
+              console.log((counter / dedupedPublicLikers.length * 100).toFixed(2));
+              scrapeSave(liker)
+                .then(user => {
+                  publicLikerIds.push(user.id);
+                  followup();
+                })
+                .catch(err => { // light-weight error handling. not very effective. read up on try/catch and implement further upstream
+                  console.log('error detected, trying again...');
+                  console.error(err);
+                  scrapeSave(liker)
+                    .then(likerIds => {
+                      console.log('second attempt successful');
+                      publicLikerIds.push(likerIds.id);
+                      followup();
+                    })
+                    .catch(err => {
+                      console.log('second error, continuing');
+                      followup();
+                    })
+                })
+            }, err => {
+              database.getInfluencers(publicLikerIds, filterParams)
+                .then(influencers => {
+                  const headers = ['id', 'externalId', 'username', 'postCount', 'TFScore', 'bullshitScore', 'followerCount', 'followingCount', 'following/follower ratio', 'recentPostCount', 'recentAvLikes', 'recentAvComments', 'likeRatio', 'commentRatio', 'postFrequency(Hr)', 'likesCount', 'website'];
+                  var influencerData = influencers.map(influencer => { // refactor this mess
+                    return influencer.id +',' + influencer.external_id + ',' + influencer.username + ',' + influencer.post_count + ',' + 
+                    tfScore(influencer, { followers: 'hi', posts: 'hello'}) + ',' + bullshit(influencer) + ',' +
+                    influencer.follower_count + ',' + 
+                    influencer.following_count + ',' + (influencer.following_count / influencer.follower_count) + ',' + influencer.recent_post_count + ',' + (influencer.recent_like_count / influencer.recent_post_count) + ',' +
+                    (influencer.recent_comment_count / influencer.recent_post_count) + ',' + ((influencer.recent_like_count) / influencer.recent_post_count) / influencer.follower_count + ',' +
+                    (influencer.recent_comment_count / influencer.recent_post_count) / influencer.follower_count + ',' + ((influencer.recent_post_duration / 3600) / influencer.recent_post_count) + ',' +
+                    publicLikerNames.filter(likerName => { return likerName == influencer.username; }).length + ',' + influencer.external_url;
+                  });
+                  fileHandler.writeToCSV(influencerData, username + '-influencer-data', headers)
+                    .then(result => {
+                    })
+                })
+                .catch(err => {
+                  console.log('getInfluencers failure');
+                  console.error(err);
+                })
+            });
+          })
+        });
+    })
+    .catch(err => {
+      console.error(err);
+    });
 }
 
 const getCandidates = (media, params, arrLikers) => {
