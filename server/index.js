@@ -48,12 +48,12 @@ io.on('connection', socket => {
 // }
 
 
-// app.post('/prospect', (req, res) => {
-//   console.log('incoming prospecting request');
-//   console.log('JSON Body:', req.body);
-//   res.json('received');
-//   prospect.likers(req.body.username, req.body);
-// })
+app.post('/prospect', (req, res) => {
+  console.log('incoming prospecting request');
+  console.log('JSON Body:', req.body);
+  res.json('received');
+  prospect.likers(req.body.username, req.body);
+})
 
 // what's being processed.
 // fetch('/ui-analyze', {
@@ -67,28 +67,28 @@ app.put('/test-url', (req, res) => {
   console.log('csv contents:', req.body);
   res.send('thanks');
 })
-app.post('/prospect', (req, res) => {
-  console.log('testing csv send');
-  var lineArray = [];
-  var rows = [
-    ['external_id', 'username', 'score'],
-    ['42583188', 'vegancuts', '50'],
-    ['2144739358', 'ivoryclasp', '60']
-  ];
-  var processRow = function (row) {
-    var finalVal = '';
-    finalVal += row;
-    // finalVal += ',';
-    return finalVal + '\n';
-  };
-  var csvFile = '';
-  rows.map(row => {
-    csvFile += processRow(row);
-  })
-  console.log(csvFile);
-  signal(csvFile, req.body.upload_url);
-  res.send(csvFile);
-})
+// app.post('/prospect', (req, res) => {
+//   console.log('testing csv send');
+//   var lineArray = [];
+//   var rows = [
+//     ['external_id', 'username', 'score'],
+//     ['42583188', 'vegancuts', '50'],
+//     ['2144739358', 'ivoryclasp', '60']
+//   ];
+//   var processRow = function (row) {
+//     var finalVal = '';
+//     finalVal += row;
+//     // finalVal += ',';
+//     return finalVal + '\n';
+//   };
+//   var csvFile = '';
+//   rows.map(row => {
+//     csvFile += processRow(row);
+//   })
+//   console.log(csvFile);
+//   signal(csvFile, req.body.upload_url);
+//   res.send(csvFile);
+// })
 
 const signal = (csvFile, url) => {
   //http://localhost:3000/users/sourtoe/prospects/14.csv?token=7qgU9Qha8KzuKZVv2Pj8pzd7
