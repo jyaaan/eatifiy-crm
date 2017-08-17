@@ -297,7 +297,6 @@ Database.prototype.createUser = function (user) {
 Database.prototype.updateUser = function (user) {
   const timeNow = new Date(Date.now()).toISOString();
   user.updated_at = timeNow;
-
   return knex('users')
     .where('username', user.username)
     .returning('id')

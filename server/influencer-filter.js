@@ -18,32 +18,40 @@ class InfluencerFilter { // comments, please.
             terms, recent_average_comment_rate,
             recent_average_like_rate } = settings;
 
-    this.follower_count = follower_count;
-    this.follower_count.filter = function(user) {
-      return evaluate(user.follower_count, this);
+    if (follower_count) {
+      this.follower_count = follower_count;
+      this.follower_count.filter = function(user) {
+        return evaluate(user.follower_count, this);
+      }
     }
 
-    this.follower_following_ratio = follower_following_ratio;
-    this.follower_following_ratio.filter = function(user) {
-      const userRatio = user.following_count / user.follower_count;
-      return evaluate(userRatio, this);
+    if (follower_following_ratio) {
+      this.follower_following_ratio = follower_following_ratio;
+      this.follower_following_ratio.filter = function(user) {
+        const userRatio = user.follower_count / user.following_count;
+        return evaluate(userRatio, this);
+      }
     }
 
     this.terms = terms;
     this.terms.filter = function(user) {
-      return matchTerms(this.misaligned, user.bio) > 0
+      return !(matchTerms(this.misaligned, user.bio) > 0);
     }
 
-    this.recent_average_comment_rate = recent_average_comment_rate;
-    this.recent_average_comment_rate.filter = function(user) {
-      const avCommentCount = user.recent_comment_count / user.recent_post_count;
-      return evaluate(avCommentCount, this);
+    if (recent_average_comment_rate){
+      this.recent_average_comment_rate = recent_average_comment_rate;
+      this.recent_average_comment_rate.filter = function(user) {
+        const avCommentCount = user.recent_comment_count / user.recent_post_count;
+        return evaluate(avCommentCount, this);
+      }
     }
 
-    this.recent_average_like_rate = recent_average_like_rate;
-    this.recent_average_like_rate.filter = function(user) {
-      const avLikeCount = user.recent_like_count / user.recent_post_count;
-      return evaluate(avLikeCount, this);
+    if (recent_average_comment_rate) {
+      this.recent_average_like_rate = recent_average_like_rate;
+      this.recent_average_like_rate.filter = function(user) {
+        const avLikeCount = user.recent_like_count / user.recent_post_count;
+        return evaluate(avLikeCount, this);
+      }
     }
   }
 
@@ -66,6 +74,7 @@ class InfluencerFilter { // comments, please.
       }
     }
     if (user.isValid) {
+      console.log('does this happen?');
       user.score = tfScore(user, this);
       user.termMatch = matchTerms(this.terms.aligned, user.bio);
     }
@@ -74,10 +83,16 @@ class InfluencerFilter { // comments, please.
 }
 
 const matchTerms = (terms, text) => {
+  // console.log('terms to query:', terms);
   var count = 0;
-  const searchText = text.toLowerCase();
-  for (let term in terms) {
-    if (searchText.indexOf(term.toLowerCase()) != -1) {
+  var searchText = '';
+  if (typeof text != 'undefined') {
+    searchText = text.toLowerCase();
+  }
+  for (var term in terms) {
+    // console.log('querying:', terms[term]);
+    if (searchText.indexOf(terms[term].toLowerCase()) != -1) {
+      // console.log('found match for', terms[term]);
       count++;
     }
   }
