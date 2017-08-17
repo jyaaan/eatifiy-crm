@@ -46,7 +46,7 @@ class InfluencerFilter { // comments, please.
       }
     }
 
-    if (recent_average_comment_rate) {
+    if (recent_average_like_rate) {
       this.recent_average_like_rate = recent_average_like_rate;
       this.recent_average_like_rate.filter = function(user) {
         const avLikeCount = user.recent_like_count / user.recent_post_count;

@@ -11,7 +11,7 @@ const currentSession = { initialized: false, session: {} };
 const bullshit = require('./bullshit');
 const tfScore = require('./tf-score');
 const InfluencerFilter = require('./influencer-filter');
-
+const request = require('request');
 ig.initialize()
   .then(result => {
     console.log('initializing session');
@@ -64,6 +64,8 @@ function Prospect() {
 // retrieve();
 
 Prospect.prototype.likers = function (username, params) { // can be broken into 5 functions
+  var targetCandidateAmount = 200;
+
   console.log('Getting likers for', username);
   const currentFilter = new InfluencerFilter(params);
   var arrLikers = [];
@@ -82,12 +84,15 @@ Prospect.prototype.likers = function (username, params) { // can be broken into 
                 async.mapSeries(medias, (media, next) => {
                   getCandidates(media, currentFilter, arrCandidates)
                     .then(candidates => {
+                      if (arrCandidates.length >= targetCandidateAmount) {
+                        next();
+                      }
                       arrCandidates = arrCandidates.concat(...candidates);
                       console.log('candidate list length:', arrCandidates.length);
                       next();
                     })
                 }, err => {
-                  if (feed.moreAvailable && arrCandidates.length < 1000) {
+                  if (feed.moreAvailable && arrCandidates.length < targetCandidateAmount) {
                     console.log('candidate list length:', arrCandidates.length);
                     setTimeout(() => {
                       retrieve(); // recursion here. 
