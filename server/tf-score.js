@@ -58,7 +58,11 @@ function tfScore(user, filter) {
   // most recent post
   console.log('score before point', score);
   console.log('youngestPost:', youngestPost);
-  score += graduatedScore(youngestPost, 0.0, 12, 168, 10);
+  if (youngestPost) {
+    score += graduatedScore(youngestPost, 0.0, 12, 168, 10);
+  } else {
+    nullModifier -= 10;
+  }
   console.log('score after point', score);
 
   //add debuffs here

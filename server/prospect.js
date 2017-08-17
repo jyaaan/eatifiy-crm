@@ -64,7 +64,7 @@ function Prospect() {
 // retrieve();
 
 Prospect.prototype.likers = function (username, params) { // can be broken into 5 functions
-  var targetCandidateAmount = 200;
+  var targetCandidateAmount = 900;
 
   console.log('Getting likers for', username);
   const currentFilter = new InfluencerFilter(params);
@@ -84,10 +84,10 @@ Prospect.prototype.likers = function (username, params) { // can be broken into 
                 async.mapSeries(medias, (media, next) => {
                   getCandidates(media, currentFilter, arrCandidates)
                     .then(candidates => {
-                      if (arrCandidates.length >= targetCandidateAmount) {
-                        console.log('size met, skipping');
-                        next();
-                      }
+                      // if (arrCandidates.length >= targetCandidateAmount) {
+                      //   console.log('size met, skipping');
+                      //   next();
+                      // }
                       arrCandidates = arrCandidates.concat(...candidates);
                       console.log('candidate list length:', arrCandidates.length);
                       next();
