@@ -85,6 +85,7 @@ Prospect.prototype.likers = function (username, params) { // can be broken into 
                   getCandidates(media, currentFilter, arrCandidates)
                     .then(candidates => {
                       if (arrCandidates.length >= targetCandidateAmount) {
+                        console.log('size met, skipping');
                         next();
                       }
                       arrCandidates = arrCandidates.concat(...candidates);
@@ -202,7 +203,7 @@ const filterLikers = (likers, filter) => {
     var candidates = [];
     async.mapSeries(likers, (liker, next) => {
       // scrape details here
-      scrapeSave(liker.username, true)
+      scrapeSave(liker.username)
         .then(user => {
           var tempCandidate = verifyCandidate(user, filter);
           if (tempCandidate.isValid) {
