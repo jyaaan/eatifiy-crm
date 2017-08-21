@@ -32,4 +32,22 @@ fileHandler.prototype.writeToCSV = (data, filename, headers = []) => {
   });
 }
 
+fileHandler.prototype.saveCSV = (csv, filename) => {
+  return new Promise((resolve, reject) => {
+    fs.writeFile(
+      './server/public/csv/' + filename + '.csv',
+      csv,
+      err => {
+        if (err) {
+          console.error('CSV Save Error');
+          reject(err);
+        } else {
+          console.log(filename + '.csv saved :3');
+          resolve('Save Successful');
+        }
+      }
+    );
+  })
+}
+
 module.exports = fileHandler;

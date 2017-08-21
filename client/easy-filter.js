@@ -389,8 +389,12 @@ const pageRender = (user, medias) => {
         onClick={loadTest}>healthfoodproject</button>
       <button
         className="ui button"
-        id='vegancuts'
-        onClick={loadTest}>vegancuts</button>
+        id='brands82117'
+        onClick={loadTest}>brands82117</button>
+      <button
+        className="ui button"
+        id='brands82117-2'
+        onClick={loadTest}>brands82117-2</button>
       {profile}
       {posts}
     </div>

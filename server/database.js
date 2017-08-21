@@ -10,28 +10,6 @@ const knex = require('knex')({
 const async = require('async');
 const InfluencerFilter = require('./influencer-filter');
 
-// const exampleSettings = { // flagged for removal
-//   follower_count: {
-//     max: 500000,
-//     min: 10000
-//   },
-//   following_count: {
-
-//   },
-//   external_url: {
-//     min: 1
-//   },
-//   ratio: {
-//     max: 0.3
-//   },
-//   terms: {
-//     bio: ['john'],
-//     mention: ['john'],
-//     tag: ['eatifyjohn']
-//   }
-// }
-
-
 function Database() {
 
 }

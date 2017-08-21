@@ -1,15 +1,4 @@
 function tfScore(user, filter) {
-  // const { followers, posts } = params;
-    // username: “asddafs”,
-    // upload_url: “https://app.truefluence.io/users/{USERNAME}/prospects/{ID}.csv?token=ASDF”
-    // follower_count: { min: 234, ideal: 234, max:234 },
-    // follower_following_ratio: { min: 234, ideal: 234, max:234 },
-    // recent_average_like_rate: { min: 234, ideal: 234, max:234 },
-    // recent_average_comment_rate: { min: 234, ideal: 234, max:234 },
-    // terms: {
-    //   aligned: [“asdf”, “asdf” …],
-    //     misaligned: […]
-    // }
   var score = 0;
   var nullModifier = 100;
   const avLikeCount = user.recent_like_count / user.recent_post_count;
@@ -73,8 +62,8 @@ function tfScore(user, filter) {
     score *= 0.85;
   }
   // null modifier (if min/max weren't defined)
-  // flattens out scores
-  if (nullModifier < 100) {
+  // flattens out scores when ideal parameters are not provided
+  if (nullModifier < 100 && nullModifier != 0) {
     score = score * (100 / nullModifier);
   }
   return score;

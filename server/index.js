@@ -32,22 +32,6 @@ io.on('connection', socket => {
   socket.emit('welcome', {message: 'Connection to Truefluence established', id: socket.id});
 });
 
-
-// incoming JSON template.
-// {
-//   username: “asddafs”,
-//   upload_url: “https://app.truefluence.io/users/{USERNAME}/prospects/{ID}.csv?token=ASDF”
-//   follower_count: { min: 234, ideal: 234, max:234 },
-//   follower_following_ratio: { min: 234, ideal: 234, max:234 },
-//   recent_average_like_rate: { min: 234, ideal: 234, max:234 },
-//   recent_average_comment_rate: { min: 234, ideal: 234, max:234 },
-//   terms: {
-//     aligned: [“asdf”, “asdf” …],
-//       misaligned: […]
-//   }
-// }
-
-
 app.post('/prospect', (req, res) => {
   console.log('incoming prospecting request');
   console.log('JSON Body:', req.body);
@@ -55,44 +39,13 @@ app.post('/prospect', (req, res) => {
   prospect.likers(req.body.username, req.body);
 })
 
-// what's being processed.
-// fetch('/ui-analyze', {
-//   method: 'POST',
-//   headers: { 'Content-Type': 'application/json' },
-//   body: JSON.stringify(state)
-// })
-
 app.put('/test-url', (req, res) => {
   console.log('test-url received');
   console.log('csv contents:', req.body);
   res.send('thanks');
 })
-// app.post('/prospect', (req, res) => {
-//   console.log('testing csv send');
-//   var lineArray = [];
-//   var rows = [
-//     ['external_id', 'username', 'score'],
-//     ['42583188', 'vegancuts', '50'],
-//     ['2144739358', 'ivoryclasp', '60']
-//   ];
-//   var processRow = function (row) {
-//     var finalVal = '';
-//     finalVal += row;
-//     // finalVal += ',';
-//     return finalVal + '\n';
-//   };
-//   var csvFile = '';
-//   rows.map(row => {
-//     csvFile += processRow(row);
-//   })
-//   console.log(csvFile);
-//   signal(csvFile, req.body.upload_url);
-//   res.send(csvFile);
-// })
 
 const signal = (csvFile, url) => {
-  //http://localhost:3000/users/sourtoe/prospects/14.csv?token=7qgU9Qha8KzuKZVv2Pj8pzd7
-  // 'http://192.241.192.44:5760/test-url'
   var options = {
     url: url,
     method: 'PUT',
@@ -172,12 +125,6 @@ function spliceDuplicates(users) {
     return collection.indexOf(user) == index;
   })
 }
-
-// ig.initialize()
-//   .then(result => {
-//     console.log('initializing session');
-//     currentSession.session = result;
-//   });
 
 app.get('/discovery', (req, res) => {
   res.send('discovery test');
@@ -300,15 +247,6 @@ app.get('/analyze/:username/:days', (req, res) => {
   prospect.likers(params);
 });
 
-
-app.get('/get-me', (req, res) => {
-  res.send('kay');
-  ig.getFollowing('52139312', currentSession.session)
-    .then(following => {
-      console.log(following);
-    })
-})
-
 app.post('/get-following', (req, res) => {
   res.send('request received');
   ig.getFollowing(req.body.external_id, currentSession.session)
@@ -394,32 +332,7 @@ app.post('/get-following', (req, res) => {
 //   })
 // });
 
-app.get('/update-viewrecipes', (req, res) => {
-  console.log('starting viewrecip.es update');
-  ig.getFollowing('5451104717', currentSession.session)
-    .then(following => {
-      async.mapSeries(following, (follow, next) => {
-        console.log(follow.username);
-        database.everScraped(follow.username)
-          .then(result => {
-            if (!result) {
-              scrapeSave(follow.username)
-                .then(saved => {
-                  next();
-                })
-            } else {
-              console.log('skipping');
-              next();
-            }
-          })
-      }, err => {
-        console.log('viewrecip.es updated');
-      })
-    })
-})
-
 // show list of rank 1 suggestions as well as frequency of rank 1
-
 app.get('/get-report-rank', (req, res) => {
   var topRanked = [];
   var topRankedDedupe = [];

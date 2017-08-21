@@ -3,16 +3,6 @@ const tfScore = require('./tf-score');
 class InfluencerFilter { // comments, please.
   constructor(settings) {
     console.log('influencer filter params:', settings);
-    // username: “asddafs”,
-    // upload_url: “https://app.truefluence.io/users/{USERNAME}/prospects/{ID}.csv?token=ASDF”
-    // follower_count: { min: 234, ideal: 234, max:234 },
-    // follower_following_ratio: { min: 234, ideal: 234, max:234 },
-    // recent_average_like_rate: { min: 234, ideal: 234, max:234 },
-    // recent_average_comment_rate: { min: 234, ideal: 234, max:234 },
-    // terms: {
-    //   aligned: [“asdf”, “asdf” …],
-    //     misaligned: […]
-    // }
 
     const { follower_count, follower_following_ratio,
             terms, recent_average_comment_rate,
@@ -55,7 +45,7 @@ class InfluencerFilter { // comments, please.
     }
   }
 
-  filter(user) {
+  filter(user) { // method to verify if user is valid
     for (let key in this) {
       if (!this[key].filter(user)) {
         return false;
@@ -64,7 +54,7 @@ class InfluencerFilter { // comments, please.
     return true;
   }
 
-  score(user) {
+  score(user) { // method to verify and score user
     user.isValid = true;
     user.score = 0;
     user.termMatch = 0;
@@ -74,25 +64,21 @@ class InfluencerFilter { // comments, please.
       }
     }
     if (user.isValid) {
-      console.log('does this happen?');
       user.score = tfScore(user, this);
-      user.termMatch = matchTerms(this.terms.aligned, user.bio);
+      user.termMatch = matchTerms(this.terms.aligned, user.bio); // number of matches
     }
     return user;
   }
 }
 
 const matchTerms = (terms, text) => {
-  // console.log('terms to query:', terms);
   var count = 0;
   var searchText = '';
   if (typeof text != 'undefined') {
     searchText = text.toLowerCase();
   }
   for (var term in terms) {
-    // console.log('querying:', terms[term]);
     if (searchText.indexOf(terms[term].toLowerCase()) != -1) {
-      // console.log('found match for', terms[term]);
       count++;
     }
   }
