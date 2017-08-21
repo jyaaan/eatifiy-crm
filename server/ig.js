@@ -51,6 +51,18 @@ IG.prototype.getUser = function (username, session) {
   });
 }
 
+IG.prototype.initializeMediaFeed = function (userId, session) {
+  return new Promise((resolve, reject) => {
+    try {
+      var feed = new Client.Feed.UserMedia(session, userId);
+      resolve(feed);
+    }
+    catch(err) {
+      reject(err);
+    }
+  })
+}
+
 IG.prototype.getMedias = function (userId, session, days=30) {
   const medias = [];
   var dateRange = new Date();
@@ -83,7 +95,7 @@ IG.prototype.getMedias = function (userId, session, days=30) {
           });
           if (feed.moreAvailable && validDate) {
             setTimeout(() => {
-              retrieve();
+              retrieve(); // recursion here. 
             }, 1200);
           } else {
             resolve(medias);

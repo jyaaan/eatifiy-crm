@@ -223,7 +223,7 @@ const userProfile = user => {
   return (
     <div className='ui centered row'>
       <div>
-        <div classame='ui centered'>
+        <div className='ui centered'>
           <a href={ profileLink }>
             <img className='ui small image centered column' src={ user.picture_url } />
             <h2>{ user.username }</h2>
@@ -385,8 +385,16 @@ const pageRender = (user, medias) => {
     <div>
       <button
         className="ui button"
-        id='equip.foods'
-        onClick= { loadTest }>equip.foods</button>
+        id='healthfoodproject'
+        onClick={loadTest}>healthfoodproject</button>
+      <button
+        className="ui button"
+        id='brands82117'
+        onClick={loadTest}>brands82117</button>
+      <button
+        className="ui button"
+        id='brands82117-2'
+        onClick={loadTest}>brands82117-2</button>
       {profile}
       {posts}
     </div>

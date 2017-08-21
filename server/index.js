@@ -32,6 +32,55 @@ io.on('connection', socket => {
   socket.emit('welcome', {message: 'Connection to Truefluence established', id: socket.id});
 });
 
+app.post('/prospect', (req, res) => {
+  console.log('incoming prospecting request');
+  console.log('JSON Body:', req.body);
+  res.json('received');
+  prospect.likers(req.body.username, req.body);
+})
+
+app.put('/test-url', (req, res) => {
+  console.log('test-url received');
+  console.log('csv contents:', req.body);
+  res.send('thanks');
+})
+
+const signal = (csvFile, url) => {
+  var options = {
+    url: url,
+    method: 'PUT',
+    headers: [
+      {
+      name: 'Content-Type',
+      value: 'application/csv'
+      }
+    ],
+    body: csvFile
+  };
+  request(options);
+}
+
+app.post('/ui-analyze', (req, res) => {
+  res.send('request received');
+  console.log('type:', req.body.type);
+  console.log('parameters:', req.body.parameters);
+  const params = {
+    username: req.body.type.username,
+    days: req.body.type.days
+  };
+  const filterParams = req.body.parameters;
+  prospect.likers(params, filterParams);
+})
+
+app.get('/brands', (req, res) => {
+  console.log('exporting brands');
+  database.getBrands()
+    .then(brands => {
+      // console.log(brands);
+      res.json(brands);
+    })
+})
+
 app.get('/prospect-list/:primaryUsername', (req, res) => {
   console.log('trying to get prospects of:', req.params.primaryUsername);
   database.getProspects(req.params.primaryUsername)
@@ -76,12 +125,6 @@ function spliceDuplicates(users) {
     return collection.indexOf(user) == index;
   })
 }
-
-// ig.initialize()
-//   .then(result => {
-//     console.log('initializing session');
-//     currentSession.session = result;
-//   });
 
 app.get('/discovery', (req, res) => {
   res.send('discovery test');
@@ -164,23 +207,6 @@ app.post('/enrich', (req, res) => {
   });
 })
 
-// Marked for deletion
-// app.get('/tf-test', (req, res) => {
-//   res.send('truefluence test');
-//   database.getTFFormatUsers()
-//     .then(users => {
-//       request.post(
-//         'http://192.168.0.106:9292/users/sourtoe/favorites/batch',
-//         { json: {instagram_users: users} },
-//         (error, res, body) => {
-//           if (!error && res.statusCode == 200) {
-//             console.log(body);
-//           }
-//         }
-//       );
-//     });
-// })
-
 app.get('/mentions/:username/:mention', (req, res) => {
   const focusUsername = req.params.username;
   const lookup = req.params.mention.toLowerCase();
@@ -220,26 +246,6 @@ app.get('/analyze/:username/:days', (req, res) => {
   };
   prospect.likers(params);
 });
-
-app.post('/ui-analyze', (req, res) => {
-  res.send('request received');
-  console.log('type:', req.body.type);
-  console.log('parameters:', req.body.parameters);
-  const params = {
-    username: req.body.type.username,
-    days: req.body.type.days
-  };
-  const filterParams = req.body.parameters;
-  prospect.likers(params, filterParams);
-})
-
-app.get('/get-me', (req, res) => {
-  res.send('kay');
-  ig.getFollowing('52139312', currentSession.session)
-    .then(following => {
-      console.log(following);
-    })
-})
 
 app.post('/get-following', (req, res) => {
   res.send('request received');
@@ -326,32 +332,7 @@ app.post('/get-following', (req, res) => {
 //   })
 // });
 
-app.get('/update-viewrecipes', (req, res) => {
-  console.log('starting viewrecip.es update');
-  ig.getFollowing('5451104717', currentSession.session)
-    .then(following => {
-      async.mapSeries(following, (follow, next) => {
-        console.log(follow.username);
-        database.everScraped(follow.username)
-          .then(result => {
-            if (!result) {
-              scrapeSave(follow.username)
-                .then(saved => {
-                  next();
-                })
-            } else {
-              console.log('skipping');
-              next();
-            }
-          })
-      }, err => {
-        console.log('viewrecip.es updated');
-      })
-    })
-})
-
 // show list of rank 1 suggestions as well as frequency of rank 1
-
 app.get('/get-report-rank', (req, res) => {
   var topRanked = [];
   var topRankedDedupe = [];

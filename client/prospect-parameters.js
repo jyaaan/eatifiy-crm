@@ -4,6 +4,7 @@ const Dropdown = require('semantic-ui-react').Dropdown;
 const Button = require('semantic-ui-react').Button;
 const Input = require('semantic-ui-react').Input;
 
+
 // Methods of prospect gathering
 prospectOptions = [
   {
@@ -67,18 +68,78 @@ const handleFile = event => {
     // reader.onerror = function () {
     //   alert('Unable to read' + ' ' + file.fileName);
     // }
-    store.dispatch({
-      type: 'ENRICH_CSV',
-      users: testArray
-    })
     // store.dispatch({
-    //   type: 'UPLOAD_PROSPECTS',
-    //   prospects: latestArray,
-    //   primaryUsername: store.getState().usernameInput
-    // });
+    //   type: 'ENRICH_CSV',
+    //   users: testArray
+    // })
+    store.dispatch({
+      type: 'UPLOAD_PROSPECTS',
+      prospects: latestArray,
+      primaryUsername: store.getState().usernameInput
+    });
   }
 }
 
+// exporting brands
+const exportBrands = event => {
+  fetch('/brands')
+    .then(resp => resp.json())
+    .then(brands => {
+      // console.log(brands[0]);
+      const allBrands = brands.map(brand => {
+        return brand.username;
+      })
+      downloadCSV(allBrands);
+    })
+}
+
+const downloadCSV = (rows) => {
+  exportToCsv('brands.csv', rows);
+
+}
+
+function exportToCsv(filename, rows) {
+  var processRow = function (row) {
+    var finalVal = '';
+    finalVal += row;
+    finalVal += ',';
+    // for (var j = 0; j < row.length; j++) {
+    //   var innerValue = row[j] === null ? '' : row[j].toString();
+    //   if (row[j] instanceof Date) {
+    //     innerValue = row[j].toLocaleString();
+    //   };
+    //   var result = innerValue.replace(/"/g, '""');
+    //   if (result.search(/("|,|\n)/g) >= 0)
+    //     result = '"' + result + '"';
+    //   if (j > 0)
+    //       finalVal += ',';
+    //   finalVal += result;
+    // }
+    return finalVal + '\n';
+  };
+
+  var csvFile = '';
+  for (var i = 0; i < rows.length; i++) {
+    csvFile += processRow(rows[i]);
+  }
+
+  var blob = new Blob([csvFile], { type: 'text/csv;charset=utf-8;' });
+  if (navigator.msSaveBlob) { // IE 10+
+    navigator.msSaveBlob(blob, filename);
+  } else {
+    var link = document.createElement("a");
+    if (link.download !== undefined) { // feature detection
+      // Browsers that support HTML5 download attribute
+      var url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }
+}
 
 // When you hit go!
 const handleProspect = event => {
@@ -329,6 +390,29 @@ const ProspectParameters = props => {
         </div>
       </div>
 
+      <div>
+        <div className='ui'>
+          <Input
+            id='aligned-terms'
+            icon='rocket'
+            iconPosition='left'
+            label={{ tag: true, content: 'Aligned Terms' }}
+            labelPosition='right'
+            placeholder='boo'
+          />
+        </div>
+        <div className='ui'>
+          <Input
+            id='misaligned-terms'
+            icon='thumbs down'
+            iconPosition='left'
+            label={{ tag: true, content: 'Misaligned Terms' }}
+            labelPosition='right'
+            placeholder='ya'
+          />
+        </div>
+      </div>
+
       <div className="inline field four columns">
         <Dropdown placeholder='Prospecting Method' fluid selection options={prospectOptions} 
           onChange={handleDropdown}/>
@@ -364,6 +448,9 @@ const ProspectParameters = props => {
           className="ui button"
           value="medias"
           onClick= { testValues }>Progress Bar</button>
+        <button
+          className='ui button'
+          onClick={ exportBrands }>Export Brands</button>
       </div>
 
       <div>
