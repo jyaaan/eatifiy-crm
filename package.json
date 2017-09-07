@@ -50,7 +50,6 @@
     "babel-preset-react-native": "^2.0.0",
     "babelify": "^7.3.0",
     "browserify": "^14.4.0",
-    "eb-fix-npm": "^1.2.5",
     "nodemon": "^1.11.0",
     "npm-run-all": "^4.0.2",
     "request": "^2.81.0",
