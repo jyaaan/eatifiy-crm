@@ -29,7 +29,7 @@ function Prospect() {
 }
 
 Prospect.prototype.likers = function (username, params) { // can be broken into 5 functions
-  var targetCandidateAmount = 50;
+  var targetCandidateAmount = 200;
 
   console.log('Getting likers for', username);
   const currentFilter = new InfluencerFilter(params);
@@ -117,8 +117,8 @@ const convertAndSend = (array, header, url) => {
   rows.map(row => {
     csvFile += processRow(row);
   })
-  signal(csvFile, url);
-  // fileHandler.saveCSV(csvFile, 'aaaa output');
+  // signal(csvFile, url);
+  fileHandler.saveCSV(csvFile, 'aaaa output');
 }
 const signal = (csvFile, url) => {
   var options = {
@@ -225,7 +225,9 @@ const scrapeSave = (username, bypass=false) => { // now with more resume-ability
             })
             .catch(err => {
               console.log('scraper failure');
-              reject(err);
+              setTimeout(()=> {
+                reject(err);
+              }, 120000);
             })
         } else {
           console.log('skipping');

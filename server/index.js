@@ -32,6 +32,10 @@ io.on('connection', socket => {
   socket.emit('welcome', {message: 'Connection to Truefluence established', id: socket.id});
 });
 
+app.get('/health_ping', (req, res) => {
+  res.send('OK'); 
+})
+
 app.post('/prospect', (req, res) => {
   console.log('incoming prospecting request');
   console.log('JSON Body:', req.body);
