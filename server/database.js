@@ -1,9 +1,17 @@
+// const knex = require('knex')({
+//   client: 'postgresql',
+//   connection: {
+//     user: 'johny',
+//     password: 'peanut',
+//     database: 'eatify-crm'
+//   }
+// });
 const knex = require('knex')({
   client: 'postgresql',
   connection: {
-    user: 'johny',
-    password: 'peanut',
-    database: 'eatify-crm'
+    user: process.env.RDS_USERNAME,
+    password: process.env.RDS_PASSWORD,
+    database: process.env.RDS_DB_NAME
   }
 });
 

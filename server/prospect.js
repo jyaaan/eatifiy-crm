@@ -32,7 +32,7 @@ Prospect.prototype.testThousand = function (url) {
   database.getThousand()
     .then(thousand => {
       const thousandValue = thousand.map(row => { return [row.username, row.external_id]; });
-      console.log(thousandValue);
+      // console.log(thousandValue);
 
       convertAndSend(thousandValue, ['username', 'external_id'], url);
     })
@@ -110,12 +110,9 @@ Prospect.prototype.likers = function (username, params) { // can be broken into 
 // })
 const convertAndSend = (array, header, url) => {
   console.log('testing csv send');
-  const filteredProspects = array.map(elem => {
-    return [elem.external_id, elem.username, elem.score];
-  });
   var rows = [
-    ['external_id', 'username', 'score'],
-    ...filteredProspects
+    ['username', 'external_id'],
+    ...array
   ];
   var processRow = function (row) {
     var finalVal = '';

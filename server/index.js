@@ -39,7 +39,7 @@ app.get('/health_ping', (req, res) => {
 app.put('/watch', (req, res) => {
   console.log('watch called');
   // console.log(req.body);
-  res.send('csv received');
+  // res.send('csv received');
 })
 
 app.post('/prospect', (req, res) => {
