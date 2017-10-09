@@ -14,6 +14,14 @@ function Database() {
 
 }
 
+// test functions
+
+Database.prototype.getThousand = function () {
+  // SELECT username, external_id FROM users LIMIT 1000;
+  return knex('users')
+    .select('username', 'external_id')
+    .limit(1000);
+}
 // QUERY FUNCTIONS
 
 Database.prototype.getBrands = function () {

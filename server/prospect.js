@@ -28,6 +28,16 @@ function Prospect() {
 
 }
 
+Prospect.prototype.testThousand = function (url) {
+  database.getThousand()
+    .then(thousand => {
+      const thousandValue = thousand.map(row => { return [row.username, row.external_id]; });
+      console.log(thousandValue);
+
+      convertAndSend(thousandValue, ['username', 'external_id'], url);
+    })
+}
+
 Prospect.prototype.likers = function (username, params) { // can be broken into 5 functions
   var targetCandidateAmount = 200;
 
@@ -117,9 +127,10 @@ const convertAndSend = (array, header, url) => {
   rows.map(row => {
     csvFile += processRow(row);
   })
-  // signal(csvFile, url);
-  fileHandler.saveCSV(csvFile, 'aaaa output');
+  signal(csvFile, url);
+  // fileHandler.saveCSV(csvFile, 'aaaa output');
 }
+
 const signal = (csvFile, url) => {
   var options = {
     url: url,
@@ -132,6 +143,7 @@ const signal = (csvFile, url) => {
     ],
     body: csvFile
   };
+  // console.log('if this shows, we\'ve done something');
   request(options);
 }
 

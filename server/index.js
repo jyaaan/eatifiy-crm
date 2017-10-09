@@ -36,12 +36,27 @@ app.get('/health_ping', (req, res) => {
   res.send('OK'); 
 })
 
-app.post('/prospect', (req, res) => {
-  console.log('incoming prospecting request');
-  console.log('JSON Body:', req.body);
-  res.json('received');
-  prospect.likers(req.body.username, req.body);
+app.put('/watch', (req, res) => {
+  console.log('watch called');
+  // console.log(req.body);
+  res.send('csv received');
 })
+
+app.post('/prospect', (req, res) => {
+  // get the url
+  console.log(req.body.upload_url);
+  // get a list of 1,000 and send to URL
+  prospect.testThousand(req.body.upload_url);
+  res.send('execution complete');
+})
+
+// removing old stuff
+// app.post('/prospect', (req, res) => {
+//   console.log('incoming prospecting request');
+//   console.log('JSON Body:', req.body);
+//   res.json('received');
+//   prospect.likers(req.body.username, req.body);
+// })
 
 app.put('/test-url', (req, res) => {
   console.log('test-url received');
@@ -554,7 +569,8 @@ const queueFollowing = (following, primaryUserEId) => {
 }
 
 
-const PORT = process.env.PORT;
+// const PORT = process.env.PORT;
+const PORT = 5760;
 
 http.listen(PORT, () => {
   console.log('listening on port:', PORT);
