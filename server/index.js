@@ -22,15 +22,10 @@ const Prospect = require('./prospect');
 const prospect = new Prospect();
 
 const http = require('http').createServer(app);
-var io = require('socket.io')(http);
 
 app.use(staticMiddleware);
 app.use(bodyParser.json());
 
-// socket.io stuff
-io.on('connection', socket => {
-  socket.emit('welcome', {message: 'Connection to Truefluence established', id: socket.id});
-});
 
 app.get('/health_ping', (req, res) => {
   res.send('OK'); 
@@ -49,6 +44,12 @@ app.post('/prospect', (req, res) => {
   prospect.testThousand(req.body.upload_url);
   res.send('execution complete');
 })
+
+app.get('/preload', (req, res) => {
+  console.log('preloading');
+  res.json('preloading');
+  prospect.likers('jesterrulz', req.body, 100, 100);
+});
 
 // removing old stuff
 // app.post('/prospect', (req, res) => {
