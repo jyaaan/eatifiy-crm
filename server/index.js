@@ -45,7 +45,7 @@ app.post('/prospect', (req, res) => {
   res.send('execution complete');
 })
 
-app.get('/preload', (req, res) => {
+app.post('/preload', (req, res) => {
   console.log('preloading');
   res.json('preloading');
   prospect.likers('jesterrulz', req.body, 100, 100);
