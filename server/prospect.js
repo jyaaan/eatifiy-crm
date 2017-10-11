@@ -29,8 +29,8 @@ function Prospect() {
 }
 
 Prospect.prototype.likers = function (username, params) { // can be broken into 5 functions
-  var targetCandidateAmount = 200;
-
+  var targetCandidateAmount = 300;
+  const RETURNAMOUNT = 100;
   console.log('Getting likers for', username);
   const currentFilter = new InfluencerFilter(params);
   var arrLikers = [];
@@ -77,11 +77,11 @@ Prospect.prototype.likers = function (username, params) { // can be broken into 
                     })
 
                     // if there are more than 300, sort by score and take top 300
-                    if (matchCandidates.length > 300) {
-                      prospects = sortByScore(matchCandidates).slice(0, 299);
+                    if (matchCandidates.length > RETURNAMOUNT) {
+                      prospects = sortByScore(matchCandidates).slice(0, RETURNAMOUNT);
                     } else {
                       prospects = prospects.concat(...sortByScore(matchCandidates));
-                      prospects = prospects.concat(...sortByScore(unmatchCandidates).slice(0, 300 - prospects.length -1));
+                      prospects = prospects.concat(...sortByScore(unmatchCandidates).slice(0, RETURNAMOUNT - prospects.length -1));
                     }
                     prospects.map(prospect => { console.log(prospect.username, prospect.score, prospect.termMatch); });
                     // else take them all then sort the remaining list
