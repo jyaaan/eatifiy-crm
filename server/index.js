@@ -51,6 +51,14 @@ app.post('/preload', (req, res) => {
   prospect.likers('jesterrulz', req.body, 100, 100);
 });
 
+app.get('/check-env', (req, res) => {
+  console.log('RDS_USERNAME', process.env.RDS_USERNAME);
+  console.log('RDS_PASSWORD', process.env.RDS_PASSWORD);
+  console.log('RDS_DB_NAME', process.env.RDS_DB_NAME);
+  console.log('RDS_PORT', process.env.RDS_PORT);
+  console.log('RDS_HOSTNAME', process.env.RDS_HOSTNAME);
+})
+
 // removing old stuff
 // app.post('/prospect', (req, res) => {
 //   console.log('incoming prospecting request');
