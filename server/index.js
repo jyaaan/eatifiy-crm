@@ -1,7 +1,7 @@
 const path = require('path');
 const watchify = require('watchify');
 const express = require('express');
-const bodyParser = require('body-parser');
+// const bodyParser = require('body-parser');
 const IG = require('./ig');
 const Database = require('./database').Database;
 const database = new Database();
