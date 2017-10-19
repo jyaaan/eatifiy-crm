@@ -50,10 +50,10 @@ fileHandler.prototype.saveCSV = (csv, filename) => {
   })
 }
 
-const convertAndSend = (array, header, url) => {
+fileHandler.prototype.convertAndSend = (array, header, url) => {
   console.log('testing csv send');
   var rows = [
-    ['username', 'external_id'],
+    header,
     ...array
   ];
   var processRow = function (row) {
@@ -66,11 +66,11 @@ const convertAndSend = (array, header, url) => {
   rows.map(row => {
     csvFile += processRow(row);
   })
-  signal(csvFile, url);
+  this.signal(csvFile, url);
   // fileHandler.saveCSV(csvFile, 'aaaa output');
 }
 
-const signal = (csvFile, url) => {
+fileHandler.prototype.signal = (csvFile, url) => {
   var options = {
     url: url,
     method: 'PUT',

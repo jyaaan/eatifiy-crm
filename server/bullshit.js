@@ -1,4 +1,3 @@
-
 function bullshit(user) {
   var score = 0;
   const avLikeCount = user.recent_like_count / user.recent_post_count;
