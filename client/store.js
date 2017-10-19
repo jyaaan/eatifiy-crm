@@ -62,30 +62,6 @@ const prospectParameters = (state = {parameters: defaultParameters, type: {}}, a
   }
 }
 
-const initProgress = {
-  show: true,
-  stage: 'init',
-  total: null,
-  progress: null
-};
-
-const prospectProgress = (state = initProgress, action) => {
-  switch (action.type) {
-    case 'HIDE_PROGRESS':
-      return Object.assign({}, state, { show: false });
-    case 'SHOW_PROGRESS':
-      return Object.assign({}, state, { show: true });
-    case 'CHANGE_STAGE':
-      console.log('attempting to change stage to', action.stage);
-      console.log('currently:', state);
-      return Object.assign(state, {stage: action.stage});
-    case 'UPDATE_STATUS':
-      return Object.assign(state, action.status);
-    default:
-      return state;
-  }
-}
-
 const enrichCSV = (state = {}, action) => {
   switch (action.type) {
     case 'ENRICH_CSV':
@@ -180,10 +156,8 @@ const prospectList = (state = {}, action) => {
 }
 
 const reducer = combineReducers({
-  usernameInput,
   userProfile,
   prospectParameters,
-  prospectProgress,
   enrichCSV,
   easyFilter,
   prospectList

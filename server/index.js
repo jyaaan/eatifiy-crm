@@ -1,7 +1,7 @@
 const path = require('path');
 const watchify = require('watchify');
 const express = require('express');
-// const bodyParser = require('body-parser');
+const bodyParser = require('body-parser');
 const IG = require('./ig');
 const Database = require('./database').Database;
 const database = new Database();
@@ -133,22 +133,6 @@ app.post('/preload', (req, res) => {
   prospect.likers('jesterrulz', req.body, 100, 100);
 });
 
-// app.get('/check-env', (req, res) => {
-//   console.log('RDS_USERNAME', process.env.RDS_USERNAME);
-//   console.log('RDS_PASSWORD', process.env.RDS_PASSWORD);
-//   console.log('RDS_DB_NAME', process.env.RDS_DB_NAME);
-//   console.log('RDS_PORT', process.env.RDS_PORT);
-//   console.log('RDS_HOSTNAME', process.env.RDS_HOSTNAME);
-// })
-
-// removing old stuff
-// app.post('/prospect', (req, res) => {
-//   console.log('incoming prospecting request');
-//   console.log('JSON Body:', req.body);
-//   res.json('received');
-//   prospect.likers(req.body.username, req.body);
-// })
-
 app.put('/test-url', (req, res) => {
   console.log('test-url received');
   console.log('csv contents:', req.body);
@@ -235,15 +219,6 @@ function spliceDuplicates(users) {
     return collection.indexOf(user) == index;
   })
 }
-
-app.get('/discovery', (req, res) => {
-  res.send('discovery test');
-  ig.discoveryTest(currentSession.session);
-})
-
-app.post('/dispatch', (req, res) => {
-  io.emit('dispatch', req.body);
-})
 
 app.post('/preload-prospects', (req, res) => {
   console.log('loading prospects');
@@ -387,61 +362,6 @@ app.post('/get-following', (req, res) => {
     })
 });
 
-// Commented out in order to load onto digital ocean
-
-// app.get('/get-suggested', (req, res) => {
-//   console.log('getting suggested');
-//   const userEIds = [];
-//   var suggestedUsers = [];
-
-//   async.mapSeries(suggestionTestUsers, (test, next) => {
-//     database.getUserByUsername(test)
-//       .then(user => {
-//         userEIds.push(user.id);
-//         database.clearSuggestionRank(user.id)
-//           .then(cleared => {
-//             autoBrowser.process(user)
-//               .then(result => {
-//                 next();
-//               })
-//           })
-//       })
-//   }, err => {
-//     async.mapSeries(userEIds, (eid, next) => {
-//       // console.log('eid under investigation:', eid);
-//       database.getFirst(eid, 3)
-//         .then(suggestions => {
-//           suggestedUsers = suggestedUsers.concat(suggestions);
-//           next();
-//         })
-
-//     }, err => {
-//       var lineArray = [];
-//       lineArray.push('data:text/csv;charset=utf-8,');
-//       var tempstore = suggestedUsers.map(suggested => {
-//         return suggested.concat(',');
-//       })
-//       lineArray = lineArray.concat(...tempstore);
-
-//       var csvContent = lineArray.join("\n");
-
-//       fs.writeFile(
-
-//           './users.csv',
-
-//           csvContent,
-
-//           function (err) {
-//               if (err) {
-//                   console.error('Crap happens');
-//               }
-//           }
-//       );
-//       // console.log(suggestedUsers);
-//     })
-//   })
-// });
-
 // show list of rank 1 suggestions as well as frequency of rank 1
 app.get('/get-report-rank', (req, res) => {
   var topRanked = [];
@@ -504,13 +424,6 @@ app.get('/get-report-rank', (req, res) => {
         })
     });
 });
-
-// show list of suggestions by frequency among following
-
-app.get('/get-report-frequency', (req, res) => {
-  // get internal id of target user. look up relationships to generate array of internal ids
-  // for each internal id in that array, 
-})
 
 app.get('/lookup/:username', (req, res) => {
   database.usernameExists(req.params.username)
