@@ -38,6 +38,34 @@ Prospect.prototype.testThousand = function (url) {
     })
 }
 
+Prospect.prototype.batchLikers = function (username, targetAmount = 1000) {
+
+}
+
+Prospect.prototype.downloadProspects = function (listUrl, token, batchId) {
+  
+}
+
+Prospect.prototype.getFollowers = function (userId) {
+  console.log('getting followers');
+  return new Promise((resolve, reject) => {
+    ig.getFollowers(userId, currentSession.session)
+      .then(result => {
+        resolve(result);
+      })
+  })
+}
+
+Prospect.prototype.deepLookup = function (username) {
+  return new Promise((resolve, reject) => {
+    ig.getUser(username, currentSession.session)
+      .then(result => {
+        console.log(result);
+        resolve(result);
+      })
+  })
+}
+
 Prospect.prototype.likers = function (username, params, targetCandidateAmount = 300, returnCount = 100) { // can be broken into 5 functions
   // var targetCandidateAmount = 200;
 
