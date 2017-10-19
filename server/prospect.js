@@ -4,6 +4,8 @@ const ig = new Ig();
 const Database = require('./database').Database;
 const database = new Database();
 const Scraper = require('./scraper');
+const ScrapeSave = require('./scrape-save');
+const scrapeSave = new ScrapeSave();
 const store = require('../client/store');
 const FileHandler = require('./file-controller.js');
 const fileHandler = new FileHandler();
@@ -76,7 +78,7 @@ Prospect.prototype.likers = function (username, params, targetCandidateAmount = 
   var publicLikerNames = [];
   var arrCandidates = [];
   var counter = 0;
-  scrapeSave(username, true)
+  scrapeSave.scrapeSave(username, database, true)
     .then(scraped => { // Get data of target account
       console.log('primary user scrape:', scraped);
       ig.initializeMediaFeed(scraped.external_id, currentSession.session) // opening media feed
@@ -205,7 +207,7 @@ const filterLikers = (likers, filter) => {
     async.mapSeries(likers, (liker, next) => {
       // scrape details here
       if (liker.username != 'avinash_patil_23') {
-        scrapeSave(liker.username)
+        scrapeSave.scrapeSave(liker.username, database)
           .then(user => {
             var tempCandidate = verifyCandidate(user, filter);
             if (tempCandidate.isValid) {
@@ -232,50 +234,9 @@ const filterLikers = (likers, filter) => {
 // Will also assign score and match count
 // reject if any misaligned terms
 const verifyCandidate = (user, filter) => {
-  // console.log('verifyCandidate, youngest post', user.youngest_post);
   return filter.score(user);
 }
 
-const scrapeSave = (username, bypass=false) => { // now with more resume-ability!
-  console.log('scraping', username);
-  var thisId;
-  return new Promise((resolve, reject) => {
-    database.getUserByUsername(username)
-      .then(user => {
-        if (!user || bypass || user.recent_like_count == 0 || user.recent_like_count == null) {
-          Scraper(username)
-            .then(user => {
-              // console.log('scraper, youngest post', user.youngest_post);
-              var tempUser = Object.assign({}, user);
-              delete tempUser.youngest_post;
-              database.upsertUser(tempUser)
-                .then(result => {
-                  database.getEIdFromExternalId(user.external_id, 'users')
-                    .then(id => {
-                      resolve(user);
-                    })
-                })
-                .catch(err => {
-                  console.log('upsert attemp failure');
-                  reject(err);
-                })
-            })
-            .catch(err => {
-              console.log('scraper failure');
-              setTimeout(()=> {
-                reject(err);
-              }, 120000);
-            })
-        } else {
-          console.log('skipping');
-          resolve(user);
-        }
-      })
-    .catch(err => {
-      console.log('get user by username failure');
-      reject(err);
-    })
-  });
-}
+
 
 module.exports = Prospect

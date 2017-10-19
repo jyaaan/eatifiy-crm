@@ -7,6 +7,8 @@ const Database = require('./database').Database;
 const database = new Database();
 const ParseScrape = require('./parse-scrape');
 const Scraper = require('./scraper');
+const ScrapeSave = require('./scrape-save');
+const scrapeSave = new ScrapeSave();
 const ScraperMedia = require('./scraper-media');
 const async = require('async');
 const fs = require('fs');
@@ -78,6 +80,7 @@ app.put('/watch', (req, res) => {
   // console.log(req.body);
   // res.send('csv received');
 })
+
 // https://staging.truefluence.io/users/eatify/prospects/1013.json?token=oiUBxMQ9KzvBezCyGX1gLDMS&per_page=2&page=5
 app.post('/prospect', (req, res) => {
   // get the url
@@ -89,8 +92,6 @@ app.post('/prospect', (req, res) => {
   listDetails.listId = getValue(url, 'prospects/', '.');
   listDetails.loaded = true;
   console.log(listDetails)
-  // get a list of 1,000 and send to URL
-  // prospect.testThousand(url);
   res.send(listDetails);
 })
 
@@ -111,7 +112,6 @@ app.get('/test-follower-submit/:userId', (req, res) => {
   prospect.getFollowers(req.params.userId)
     .then(result => {
       const followers = result.map(follower => { return [follower.username, follower.id]; }) 
-      // res.send(followers);
       tfBridge.submitProspects(submitURL, followers);
     })
 })
@@ -267,11 +267,6 @@ app.post('/enrich', (req, res) => {
           })
       })
   }, err => {
-    // filtering users for influencers
-    // store.dispatch({
-    //   type: 'CHANGE_STAGE',
-    //   stage: 'filter'
-    // });
     database.getUsers(userIds)
       .then(influencers => {
         const headers = ['id', 'externalId', 'username', 'postCount', 'followerCount', 'followingCount', 'following/follower ratio', 'recentPostCount', 'recentAvLikes', 'recentAvComments', 'engagementRatio', 'postFrequency(Hr)', 'website'];
@@ -338,19 +333,10 @@ app.post('/get-following', (req, res) => {
     .then(following => {
       queueFollowing(following, req.body.id)
         .then(result => {
-          // console.log('following harvest complete result:', result);
-          // splice out users where suggestions have been loaded already
           async.mapSeries(result, (user, next) => {
             database.userSuggestionsLoaded(user.username)
               .then(loaded => {
-                // if (!loaded) {
-                //   autoBrowser.process(user)
-                //     .then(processed => {
-                //       setTimeout(next, 1000);
-                //     })
-                // } else {
-                  next();
-                // }
+                next();
               })
           }, err => {
             console.log('complete');
@@ -385,16 +371,6 @@ app.get('/get-report-rank', (req, res) => {
                 next();
               })
           }, (err, data) => {
-
-            // console.log(topRanked[1]);
-            // anonymous { // sample of returned suggestion data
-            //   user_id: 676,
-            //   suggested_id: 316,
-            //   created_at: 2017-06-13T00:43:13.318Z,
-            //   updated_at: 2017-06-13T00:43:13.318Z,
-            //   last_rank: 2,
-            //   highest_rank: 2 }
-
             topRanked = topRanked.map(rank => {
               return rank.suggested_id;
             });
@@ -448,7 +424,6 @@ app.get('/lookup/:username', (req, res) => {
 app.get('/tf-lookup/:username', (req, res) => {
   scrapeSave(req.params.username)
     .then(scrape => {
-      // res.send(scrape)
       database.getUserByEId(scrape.id)
         .then(user => {
           res.json({
@@ -467,55 +442,11 @@ app.get('/tf-lookup/:username', (req, res) => {
 });
 
 app.get('/deep-lookup/:username', (req, res) => {
-  // res.send('deep lookup: ' + req.params.username);
-  // ig.getUser(req.params.username, currentSession.session)
-  //   .then(user => {
-  //     res.send(user._params);
-  //   });
   prospect.deepLookup(req.params.username)
     .then(result => {
       res.send(result);
     })
 })
-
-const scrapeSave = (username, bypass=false) => { // now with more resume-ability!
-  username = username.trim();
-  console.log('scraping', username);
-  var thisId;
-  return new Promise((resolve, reject) => {
-    database.getUserByUsername(username)
-      .then(user => {
-        // console.log('user:', user);
-        if (!user || bypass || user.recent_like_count == 0 || user.recent_like_count == null) {
-          Scraper(username)
-            .then(user => {
-              database.upsertUser(user)
-                .then(result => {
-                  database.getEIdFromExternalId(user.external_id, 'users')
-                    .then(id => {
-                      resolve({ id: id[0].id, external_id: user.external_id });
-                    })
-                })
-                .catch(err => {
-                  console.log('upsert attemp failure');
-                  reject(err);
-                })
-            })
-            .catch(err => {
-              console.log('scraper failure');
-              reject(err);
-            })
-        } else {
-          console.log('skipping');
-          resolve({ id: user.id, external_id: user.external_id });
-        }
-      })
-    .catch(err => {
-      console.log('get user by username failure');
-      reject(err);
-    })
-  });
-}
 
 // update this to work with tasks if you decide to use them
 const queueFollowing = (following, primaryUserEId) => {
@@ -552,9 +483,6 @@ const queueFollowing = (following, primaryUserEId) => {
                 console.log('profile:', profile);
                 profile.id = newUser;
                 upsertedUsers.push(profile);
-                // console.log('newUser[0]', newUser[0]);
-                // console.log('primary id:', primaryUserEId);
-                // (usereid, eid of person user is following)
                 database.upsertRelationship(primaryUserEId, newUser, true)
                   .then(related => {
                     next();
@@ -578,7 +506,6 @@ const queueFollowing = (following, primaryUserEId) => {
 
 
 const PORT = process.env.PORT;
-// const PORT = 5760;
 
 http.listen(PORT || 5760, () => {
   console.log('listening on port:', PORT || 5760);

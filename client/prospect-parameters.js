@@ -12,7 +12,6 @@ const handleFile = event => {
   reader.readAsText(file);
   reader.onload = function (loadEvent) {
     var csvData = loadEvent.target.result;
-    // data = $.csv.toArrays(csvData);
     var testArray = csvData.split('\n');
     console.log(testArray.length);
     console.log(testArray.slice(-1));
@@ -22,13 +21,7 @@ const handleFile = event => {
     var latestArray = testArray.map(arr => {
       return arr.replace('\r', '');
     })
-    // if (data && data.length > 0) {
-    //   alert('Imported' + ' ' + data.length + ' ' + 'rows.');
-    //   console.log(data);
-    // }
-    // reader.onerror = function () {
-    //   alert('Unable to read' + ' ' + file.fileName);
-    // }
+
     store.dispatch({
       type: 'ENRICH_CSV',
       users: testArray
@@ -46,7 +39,6 @@ const exportBrands = event => {
   fetch('/brands')
     .then(resp => resp.json())
     .then(brands => {
-      // console.log(brands[0]);
       const allBrands = brands.map(brand => {
         return brand.username;
       })
@@ -77,7 +69,6 @@ function exportToCsv(filename, rows) {
   } else {
     var link = document.createElement("a");
     if (link.download !== undefined) { // feature detection
-      // Browsers that support HTML5 download attribute
       var url = URL.createObjectURL(blob);
       link.setAttribute("href", url);
       link.setAttribute("download", filename);
