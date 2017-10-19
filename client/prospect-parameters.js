@@ -56,7 +56,6 @@ const exportBrands = event => {
 
 const downloadCSV = (rows) => {
   exportToCsv('brands.csv', rows);
-
 }
 
 function exportToCsv(filename, rows) {
@@ -64,18 +63,6 @@ function exportToCsv(filename, rows) {
     var finalVal = '';
     finalVal += row;
     finalVal += ',';
-    // for (var j = 0; j < row.length; j++) {
-    //   var innerValue = row[j] === null ? '' : row[j].toString();
-    //   if (row[j] instanceof Date) {
-    //     innerValue = row[j].toLocaleString();
-    //   };
-    //   var result = innerValue.replace(/"/g, '""');
-    //   if (result.search(/("|,|\n)/g) >= 0)
-    //     result = '"' + result + '"';
-    //   if (j > 0)
-    //       finalVal += ',';
-    //   finalVal += result;
-    // }
     return finalVal + '\n';
   };
 
