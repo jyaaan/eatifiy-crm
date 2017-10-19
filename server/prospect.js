@@ -28,8 +28,46 @@ function Prospect() {
 
 }
 
-Prospect.prototype.likers = function (username, params) { // can be broken into 5 functions
-  var targetCandidateAmount = 200;
+Prospect.prototype.testThousand = function (url) {
+  database.getThousand()
+    .then(thousand => {
+      const thousandValue = thousand.map(row => { return [row.username, row.external_id]; });
+      // console.log(thousandValue);
+
+      convertAndSend(thousandValue, ['username', 'external_id'], url);
+    })
+}
+
+Prospect.prototype.batchLikers = function (username, targetAmount = 1000) {
+
+}
+
+Prospect.prototype.downloadProspects = function (listUrl, token, batchId) {
+  
+}
+
+Prospect.prototype.getFollowers = function (userId) {
+  console.log('getting followers');
+  return new Promise((resolve, reject) => {
+    ig.getFollowers(userId, currentSession.session)
+      .then(result => {
+        resolve(result);
+      })
+  })
+}
+
+Prospect.prototype.deepLookup = function (username) {
+  return new Promise((resolve, reject) => {
+    ig.getUser(username, currentSession.session)
+      .then(result => {
+        console.log(result);
+        resolve(result);
+      })
+  })
+}
+
+Prospect.prototype.likers = function (username, params, targetCandidateAmount = 300, returnCount = 100) { // can be broken into 5 functions
+  // var targetCandidateAmount = 200;
 
   console.log('Getting likers for', username);
   const currentFilter = new InfluencerFilter(params);
@@ -77,11 +115,11 @@ Prospect.prototype.likers = function (username, params) { // can be broken into 
                     })
 
                     // if there are more than 300, sort by score and take top 300
-                    if (matchCandidates.length > 300) {
-                      prospects = sortByScore(matchCandidates).slice(0, 299);
+                    if (matchCandidates.length > returnCount) {
+                      prospects = sortByScore(matchCandidates).slice(0, returnCount);
                     } else {
                       prospects = prospects.concat(...sortByScore(matchCandidates));
-                      prospects = prospects.concat(...sortByScore(unmatchCandidates).slice(0, 300 - prospects.length -1));
+                      prospects = prospects.concat(...sortByScore(unmatchCandidates).slice(0, returnCount - prospects.length -1));
                     }
                     prospects.map(prospect => { console.log(prospect.username, prospect.score, prospect.termMatch); });
                     // else take them all then sort the remaining list
@@ -100,12 +138,9 @@ Prospect.prototype.likers = function (username, params) { // can be broken into 
 // })
 const convertAndSend = (array, header, url) => {
   console.log('testing csv send');
-  const filteredProspects = array.map(elem => {
-    return [elem.external_id, elem.username, elem.score];
-  });
   var rows = [
-    ['external_id', 'username', 'score'],
-    ...filteredProspects
+    ['username', 'external_id'],
+    ...array
   ];
   var processRow = function (row) {
     var finalVal = '';
@@ -117,9 +152,10 @@ const convertAndSend = (array, header, url) => {
   rows.map(row => {
     csvFile += processRow(row);
   })
-  // signal(csvFile, url);
-  fileHandler.saveCSV(csvFile, 'aaaa output');
+  signal(csvFile, url);
+  // fileHandler.saveCSV(csvFile, 'aaaa output');
 }
+
 const signal = (csvFile, url) => {
   var options = {
     url: url,
@@ -132,6 +168,7 @@ const signal = (csvFile, url) => {
     ],
     body: csvFile
   };
+  // console.log('if this shows, we\'ve done something');
   request(options);
 }
 

@@ -38,16 +38,41 @@ IG.prototype.getFollowing = function (userId, session) {
   })
 }
 
+IG.prototype.getFollowers = function (userId, session) {
+  const followers = [];
+  return new Promise((resolve, reject) => {
+    let feed = new Client.Feed.AccountFollowers(session, userId);
+    function retrieve() {
+      console.log('getting followers');
+      feed.get()
+        .then(result => {
+          result.map(user => { followers.push(user._params); });
+          if (feed.isMoreAvailable()) {
+            setTimeout(() => {
+              retrieve();
+            }, 5000);
+          } else {
+            console.log('finished');
+            resolve(followers);
+          }
+        })
+    }
+    retrieve();
+  })
+}
+
 Date.prototype.formatMMDDYYYY = function(){
 	return ((this.getMonth()+1)+"/"+this.getDate()+"/"+this.getFullYear());
 };
 
 IG.prototype.getUser = function (username, session) {
   return new Promise((resolve, reject) => {
-    new Client.Account.searchForUser(session, username)
+    new Client.Account.search(session, username)
       .then((result) => {
+        console.log(result);
         resolve(result);
       });
+    // resolve(session);
   });
 }
 

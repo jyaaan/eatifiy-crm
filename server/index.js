@@ -21,27 +21,133 @@ const currentSession = { initialized: false, session: {} };
 const Prospect = require('./prospect');
 const prospect = new Prospect();
 
+const TFBridge = require('./tf-bridge');
+const tfBridge = new TFBridge();
+
 const http = require('http').createServer(app);
-var io = require('socket.io')(http);
 
 app.use(staticMiddleware);
 app.use(bodyParser.json());
 
-// socket.io stuff
-io.on('connection', socket => {
-  socket.emit('welcome', {message: 'Connection to Truefluence established', id: socket.id});
-});
+const listDetails = {
+  loaded: false,
+  staging: true,
+  token: '',
+  username: '',
+  listId: ''
+}
+
+const testListDetails = {
+  "loaded": true,
+  "staging": true,
+  "token": "AP7Wf9NdJRgzXzpCqMqwr6Dj",
+  "username": "truefluence9",
+  "listId": "1016"
+}
+
+getValue = (url, value, terminus = '/') => {
+  if (url.indexOf(value) > 0) {
+    const startPos = url.indexOf(value) + value.length;
+    const endPos = url.indexOf(terminus, startPos) > 0 ? url.indexOf(terminus, startPos) : url.length;
+    return url.substring(startPos, endPos);
+  } else {
+    return -1;
+  }
+}
+
+getSubmitURL = listDetails => {
+  var submitURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
+  submitURL = submitURL + listDetails.username + '/prospects/' + listDetails.listId + '.csv?token=';
+  submitURL = submitURL + listDetails.token;
+  return submitURL;
+}
+
+getDownloadURL = listDetails => {
+  var downloadURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
+  downloadURL = downloadURL + listDetails.username + '/prospects/' + listDetails.listId + '.json?token=';
+  downloadURL = downloadURL + listDetails.token;
+  return downloadURL;
+}
 
 app.get('/health_ping', (req, res) => {
   res.send('OK'); 
 })
 
-app.post('/prospect', (req, res) => {
-  console.log('incoming prospecting request');
-  console.log('JSON Body:', req.body);
-  res.json('received');
-  prospect.likers(req.body.username, req.body);
+app.put('/watch', (req, res) => {
+  console.log('watch called');
+  // console.log(req.body);
+  // res.send('csv received');
 })
+// https://staging.truefluence.io/users/eatify/prospects/1013.json?token=oiUBxMQ9KzvBezCyGX1gLDMS&per_page=2&page=5
+app.post('/prospect', (req, res) => {
+  // get the url
+  const url = req.body.upload_url;
+  console.log(url);
+  listDetails.staging = url.indexOf('/staging.') > 0;
+  listDetails.token = getValue(url, 'token=', '&');
+  listDetails.username = getValue(url, 'users/');
+  listDetails.listId = getValue(url, 'prospects/', '.');
+  listDetails.loaded = true;
+  console.log(listDetails)
+  // get a list of 1,000 and send to URL
+  // prospect.testThousand(url);
+  res.send(listDetails);
+})
+
+app.get('/submit-list', (req, res) => {
+  if (listDetails.loaded) {
+    console.log(submitURL);
+    const submitURL = getSubmitURL(listDetails);
+    tfBridge.submitProspects(submitURL);
+    res.send('list created');
+  } else {
+    res.send('error: target prospect list not specified');
+  }
+})
+
+app.get('/test-follower-submit/:userId', (req, res) => {
+  req.params.userId;
+  const submitURL = getSubmitURL(listDetails);
+  prospect.getFollowers(req.params.userId)
+    .then(result => {
+      const followers = result.map(follower => { return [follower.username, follower.id]; }) 
+      // res.send(followers);
+      tfBridge.submitProspects(submitURL, followers);
+    })
+})
+
+app.get('/download-list', (req, res) => {
+  if (listDetails.loaded) {
+    const downloadURL = getDownloadURL(listDetails);
+    tfBridge.downloadProspects(downloadURL);
+    console.log(downloadURL);
+    res.send('downloaded');
+  } else {
+    res.send('error: target prospect list not specified');
+  }
+})
+
+app.post('/preload', (req, res) => {
+  console.log('preloading');
+  res.json('preloading');
+  prospect.likers('jesterrulz', req.body, 100, 100);
+});
+
+// app.get('/check-env', (req, res) => {
+//   console.log('RDS_USERNAME', process.env.RDS_USERNAME);
+//   console.log('RDS_PASSWORD', process.env.RDS_PASSWORD);
+//   console.log('RDS_DB_NAME', process.env.RDS_DB_NAME);
+//   console.log('RDS_PORT', process.env.RDS_PORT);
+//   console.log('RDS_HOSTNAME', process.env.RDS_HOSTNAME);
+// })
+
+// removing old stuff
+// app.post('/prospect', (req, res) => {
+//   console.log('incoming prospecting request');
+//   console.log('JSON Body:', req.body);
+//   res.json('received');
+//   prospect.likers(req.body.username, req.body);
+// })
 
 app.put('/test-url', (req, res) => {
   console.log('test-url received');
@@ -449,10 +555,14 @@ app.get('/tf-lookup/:username', (req, res) => {
 
 app.get('/deep-lookup/:username', (req, res) => {
   // res.send('deep lookup: ' + req.params.username);
-  ig.getUser(req.params.username, currentSession.session)
-    .then(user => {
-      res.send(user._params);
-    });
+  // ig.getUser(req.params.username, currentSession.session)
+  //   .then(user => {
+  //     res.send(user._params);
+  //   });
+  prospect.deepLookup(req.params.username)
+    .then(result => {
+      res.send(result);
+    })
 })
 
 const scrapeSave = (username, bypass=false) => { // now with more resume-ability!
@@ -555,7 +665,8 @@ const queueFollowing = (following, primaryUserEId) => {
 
 
 const PORT = process.env.PORT;
+// const PORT = 5760;
 
-http.listen(PORT, () => {
-  console.log('listening on port:', PORT);
+http.listen(PORT || 5760, () => {
+  console.log('listening on port:', PORT || 5760);
 });
