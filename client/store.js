@@ -1,29 +1,6 @@
 const { createStore, combineReducers } = require('redux');
 const https = require('https');
 
-const usernameInput = (state = '', action) => {
-  switch (action.type) {
-    case 'INPUT_CHANGED':
-      return action.text;
-    case 'SEARCH_COMPLETE':
-      return action.text;
-    default:
-      return state;
-  }
-}
-
-const userProfile = (state = { profile: { id: -1 }, followingBtn: false }, action) => {
-  switch (action.type) {
-    case 'SHOW_PROFILE':
-      return { profile: action.profile };
-    case 'DISABLE_FOLLOWING': // For the button. For when we implement follower overlap
-      return { followingBtn: action.show, profile: state.profile };
-    case 'ENABLE_FOLLOWING':
-      return { followingBtn: action.show, profile: state.profile };
-    default:
-      return state;
-  }
-}
 const defaultParameters = {
   engagement: {
   },
@@ -57,30 +34,6 @@ const prospectParameters = (state = {parameters: defaultParameters, type: {}}, a
         body: JSON.stringify(state)
       })
       return state;
-    default:
-      return state;
-  }
-}
-
-const initProgress = {
-  show: true,
-  stage: 'init',
-  total: null,
-  progress: null
-};
-
-const prospectProgress = (state = initProgress, action) => {
-  switch (action.type) {
-    case 'HIDE_PROGRESS':
-      return Object.assign({}, state, { show: false });
-    case 'SHOW_PROGRESS':
-      return Object.assign({}, state, { show: true });
-    case 'CHANGE_STAGE':
-      console.log('attempting to change stage to', action.stage);
-      console.log('currently:', state);
-      return Object.assign(state, {stage: action.stage});
-    case 'UPDATE_STATUS':
-      return Object.assign(state, action.status);
     default:
       return state;
   }
@@ -180,10 +133,7 @@ const prospectList = (state = {}, action) => {
 }
 
 const reducer = combineReducers({
-  usernameInput,
-  userProfile,
   prospectParameters,
-  prospectProgress,
   enrichCSV,
   easyFilter,
   prospectList

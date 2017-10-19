@@ -1,10 +1,7 @@
-// First step: get services connected.
-
 const AWS = require('aws-sdk');
 const http = require('http');
 const uuid = require('node-uuid');
 
-// Create an S3 client
 var s3 = new AWS.S3();
 
 // Create a bucket and upload something into it

@@ -50,4 +50,42 @@ fileHandler.prototype.saveCSV = (csv, filename) => {
   })
 }
 
+fileHandler.prototype.convertAndSend = (array, header, url) => {
+  console.log('testing csv send');
+  var rows = [
+    header,
+    ...array
+  ];
+  var processRow = function (row) {
+    var finalVal = '';
+    finalVal += row;
+    // finalVal += ',';
+    return finalVal + '\n';
+  };
+  var csvFile = '';
+  rows.map(row => {
+    csvFile += processRow(row);
+  })
+  this.signal(csvFile, url);
+  // fileHandler.saveCSV(csvFile, 'aaaa output');
+}
+
+fileHandler.prototype.signal = (csvFile, url) => {
+  var options = {
+    url: url,
+    method: 'PUT',
+    headers: [
+      {
+        name: 'Content-Type',
+        value: 'application/csv'
+      }
+    ],
+    body: csvFile
+  };
+  // console.log('if this shows, we\'ve done something');
+  request(options);
+  console.log('submission complete');
+}
+
+
 module.exports = fileHandler;

@@ -1,21 +1,23 @@
-// const knex = require('knex')({
-//   client: 'postgresql',
-//   connection: {
-//     user: 'johny',
-//     password: 'peanut',
-//     database: 'eatify-crm'
-//   }
-// });
 const knex = require('knex')({
   client: 'postgresql',
   connection: {
-    user: process.env.RDS_USERNAME,
-    password: process.env.RDS_PASSWORD,
-    database: process.env.RDS_DB_NAME,
-    port: process.env.RDS_PORT,
-    host: process.env.RDS_HOSTNAME
+    user: 'johny',
+    password: 'peanut',
+    database: 'eatify-crm',
+    host: 'localhost',
+    port: '5432'
   }
 });
+// const knex = require('knex')({
+//   client: 'postgresql',
+//   connection: {
+//     user: process.env.RDS_USERNAME,
+//     password: process.env.RDS_PASSWORD,
+//     database: process.env.RDS_DB_NAME,
+//     port: process.env.RDS_PORT,
+//     host: process.env.RDS_HOSTNAME
+//   }
+// });
 
 const async = require('async');
 const InfluencerFilter = require('./influencer-filter');

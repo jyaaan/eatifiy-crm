@@ -1,35 +1,47 @@
 const Scraper = require('./scraper');
 const Database = require('./database').Database;
-// const database = new Database();
+const database = new Database();
+function ScrapeSave() {
 
-function ScrapeSave(username, bypass=false) { // now with more resume-ability!
+}
+
+ScrapeSave.prototype.scrapeSave = function (username, bypass = false) { // now with more resume-ability!
   console.log('scraping', username);
   var thisId;
   return new Promise((resolve, reject) => {
     database.getUserByUsername(username)
       .then(user => {
-        // console.log('user:', user);
-        if (!user || bypass || user.recent_like_count == 0) {
+        if (!user || bypass || user.recent_like_count == 0 || user.recent_like_count == null) {
           Scraper(username)
             .then(user => {
-              database.upsertUser(user)
+              var tempUser = Object.assign({}, user);
+              delete tempUser.youngest_post;
+              database.upsertUser(tempUser)
                 .then(result => {
                   database.getEIdFromExternalId(user.external_id, 'users')
                     .then(id => {
-                      resolve({ id: id[0].id, external_id: user.external_id });
+                      resolve(user);
                     })
                 })
                 .catch(err => {
+                  console.log('upsert attemp failure');
                   reject(err);
                 })
             })
             .catch(err => {
-              reject(err);
+              console.log('scraper failure');
+              setTimeout(() => {
+                reject(err);
+              }, 120000);
             })
         } else {
           console.log('skipping');
-          resolve({ id: user.id, external_id: user.external_id });
+          resolve(user);
         }
+      })
+      .catch(err => {
+        console.log('get user by username failure');
+        reject(err);
       })
   });
 }

@@ -2,7 +2,6 @@ const React = require('react');
 const store = require('./store');
 const ScraperMedia = require('../server/scraper');
 
-
 const Segment = require('semantic-ui-react').Segment;
 const Statistic = require('semantic-ui-react').Statistic;
 const Image = require('semantic-ui-react').Image;
@@ -289,8 +288,6 @@ const toggleFilter = () => {
   if (document.querySelector('#accepted-check').checked) {
     console.log('accepted checked');
     filteredProspects = filteredProspects.concat(masterProspects.filter(prospect => { return prospect.accepted == true }));
-    // console.log(masterProspects.filter(prospect => { return prospect.accepted == true }));
-    // console.log('filtered prospects:', filteredProspects);
   }
   if (document.querySelector('#rejected-check').checked) {
     console.log('rejected checked');
@@ -299,7 +296,7 @@ const toggleFilter = () => {
   if (document.querySelector('#remain-check').checked) {
     filteredProspects = filteredProspects.concat(masterProspects.filter(prospect => { return prospect.accepted == null }));
   }
-  // console.log('here are the filtered:', filteredProspects);
+
   position = 0;
   prospects = filteredProspects;
   currentProspect = prospects[0];
@@ -313,10 +310,6 @@ const toggleFilter = () => {
     });
   }, 500);
 }
-
-/*
-toggle > check state > apply filters to state > 
-*/
 
 const userMedias = (medias) => {
   const result = medias.map(media => {
@@ -334,10 +327,7 @@ const userMedias = (medias) => {
 const loadTest = event => {
   console.log('loading:', event.target.id);
   position = 0;
-  // store.dispatch({
-  //   type: 'LOAD_USER',
-  //   username: 'gamegrumps'
-  // })
+
   fetch('/prospect-list/' + event.target.id)
     .then(resp => resp.json())
     .then(data => {
@@ -387,39 +377,11 @@ const pageRender = (user, medias) => {
         className="ui button"
         id='rocksbox2'
         onClick={loadTest}>rocksbox2</button>
-      <button
-        className="ui button"
-        id='brands82117'
-        onClick={loadTest}>brands82117</button>
-      <button
-        className="ui button"
-        id='brands82117-2'
-        onClick={loadTest}>brands82117-2</button>
-      <button
-        className="ui button"
-        id='goldnuggetghee'
-        onClick={loadTest}>goldnuggetghee</button>
       {profile}
       {posts}
     </div>
   )
 }
-      // <button
-      //   className="ui button"
-      //   id='kodiakcakes'
-      //   onClick= { loadTest }>kodiakcakes</button>
-      // <button
-      //   className="ui button"
-      //   id='polkadot_pr'
-      //   onClick= { loadTest }>polkadot_pr</button>
-      // <button
-      //   className="ui button"
-      //   id='rxbar'
-      //   onClick= { loadTest }>rxbar</button>
-      // <button
-      //   className="ui button"
-      //   id='gomacro'
-      //   onClick= { loadTest }>gomacro</button>
 
 const downloadCSV = () => {
   const toSave = prospects.filter(prospect => { return prospect.accepted == true; }).map(prospect => { return prospect.username });
@@ -432,18 +394,6 @@ function exportToCsv(filename, rows) {
     var finalVal = '';
     finalVal += row;
     finalVal += ',';
-    // for (var j = 0; j < row.length; j++) {
-    //   var innerValue = row[j] === null ? '' : row[j].toString();
-    //   if (row[j] instanceof Date) {
-    //     innerValue = row[j].toLocaleString();
-    //   };
-    //   var result = innerValue.replace(/"/g, '""');
-    //   if (result.search(/("|,|\n)/g) >= 0)
-    //     result = '"' + result + '"';
-    //   if (j > 0)
-    //       finalVal += ',';
-    //   finalVal += result;
-    // }
     return finalVal + '\n';
   };
 
@@ -458,7 +408,6 @@ function exportToCsv(filename, rows) {
   } else {
     var link = document.createElement("a");
     if (link.download !== undefined) { // feature detection
-      // Browsers that support HTML5 download attribute
       var url = URL.createObjectURL(blob);
       link.setAttribute("href", url);
       link.setAttribute("download", filename);
