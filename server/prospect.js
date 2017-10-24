@@ -40,8 +40,22 @@ Prospect.prototype.testThousand = function (url) {
     })
 }
 
-Prospect.prototype.batchLikers = function (username, targetAmount = 1000) {
-
+Prospect.prototype.batchLikers = function (username) {
+  const timeStart = Date.now();
+  console.log('Getting all likers for', username);
+  return new Promise((resolve, reject) => {
+    scrapeSave.scrapeSave(username, true)
+      .then(user => {
+        this.getAllLikers(user.external_id, user.post_count, timeStart)
+          .then(likers => {
+            console.log(likers.slice(1, 10));
+            resolve(likers);
+            const timeComplete = Date.now();
+            console.log('time taken (sec):', (timeComplete - timeStart) / 1000);
+          })
+        // resolve(user);
+      })
+  })
 }
 
 Prospect.prototype.downloadProspects = function (listUrl, token, batchId) {
@@ -68,6 +82,62 @@ Prospect.prototype.deepLookup = function (username) {
   })
 }
 
+// will result in array of [username, external_id]
+Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart) {
+  var likers = [];
+  console.log('Getting all likers for', externalId);
+  var counter = 0;
+  return new Promise((resolve, reject) => {
+    ig.initializeMediaFeed(externalId, currentSession.session)
+      .then(feed => {
+        function retrieve() {
+          feed.get()
+            .then(medias => {
+              async.mapSeries(medias, (media, next) => {
+                getMediaLikers(media, likers)
+                  .then(newLikers => {
+                    counter++;
+                    likers = likers.concat(...newLikers);
+                    var timeNow = Date.now();
+                    var timeElapsed = (timeNow - timeStart) / 1000;
+                    var predictedTotal = (timeElapsed * postCount) / counter;
+                    console.log('\033c');
+                    console.log('got new likers, running total:', likers.length);
+                    console.log(counter + ' out of ' + postCount + ' posts analyzed. ' + 
+                      ((counter / postCount) * 100).toFixed(2) + '%');
+                    console.log('time elapsed (sec):', timeElapsed.toFixed(2));
+                    console.log('predicted total job duration (sec):', predictedTotal.toFixed(0));
+                    console.log('predicted time remaining (sec):', (predictedTotal - timeElapsed).toFixed(0));
+
+                    setTimeout(() => {
+                      next();
+                    }, 1000)
+                  })
+                  .catch(err => {
+                    console.log('error detected, waiting to restart');
+                    setTimeout(() => {
+                      console.log('attempting reset');
+                      next();
+                    }, 120000)
+                  })
+              }, err => { // when medias are done, check to see if more medias exist
+                if (feed.moreAvailable) {
+                  console.log('More likers available');
+                  setTimeout(() => {
+                    retrieve();
+                  }, 1000);
+                } else {
+                  console.log('All likers retrieved');
+                  resolve(likers);
+                }
+              })
+            })
+        } 
+        retrieve();
+      }) 
+  })
+}
+
 Prospect.prototype.likers = function (username, params, targetCandidateAmount = 300, returnCount = 100) { // can be broken into 5 functions
   // var targetCandidateAmount = 200;
 
@@ -78,7 +148,7 @@ Prospect.prototype.likers = function (username, params, targetCandidateAmount = 
   var publicLikerNames = [];
   var arrCandidates = [];
   var counter = 0;
-  scrapeSave.scrapeSave(username, database, true)
+  scrapeSave.scrapeSave(username, true)
     .then(scraped => { // Get data of target account
       console.log('primary user scrape:', scraped);
       ig.initializeMediaFeed(scraped.external_id, currentSession.session) // opening media feed
@@ -177,6 +247,18 @@ const signal = (csvFile, url) => {
 const sortByScore = candidates => {
   return candidates.sort((a, b) => {
     return b.score - a.score;
+  })
+}
+
+const getMediaLikers = (media, arrLikers) => {
+  return new Promise((resolve, reject) => {
+    ig.getLikers(media, currentSession.session)
+      .then(likers => {
+        const likerUsernames = arrLikers.map(liker => { return liker.username });
+        const publicLikers = likers.filter(liker => { return liker.isPrivate == false; });
+        const dedupedPublicLikers = publicLikers.filter(liker => { return likerUsernames.indexOf(liker.username) == -1; });
+        resolve(dedupedPublicLikers);
+      })
   })
 }
 

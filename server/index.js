@@ -71,6 +71,14 @@ getDownloadURL = listDetails => {
   return downloadURL;
 }
 
+app.get('/batch-likers-test/:username', (req, res) => {
+  res.send('OK');
+  prospect.batchLikers(req.params.username)
+    .then(likers => {
+      console.log('likers found:', likers.length);
+    })
+})
+
 app.get('/health_ping', (req, res) => {
   res.send('OK'); 
 })
@@ -107,12 +115,13 @@ app.get('/submit-list', (req, res) => {
 })
 
 app.get('/test-follower-submit/:userId', (req, res) => {
-  req.params.userId;
+  
   const submitURL = getSubmitURL(listDetails);
   prospect.getFollowers(req.params.userId)
     .then(result => {
       const followers = result.map(follower => { return [follower.username, follower.id]; }) 
-      tfBridge.submitProspects(submitURL, followers);
+      res.send(followers);
+      // tfBridge.submitProspects(submitURL, followers);
     })
 })
 
