@@ -48,7 +48,6 @@ Prospect.prototype.batchLikers = function (username) {
       .then(user => {
         this.getAllLikers(user.external_id, user.post_count, timeStart)
           .then(likers => {
-            console.log(likers.slice(1, 10));
             resolve(likers);
             const timeComplete = Date.now();
             console.log('time taken (sec):', (timeComplete - timeStart) / 1000);
@@ -82,11 +81,13 @@ Prospect.prototype.deepLookup = function (username) {
   })
 }
 
+var totalLikersProcessed = 0;
 // will result in array of [username, external_id]
 Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart) {
   var likers = [];
   console.log('Getting all likers for', externalId);
   var counter = 0;
+  totalLikersProcessed = 0;
   return new Promise((resolve, reject) => {
     ig.initializeMediaFeed(externalId, currentSession.session)
       .then(feed => {
@@ -97,12 +98,13 @@ Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart) {
                 getMediaLikers(media, likers)
                   .then(newLikers => {
                     counter++;
+                    totalLikersProcessed += newLikers.length
                     likers = likers.concat(...newLikers);
                     var timeNow = Date.now();
                     var timeElapsed = (timeNow - timeStart) / 1000;
                     var predictedTotal = (timeElapsed * postCount) / counter;
                     console.log('\033c');
-                    console.log('got new likers, running total:', likers.length);
+                    console.log('got new likers, unique total (processed): ' + likers.length + ' (' + totalLikersProcessed + ')');
                     console.log(counter + ' out of ' + postCount + ' posts analyzed. ' + 
                       ((counter / postCount) * 100).toFixed(2) + '%');
                     console.log('time elapsed (sec):', timeElapsed.toFixed(2));
@@ -254,6 +256,7 @@ const getMediaLikers = (media, arrLikers) => {
   return new Promise((resolve, reject) => {
     ig.getLikers(media, currentSession.session)
       .then(likers => {
+        totalLikersProcessed += likers.length;
         const likerUsernames = arrLikers.map(liker => { return liker.username });
         const publicLikers = likers.filter(liker => { return liker.isPrivate == false; });
         const dedupedPublicLikers = publicLikers.filter(liker => { return likerUsernames.indexOf(liker.username) == -1; });
