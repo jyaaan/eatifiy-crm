@@ -87,6 +87,7 @@ IG.prototype.initializeMediaFeed = function (userId, session) {
   })
 }
 
+// i think it gets up to 18 posts per
 IG.prototype.getMedias = function (userId, session, days=30) {
   const medias = [];
   var dateRange = new Date();

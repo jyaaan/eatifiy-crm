@@ -305,8 +305,8 @@ Database.prototype.getProspectsByJobId = function (jobId) {
 Database.prototype.prospectForJobExists = function (jobId, username) {
   return knex('prospects')
     .count('*')
-    .where('username', username)
-    .andWhere('prospect_job_id', jobId)
+    .where('prospect_job_id', jobId)
+    .andWhere('username', username)
     .then(result => {
       return (result[0].count > 0);
     })
@@ -458,6 +458,7 @@ Database.prototype.updateJob = function (job) {
   job.updated_at = timeNow;
   return knex('prospect-jobs')
     .where('id', job.id)
+    .returning('id')
     .update(job);
 }
 

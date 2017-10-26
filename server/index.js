@@ -42,9 +42,9 @@ const listDetails = {
 const testListDetails = {
   "loaded": true,
   "staging": true,
-  "token": "awshitdawg",
-  "username": "eatify",
-  "listId": "69"
+  "token": "LBeYe2o61wr2eypVhL2wFkqT",
+  "username": "lawrencehunt_co",
+  "listId": "1035"
 }
 
 // const testListDetails = {
@@ -155,20 +155,10 @@ app.get('/initiate-prospect-job', (req, res) => {
                     console.log('business likers:', likers.filter(liker => {
                       return liker.isBusiness == true;
                     }).length);
-                    // convert and save to prospect table
-                    // const newProspect = {
-                    //   username: likers[5].username,
-                    //   external_id: likers[5].id,
-                    //   prospect_job_id: testListDetails.listId,
-                    //   relationship_type: 'liker'
-                    // }
-                    // database.upsertProspect(newProspect)
-                    //   .then(result => {
-                    //     console.log('upsert return:', result);
-                    //   })
                     console.log(job.id);
                     saveLikersToProspects(likers, job.id)
                       .then(saveResult => {
+
                         console.log('return from saving prospects:', saveResult);
                       })
                   })
@@ -181,15 +171,25 @@ app.get('/initiate-prospect-job', (req, res) => {
   }
 })
 
-app.get('/test-render-prospects', (req, res) => {
+app.get('/test-render-send-prospects', (req, res) => {
   res.send('ok');
-  renderFormattedProspects(1)
-    .then(prospects => {
-      // console.log(prospects);
-      batchProspects(prospects, 50).map(batch => {
-        console.log('batch quantity:', batch.length);
+  if (testListDetails.loaded) {
+    const submitURL = getSubmitURL(testListDetails);
+    console.log(submitURL);
+    renderFormattedProspects(4)
+      .then(prospects => {
+        console.log('prospects to transfer:', prospects.length);
+        // console.log(prospects);
+        batchProspects(prospects).map(batch => {
+          // send each batch to tf
+          setTimeout(() => {
+            tfBridge.submitProspects(submitURL, batch);
+          }, 500);
+        })
       })
-    })
+  } else {
+    res.send('error: target prospect list not specified');
+  }
 })
 
 batchProspects = (prospects, batchSize = 1000) => {
@@ -211,6 +211,9 @@ renderFormattedProspects = jobId => {
 }
 
 saveLikersToProspects = (likers, jobId) => {
+  console.log('attempgint save:', likers.length);
+  const splicedLikers = spliceDuplicates(likers);
+  console.log('after dupe splice:', splicedLikers.length);
   return new Promise((resolve, reject) => {
     async.mapSeries(likers, (liker, next) => {
       const newProspect = {
