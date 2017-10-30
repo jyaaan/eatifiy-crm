@@ -42,9 +42,9 @@ const listDetails = {
 const testListDetails = {
   "loaded": true,
   "staging": true,
-  "token": "LBeYe2o61wr2eypVhL2wFkqT",
+  "token": "nnZdA6NCvRNrUp5tjNu4VEUz",
   "username": "lawrencehunt_co",
-  "listId": "1035"
+  "listId": "1195"
 }
 
 // const testListDetails = {
@@ -171,12 +171,26 @@ app.get('/initiate-prospect-job', (req, res) => {
   }
 })
 
+app.get('/test-batch-download-prospects', (req, res) => {
+  const downloadURL = getDownloadURL(testListDetails);
+  tfBridge.downloadProspects(downloadURL, 4);
+  // console.log(downloadURL);
+  res.send('downloaded');
+})
+
+app.get('/test-get-user-list', (req, res) => {
+  const listURL = 'https://staging.truefluence.io/users/lawrencehunt_co/lists.json';
+  tfBridge.downloadProspects(listURL);
+  res.send('received');
+})
+
 app.get('/test-render-send-prospects', (req, res) => {
   res.send('ok');
+  const prospectJobId = 4; // HEY, make this dynamic
   if (testListDetails.loaded) {
     const submitURL = getSubmitURL(testListDetails);
     console.log(submitURL);
-    renderFormattedProspects(4)
+    renderFormattedProspects(prospectJobId) 
       .then(prospects => {
         console.log('prospects to transfer:', prospects.length);
         // console.log(prospects);
@@ -186,6 +200,10 @@ app.get('/test-render-send-prospects', (req, res) => {
             tfBridge.submitProspects(submitURL, batch);
           }, 500);
         })
+      })
+      .then(result => {
+        // update prospect job as list_sent = true
+
       })
   } else {
     res.send('error: target prospect list not specified');

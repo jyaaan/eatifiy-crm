@@ -475,8 +475,6 @@ Database.prototype.listIdExists = function (listId) {
     .count('*')
     .where('prospect_list_id', listId)
     .then(result => {
-      console.log('listidexists result:', result[0].count);
-      console.log('is above greater than 0?', result[0].count > 0);
       return (result[0].count > 0);
     })
 }
