@@ -69,7 +69,6 @@ IG.prototype.getUser = function (username, session) {
   return new Promise((resolve, reject) => {
     new Client.Account.search(session, username)
       .then((result) => {
-        console.log(result);
         resolve(result);
       });
     // resolve(session);
@@ -88,6 +87,7 @@ IG.prototype.initializeMediaFeed = function (userId, session) {
   })
 }
 
+// i think it gets up to 18 posts per
 IG.prototype.getMedias = function (userId, session, days=30) {
   const medias = [];
   var dateRange = new Date();
@@ -131,8 +131,11 @@ IG.prototype.getMedias = function (userId, session, days=30) {
   });
 }
 
+
+// gets first 1,000 likers of given media
+// results are concise
 IG.prototype.getLikers = function (media, session) {
-  console.log('getLikers');
+  // console.log('getLikers');
   return new Promise((resolve, reject) => {
     Client.Media.likers(session, media.id)
       .then(likers => {
@@ -140,7 +143,6 @@ IG.prototype.getLikers = function (media, session) {
         resolve(concise);
       })
   })
-
 }
 
 IG.prototype.initialize = function () {

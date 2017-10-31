@@ -42,10 +42,18 @@ const listDetails = {
 const testListDetails = {
   "loaded": true,
   "staging": true,
-  "token": "AP7Wf9NdJRgzXzpCqMqwr6Dj",
-  "username": "truefluence9",
-  "listId": "1016"
+  "token": "nnZdA6NCvRNrUp5tjNu4VEUz",
+  "username": "lawrencehunt_co",
+  "listId": "1195"
 }
+
+// const testListDetails = {
+//   "loaded": true,
+//   "staging": true,
+//   "token": "thatboyaintright",
+//   "username": "lawrencehunt_co",
+//   "listId": "1"
+// }
 
 getValue = (url, value, terminus = '/') => {
   if (url.indexOf(value) > 0) {
@@ -71,15 +79,196 @@ getDownloadURL = listDetails => {
   return downloadURL;
 }
 
+app.get('/batch-likers-test/:username', (req, res) => {
+  res.send('OK');
+  prospect.batchLikers(req.params.username)
+    .then(likers => {
+      console.log('likers found:', likers.length);
+    })
+})
+
 app.get('/health_ping', (req, res) => {
   res.send('OK'); 
 })
 
-app.put('/watch', (req, res) => {
-  console.log('watch called');
-  // console.log(req.body);
-  // res.send('csv received');
+app.get('/list-details', (req, res) => {
+  console.log('getting list details');
+  if (listDetails.loaded) {
+    res.send(listDetails.listId);
+  } else {
+    res.send('-1');
+  }
 })
+
+app.get('/test-create-job', (req, res) => {
+  if (testListDetails.loaded) {
+    database.listIdExists(testListDetails.listId)
+      .then(exists => {
+        if (!exists) {
+          console.log('doesn\'t exist, adding');
+          const job = {};
+          job.prospect_list_id = testListDetails.listId;
+          job.token = testListDetails.token;
+          job.primary_username = testListDetails.username;
+          job.analyzed_username = testListDetails.username;
+          job.stage = 'initialized';
+          job.filter_params = JSON.stringify({});
+    
+          database.createJob(job)
+            .then(result => {
+              res.send(result);
+            })
+
+        } else {
+          res.send('list id already exists!');
+        }
+      })
+  } else {
+    res.send('prospect list details not loaded');
+  }
+})
+
+app.get('/initiate-prospect-job', (req, res) => {
+  if (testListDetails.loaded) {
+    database.listIdExists(testListDetails.listId)
+      .then(exists => {
+        if (!exists) {
+          res.send('prospect job with this list ID does not exist, please create');
+        } else {
+          console.log('job found');
+          database.getJobByListId(testListDetails.listId)
+            .then(job => {
+              console.log('job:', job);
+              if (job.list_sent) {
+                if (job.ready_to_download) {
+                  res.send('ready to download!');
+                } else {
+                  res.send('prospect list previously submitted for enrichment, please wait');
+                }
+              } else {
+                res.send('this job be ready to rock and roll!');
+                prospect.batchLikers(job.analyzed_username)
+                  .then(likers => {
+                    console.log('likers found:', likers.length);
+                    // at this point you will have public likers as an array of objects which contain:
+                    // username, id, picture, fullName, hasAnonymousProfilePicture, isBusiness, isPrivate
+                    console.log('business likers:', likers.filter(liker => {
+                      return liker.isBusiness == true;
+                    }).length);
+                    console.log(job.id);
+                    saveLikersToProspects(likers, job.id)
+                      .then(saveResult => {
+                        
+                        console.log('return from saving prospects:', saveResult);
+                      })
+                  })
+              }
+            })
+        }
+      })
+  } else {
+    res.send('prospect list details not loaded');
+  }
+})
+
+app.get('/test-batch-download-prospects', (req, res) => {
+  const downloadURL = getDownloadURL(testListDetails);
+  tfBridge.downloadProspects(downloadURL, 4);
+  // console.log(downloadURL);
+  res.send('downloaded');
+})
+
+app.get('/test-get-user-list', (req, res) => {
+  const listURL = 'https://staging.truefluence.io/users/lawrencehunt_co/lists.json';
+  tfBridge.downloadProspects(listURL);
+  res.send('received');
+})
+
+app.get('/test-render-send-prospects', (req, res) => {
+  res.send('ok');
+  var prospectCount;
+
+  
+  const prospectJobId = 4; // HEY, make this dynamic
+
+
+  if (testListDetails.loaded) {
+    const submitURL = getSubmitURL(testListDetails);
+    console.log(submitURL);
+    renderFormattedProspects(prospectJobId) 
+      .then(prospects => {
+        prospectCount = prospects.length;
+        console.log('prospects to transfer:', prospects.length);
+        // console.log(prospects);
+        batchProspects(prospects).map(batch => {
+          // send each batch to tf
+          setTimeout(() => {
+            tfBridge.submitProspects(submitURL, batch);
+          }, 500);
+        })
+      })
+      .then(result => {
+        const updateJob = {
+          id: prospectJobId,
+          list_sent: true,
+          prospect_count: prospectCount
+        }
+        database.updateJob(updateJob)
+          .then(done => {
+            // confirmed that update occurs
+          })
+      })
+  } else {
+    res.send('error: target prospect list not specified');
+  }
+})
+
+batchProspects = (prospects, batchSize = 1000) => {
+  return prospects.map((prospect, i) => {
+    return i%batchSize === 0 ? prospects.slice(i, i + batchSize) : null;
+  }).filter(elem => { return elem; });
+}
+
+renderFormattedProspects = jobId => {
+  return new Promise((resolve, reject) => {
+    database.getProspectsByJobId(jobId)
+      .then(prospects => {
+        const formattedProspects = prospects.map(prospect => {
+          return [prospect.username, prospect.external_id];
+        })
+        resolve(formattedProspects);
+      })
+  })
+}
+
+saveLikersToProspects = (likers, jobId) => {
+  console.log('attempgint save:', likers.length);
+  const splicedLikers = spliceDuplicates(likers);
+  console.log('after dupe splice:', splicedLikers.length);
+  return new Promise((resolve, reject) => {
+    async.mapSeries(likers, (liker, next) => {
+      const newProspect = {
+        username: liker.username,
+        external_id: liker.id,
+        prospect_job_id: jobId,
+        relationship_type: 'liker'
+      }
+      database.upsertProspect(newProspect)
+        .then(result => {
+          // result contains internal id of prospect.
+          next();
+        })
+    }, err => {
+      // update job to a new stage
+      database.updateJobStage(jobId, 'Primed')
+        .then(result => {
+          resolve(result);
+        })
+    })
+  })
+}
+
+
 
 // https://staging.truefluence.io/users/eatify/prospects/1013.json?token=oiUBxMQ9KzvBezCyGX1gLDMS&per_page=2&page=5
 app.post('/prospect', (req, res) => {
@@ -107,12 +296,13 @@ app.get('/submit-list', (req, res) => {
 })
 
 app.get('/test-follower-submit/:userId', (req, res) => {
-  req.params.userId;
+  
   const submitURL = getSubmitURL(listDetails);
   prospect.getFollowers(req.params.userId)
     .then(result => {
       const followers = result.map(follower => { return [follower.username, follower.id]; }) 
-      tfBridge.submitProspects(submitURL, followers);
+      res.send(followers);
+      // tfBridge.submitProspects(submitURL, followers);
     })
 })
 

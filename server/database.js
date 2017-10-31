@@ -248,35 +248,68 @@ Database.prototype.userSuggestionsLoaded = function (username) {
   })
 }
 
-Database.prototype.createProspect = function (primary, username) {
+// PROSPECTS
+
+Database.prototype.createProspect = function (prospect) {
   const timeNow = new Date(Date.now()).toISOString();
-  const prospect = {
-    username: username,
-    primary_username: primary,
-    created_at: timeNow,
-    updated_at: timeNow,
-    prospect: true,
-    category: 'P'
+  prospect.created_at = timeNow;
+  prospect.updated_at = timeNow;
+  if (prospect.external_id && prospect.username && prospect.relationship_type && prospect.prospect_job_id) {
+    return knex('prospects')
+      .returning('id')
+      .insert(prospect);
+  } else {
+    return 'missing required fields to create prospect';
   }
-  return knex('prospects')
-    .returning('id')
-    .insert(prospect);
 }
 
-Database.prototype.getProspects = function (primary) {
+Database.prototype.updateProspect = function (prospect) {
+  const timeNow = new Date(Date.now()).toISOString();
+  prospect.updated_at = timeNow;
+
+  return knex('prospects')
+    .where('username', prospect.username)
+    .andWhere('prospect_job_id', prospect.prospect_job_id)
+    .returning('id')
+    .update(prospect);
+}
+
+Database.prototype.upsertProspect = function (prospect) {
+  return new Promise((resolve, reject) => {
+    this.prospectForJobExists(prospect.prospect_job_id, prospect.username)
+      .then(exists => {
+        if (exists) {
+          this.updateProspect(prospect)
+            .then(result => {
+              resolve(result[0]);
+            })
+        } else {
+          this.createProspect(prospect)
+            .then(result => {
+              resolve(result[0]);
+            })
+        }
+      })
+      .catch(err => {
+        reject(err);
+      })
+  })
+}
+
+Database.prototype.getProspectsByJobId = function (jobId) {
   return knex('prospects')
     .select('*')
-    .where('primary_username', primary)
-    .andWhere('prospect', true)
+    .where('prospect_job_id', jobId)
 }
 
-Database.prototype.updateProspect = function (id, param) {
-  const timeNow = new Date(Date.now()).toISOString();
-  const prospect = Object.assign({}, param, { updated_at: timeNow });
-
+Database.prototype.prospectForJobExists = function (jobId, username) {
   return knex('prospects')
-    .where('id', id)
-    .update(prospect);
+    .count('*')
+    .where('prospect_job_id', jobId)
+    .andWhere('username', username)
+    .then(result => {
+      return (result[0].count > 0);
+    })
 }
 // MODIFY FUNCTIONS
 
@@ -387,6 +420,63 @@ Database.prototype.upsertRelationship = function (userEId, followingEId, followi
           }
         })
   })
+}
+
+// PROSPECT JOBS
+/*
+Stages:
+Initialized - When first created, gathering of likers not yet started
+Primed - likers gathered and loaded into prospects table
+Pending - prospects converted to csv and sent to TF
+Ready - TF signals that prospects have been loaded and ready to be downloaded
+Loading - loading process has begun
+Loaded - all users have been added to users table and prospects updated with user id.
+Refreshing
+Complete
+*/
+Database.prototype.getJobByListId = function (listId) {
+  return knex('prospect-jobs')
+    .select('*')
+    .where('prospect_list_id', listId)
+    .then(job => {
+      return job[0];
+    });
+}
+
+Database.prototype.createJob = function (job) {
+  const timeNow = new Date(Date.now()).toISOString();
+  job.created_at = timeNow;
+  job.updated_at = timeNow;
+  console.log('creating', job);
+  return knex('prospect-jobs')
+    .returning('id')
+    .insert(job);
+}
+
+Database.prototype.updateJob = function (job) {
+  const timeNow = new Date(Date.now()).toISOString();
+  job.updated_at = timeNow;
+  return knex('prospect-jobs')
+    .where('id', job.id)
+    .returning('id')
+    .update(job);
+}
+
+Database.prototype.updateJobStage = function (jobId, stage) {
+  const job = {
+    id: jobId,
+    stage: stage
+  }
+  return this.updateJob(job);
+}
+
+Database.prototype.listIdExists = function (listId) {
+  return knex('prospect-jobs')
+    .count('*')
+    .where('prospect_list_id', listId)
+    .then(result => {
+      return (result[0].count > 0);
+    })
 }
 
 // SUGGESTIONS
