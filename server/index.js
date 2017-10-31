@@ -158,7 +158,7 @@ app.get('/initiate-prospect-job', (req, res) => {
                     console.log(job.id);
                     saveLikersToProspects(likers, job.id)
                       .then(saveResult => {
-
+                        
                         console.log('return from saving prospects:', saveResult);
                       })
                   })
@@ -186,12 +186,18 @@ app.get('/test-get-user-list', (req, res) => {
 
 app.get('/test-render-send-prospects', (req, res) => {
   res.send('ok');
+  var prospectCount;
+
+  
   const prospectJobId = 4; // HEY, make this dynamic
+
+
   if (testListDetails.loaded) {
     const submitURL = getSubmitURL(testListDetails);
     console.log(submitURL);
     renderFormattedProspects(prospectJobId) 
       .then(prospects => {
+        prospectCount = prospects.length;
         console.log('prospects to transfer:', prospects.length);
         // console.log(prospects);
         batchProspects(prospects).map(batch => {
@@ -202,8 +208,15 @@ app.get('/test-render-send-prospects', (req, res) => {
         })
       })
       .then(result => {
-        // update prospect job as list_sent = true
-
+        const updateJob = {
+          id: prospectJobId,
+          list_sent: true,
+          prospect_count: prospectCount
+        }
+        database.updateJob(updateJob)
+          .then(done => {
+            // confirmed that update occurs
+          })
       })
   } else {
     res.send('error: target prospect list not specified');

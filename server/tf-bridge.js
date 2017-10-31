@@ -2,7 +2,8 @@ const request = require('request');
 const Database = require('./database').Database;
 const database = new Database();
 const async = require('async');
-
+const FileHandler = require('./file-controller');
+const fileHandler = new FileHandler();
 function TFBridge() {
 
 }
@@ -17,10 +18,13 @@ TFBridge.prototype.submitProspects = function (url, users) {
 // first get meta data. 
 // 
 TFBridge.prototype.downloadProspects = function (url, jobId) {
+  console.log('starting download of prospects');
+  var userDebug = [];
   var options = {
     url: url,
     method: 'GET'
   };
+  var processUserCount = 0;
   request(options, (err, res, bod) => {
     if (err) {
 
@@ -31,38 +35,92 @@ TFBridge.prototype.downloadProspects = function (url, jobId) {
       for (let i = 0; i < pageTracker.length; i++) {
         pageTracker[i] = i + 1;
       }
+
       async.mapSeries(pageTracker, (page, next) => {
         //load, confirm, 
         var currOption = {
-          url: url + '&page=' + page,
+          url: url + '&direction=desc&page=' + page,
           method: 'GET'
         }
         getRequest(currOption)
           .then(result => {
             // parse out the 
-            // result.instagram_users.map(user => {
 
-            // });
             async.mapSeries(result.instagram_users, (user, cb) => {
               //parse, return user object that can be upserted to database
-
+              const parsedUser = parseUserData(user);
               // upsert to db
-
-              // fill user_id column in prospects table for corresponding thingof thing
-              // need job id, 
+              database.upsertUser(parsedUser)
+                .then(result => {
+                  userDebug.push([parsedUser.username, result]);
+                  // fill user_id column in prospects table for corresponding thingof thing
+                  // need job id, 
+                  const updateProspect = {
+                    user_id: result,
+                    prospect_job_id: jobId,
+                    username: parsedUser.username
+                  };
+                  database.updateProspect(updateProspect)
+                    .then(finisher => {
+                      processUserCount++;
+                      cb();
+                    })
+                    .catch(err => {
+                      console.error('update prospect error', err);
+                    })
+                })
+                .catch(err => {
+                  console.error('update user error:', err);
+                })
+            }, err => {
+              console.log('finished page:', page);
+              next();
             });
             // console.log(result.instagram_users[0]);
-            next();
+          })
+      }, err => {
+        const jobUpdate = {
+          id: jobId,
+          stage: 'Downloaded'
+        }
+        database.updateJob(jobUpdate)
+          .then(result => {
+            console.log('list downloaded, job updated');
+            console.log('total users processed:', processUserCount);
+            // done:
+            convertAndSend(userDebug, ['username', 'user_id'])
           })
       })
-      // console.log(pageTracker);
+
+
     }
   });
 
 }
 
 const parseUserData = rawData => {
-  
+  var parsedUser = {
+    external_id: rawData.external_id,
+    username: rawData.username,
+    picture_url: rawData.picture_url,
+    full_name: rawData.full_name,
+    external_url: rawData.website,
+    bio: rawData.bio,
+    following_count: rawData.following_count,
+    follower_count: rawData.follower_count,
+    post_count: rawData.post_count,
+    recent_like_count: rawData.recent_like_count,
+    recent_comment_count: rawData.recent_comment_count,
+    recent_post_count: rawData.recent_post_count,
+    recent_video_count: rawData.recent_video_count,
+    days_since_last_post: rawData.days_since_last_post,
+    recent_average_likes: rawData.recent_average_likes,
+    recent_engagement_rate: rawData.recent_engagement_rate,
+    recent_average_comments: rawData.recent_average_comments,
+    recent_like_rate: rawData.recent_like_rate,
+    recent_comment_rate: rawData.recent_comment_rate
+  }
+  return parsedUser;
 }
 
 const getRequest = (options, object = 'bod') => {
@@ -80,7 +138,7 @@ const getRequest = (options, object = 'bod') => {
 const convertAndSend = (array, header, url) => {
   console.log('testing csv send');
   var rows = [
-    ['username', 'external_id'],
+    header,
     ...array
   ];
   var processRow = function (row) {
@@ -93,8 +151,8 @@ const convertAndSend = (array, header, url) => {
   rows.map(row => {
     csvFile += processRow(row);
   })
-  signal(csvFile, url);
-  // fileHandler.saveCSV(csvFile, 'aaaa output');
+  // signal(csvFile, url);
+  fileHandler.saveCSV(csvFile, 'debug output');
 }
 
 const signal = (csvFile, url) => {
