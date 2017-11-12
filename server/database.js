@@ -335,6 +335,9 @@ Database.prototype.updateUser = function (user) {
 }
 
 Database.prototype.upsertUser = function (user) {
+  if (user.youngest_post) {
+    delete user.youngest_post;
+  }
   return new Promise((resolve, reject) => {
     knex('users')
       .count('*')
@@ -362,6 +365,14 @@ Database.prototype.upsertUser = function (user) {
         }
       })
   })
+}
+
+Database.prototype.getUsersByJobId = function(jobId, minFollowerCount) {
+  const subquery = knex('prospects').select('user_id').where('prospect_job_id', jobId);
+  return knex('users')
+    .select('*')
+    .where('id', 'in', subquery)
+    .andWhere('follower_count', '>=', minFollowerCount)
 }
 
 // RELATIONSHIPS
@@ -441,6 +452,15 @@ Database.prototype.getJobByListId = function (listId) {
     .then(job => {
       return job[0];
     });
+}
+
+Database.prototype.getJobByJobId = function (jobId) {
+  return knex('prospect-jobs')
+    .select('*')
+    .where('id', jobId)
+    .then(job => {
+      return job[0];
+    })
 }
 
 Database.prototype.createJob = function (job) {

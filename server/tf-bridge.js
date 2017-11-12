@@ -4,6 +4,7 @@ const database = new Database();
 const async = require('async');
 const FileHandler = require('./file-controller');
 const fileHandler = new FileHandler();
+
 function TFBridge() {
 
 }
@@ -12,89 +13,129 @@ TFBridge.prototype.getProspectList = function (listURL, token, batchID) {
 
 }
 
+TFBridge.prototype.createProspectList = function (username, staging = true) {
+  var url = 'https://' + (staging ? 'staging.' : 'app.') + 'truefluence.io/:' + username + '/lists.json'
+  var options = {
+    url: url,
+    method: 'POST',
+    headers: [
+      {
+        name: 'Content-Type',
+        value: 'application/csv'
+      }
+    ],
+    body: csvFile
+  };
+}
+
 TFBridge.prototype.submitProspects = function (url, users) {
   convertAndSend(users, ['username', 'external_id'], url);
 }
 // first get meta data. 
 // 
+
+TFBridge.prototype.verifyList = (url, jobId) => {
+  // skip_medias=true&skip_counts=true&filters[unrefreshed]=true&per_page=1
+  const options = {
+    url: url + 'skip_medias=true&skip_counts=true&filters[unrefreshed]=true&per_page=1',
+    method: 'GET'
+  }
+}
+
 TFBridge.prototype.downloadProspects = function (url, jobId) {
+  const perPage = 1000;
   console.log('starting download of prospects');
+  const timeStart = Date.now();
   var userDebug = [];
+  //skip_medias=true&skip_counts=true&filters[unrefreshed]=true&per_page=1
   var options = {
-    url: url,
+    url: url + '&skip_medias=true&per_page=' + perPage + '&page=1',
     method: 'GET'
   };
   var processUserCount = 0;
-  request(options, (err, res, bod) => {
-    if (err) {
+  console.log(options.url);
+  return new Promise((resolve, reject) => {
+    request(options, (err, res, bod) => {
+      if (err) {
+        console.error(err);
+      } else {
+        // try {
+        //   const bodyObj = JSON.parse(res.body);
+        // }
+        // catch (err) {
+        //   const bodyObj = JSON.parse(bod);
+        // }
+        const bodyObj = JSON.parse(bod);
+        console.log(Object.keys(bodyObj));
+        var pageTracker = new Array(bodyObj.meta.total_pages);
+  
+        for (let i = 0; i < pageTracker.length; i++) {
+          pageTracker[i] = i + 1;
+        }
+        console.log('creatd page tracker of length:', pageTracker.length);
+        async.mapSeries(pageTracker, (page, next) => {
+          //load, confirm, 
+          var currOption = {
+            url: url + '&skip_medias=true&skip_counts=true&per_page=' + perPage + '&page=' + page,
+            method: 'GET'
+          }
+          console.log('trying:', currOption.url);
+          getRequest(currOption)
+            .then(result => {
+              // parse out the 
+  
+              async.mapSeries(result.instagram_users, (user, cb) => {
+                const parsedUser = parseUserData(user);
 
-    } else {
-      const bodyObj = JSON.parse(bod);
-      console.log(Object.keys(bodyObj));
-      var pageTracker = new Array(bodyObj.meta.total_pages);
-      for (let i = 0; i < pageTracker.length; i++) {
-        pageTracker[i] = i + 1;
+                database.upsertUser(parsedUser)
+                  .then(result => {
+                    userDebug.push([parsedUser.username, result]);
+                    // fill user_id column in prospects table for corresponding thingof thing
+                    // need job id, 
+                    const updateProspect = {
+                      user_id: result,
+                      prospect_job_id: jobId,
+                      username: parsedUser.username
+                    };
+                    database.updateProspect(updateProspect)
+                      .then(finisher => {
+                        processUserCount++;
+                        cb();
+                      })
+                      .catch(err => {
+                        console.error('update prospect error', err);
+                      })
+                  })
+                  .catch(err => {
+                    console.error('update user error:', err);
+                    cb();
+                  })
+              }, err => {
+                console.log('finished page:', page);
+                next();
+              });
+              // console.log(result.instagram_users[0]);
+            })
+        }, err => {
+          const jobUpdate = {
+            id: jobId,
+            stage: 'Downloaded'
+          }
+          database.updateJob(jobUpdate)
+            .then(result => {
+              console.log('list downloaded, job updated');
+              console.log('total users processed:', processUserCount);
+              const timeComplete = Date.now();
+              const duration = (timeComplete - timeStart) / 1000;
+              console.log('time taken (sec):', duration);
+              resolve({count: processUserCount, duration: duration});
+              // done:
+              // convertAndSend(userDebug, ['username', 'user_id'])
+            })
+        })
       }
-
-      async.mapSeries(pageTracker, (page, next) => {
-        //load, confirm, 
-        var currOption = {
-          url: url + '&direction=desc&page=' + page,
-          method: 'GET'
-        }
-        getRequest(currOption)
-          .then(result => {
-            // parse out the 
-
-            async.mapSeries(result.instagram_users, (user, cb) => {
-              //parse, return user object that can be upserted to database
-              const parsedUser = parseUserData(user);
-              // upsert to db
-              database.upsertUser(parsedUser)
-                .then(result => {
-                  userDebug.push([parsedUser.username, result]);
-                  // fill user_id column in prospects table for corresponding thingof thing
-                  // need job id, 
-                  const updateProspect = {
-                    user_id: result,
-                    prospect_job_id: jobId,
-                    username: parsedUser.username
-                  };
-                  database.updateProspect(updateProspect)
-                    .then(finisher => {
-                      processUserCount++;
-                      cb();
-                    })
-                    .catch(err => {
-                      console.error('update prospect error', err);
-                    })
-                })
-                .catch(err => {
-                  console.error('update user error:', err);
-                })
-            }, err => {
-              console.log('finished page:', page);
-              next();
-            });
-            // console.log(result.instagram_users[0]);
-          })
-      }, err => {
-        const jobUpdate = {
-          id: jobId,
-          stage: 'Downloaded'
-        }
-        database.updateJob(jobUpdate)
-          .then(result => {
-            console.log('list downloaded, job updated');
-            console.log('total users processed:', processUserCount);
-            // done:
-            convertAndSend(userDebug, ['username', 'user_id'])
-          })
-      })
-
-
-    }
-  });
+    });
+  })
 
 }
 
@@ -123,13 +164,16 @@ const parseUserData = rawData => {
   return parsedUser;
 }
 
-const getRequest = (options, object = 'bod') => {
+const getRequest = (options) => {
   return new Promise((resolve, reject) => {
     request(options, (err, res, bod) => {
-      if (object = 'bod') {
-        resolve(JSON.parse(bod));
-      } else {
-        resolve(res);
+      try {
+        const parsed = JSON.parse(res.body);
+        resolve(parsed);
+      }
+      catch (err) {
+        const parsed = JSON.parse(bod);
+        resolve(parsed);
       }
     })
   })
@@ -151,8 +195,8 @@ const convertAndSend = (array, header, url) => {
   rows.map(row => {
     csvFile += processRow(row);
   })
-  // signal(csvFile, url);
-  fileHandler.saveCSV(csvFile, 'debug output');
+  signal(csvFile, url);
+  // fileHandler.saveCSV(csvFile, 'debug output');
 }
 
 const signal = (csvFile, url) => {
@@ -170,5 +214,7 @@ const signal = (csvFile, url) => {
   request(options);
   console.log('submission complete');
 }
+
+
 
 module.exports = TFBridge;

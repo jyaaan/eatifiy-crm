@@ -75,9 +75,14 @@ IG.prototype.getUser = function (username, session) {
   });
 }
 
-IG.prototype.initializeMediaFeed = function (userId, session) {
+IG.prototype.initializeMediaFeed = function (userId, session, proxyUrl) {
   return new Promise((resolve, reject) => {
     try {
+      if (proxyUrl) {
+        console.log('proxy:', proxyUrl);
+        // Client.Request.setProxy(proxyUrl);
+        session.proxyUrl = proxyUrl;
+      }
       var feed = new Client.Feed.UserMedia(session, userId);
       resolve(feed);
     }
@@ -101,18 +106,12 @@ IG.prototype.getMedias = function (userId, session, days=30) {
       feed.get()
         .then(result => {
           result.map(media => { 
-            // console.log('media', media._params);
-            // if (typeof media._params.usertags != 'undefined') {
-            //   // media._params.usertags.in will yield an array of user objects.
-            //   // user.username .pk for external_id
-            //   console.log('usertags', media._params.usertags.in);
-            // }
             console.log('deviceTimestamp:', media._params.deviceTimestamp);
             const timeStamp = media._params.deviceTimestamp;
             var postDate = timeStamp > 1500000000 ? new Date(timeStamp) : new Date(timeStamp * 1000);
             console.log('converted date:', postDate.formatMMDDYYYY());
             if (postDate > dateRange || postDate < errorDate) {
-              medias.push(media._params); 
+              medias.push(media._params);
             } else {
               console.log('date out of range');
               validDate = false;
@@ -134,13 +133,24 @@ IG.prototype.getMedias = function (userId, session, days=30) {
 
 // gets first 1,000 likers of given media
 // results are concise
-IG.prototype.getLikers = function (media, session) {
+IG.prototype.getLikers = function (media, session, proxyUrl) {
   // console.log('getLikers');
   return new Promise((resolve, reject) => {
+    if (proxyUrl) {
+      // Client.Request.setProxy(proxyUrl);
+      console.log('proxy:', proxyUrl);
+      session.proxyUrl = proxyUrl;
+    }
+    console.log('getlikers active');
     Client.Media.likers(session, media.id)
       .then(likers => {
+        console.log('likers found:', likers.length);
         const concise = likers.map(liker => { return liker._params; });
         resolve(concise);
+      })
+      .catch(err => {
+        console.error('getLikers failure');
+        reject('getLikers');
       })
   })
 }
