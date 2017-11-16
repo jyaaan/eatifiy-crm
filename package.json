@@ -7,7 +7,7 @@
     "test": "mocha",
     "bundle": "browserify client/ -t babelify -o server/public/main.js",
     "bundle:watch": "watchify client/ -vd -t babelify -o server/public/main.js",
-    "start": "$(node -e \"var vars = JSON.parse('$(sudo /opt/elasticbeanstalk/bin/get-config environment)'); console.log(Object.keys(vars).map((key) => \\`\\${key}=\\\"\\${vars[key]}\"\\`).join(' '));\") node .",
+    "start": "$(node -e \"var vars = JSON.parse('$(sudo /opt/elasticbeanstalk/bin/get-config environment)'); console.log(Object.keys(vars).map((key) => \\`\\${key}=\\\"\\${vars[key]}\\\"\\`).join(' '));\") node .",
     "start:watch": "nodemon --ignore cookies/*.json --ignore server/cookies/*.json .",
     "watch": "run-p bundle:watch start:watch",
     "migrate:make": "knex migrate:make",
