@@ -1,3 +1,5 @@
+console.log('db name:', process.env.RDS_DB_NAME);
+
 exports.development = {
   client: 'postgresql',
   connection: {
