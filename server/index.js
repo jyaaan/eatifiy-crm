@@ -7,8 +7,8 @@ const Database = require('./database').Database;
 const database = new Database();
 const ParseScrape = require('./parse-scrape');
 const Scraper = require('./scraper');
-const ScrapeSave = require('./scrape-save');
-const scrapeSave = new ScrapeSave();
+// const ScrapeSave = require('./scrape-save');
+// const scrapeSave = new ScrapeSave();
 const ScraperMedia = require('./scraper-media');
 const async = require('async');
 const fs = require('fs');
@@ -23,6 +23,9 @@ const currentSession = { initialized: false, session: {} };
 const Prospect = require('./prospect');
 const prospect = new Prospect();
 
+const Messaging = require('./messaging');
+const messaging = new Messaging();
+
 const TFBridge = require('./tf-bridge');
 const tfBridge = new TFBridge();
 
@@ -31,20 +34,28 @@ const http = require('http').createServer(app);
 app.use(staticMiddleware);
 app.use(bodyParser.json());
 
-const listDetails = {
-  loaded: false,
-  staging: true,
-  token: '',
-  username: '',
-  listId: ''
-}
+// const listDetails = {
+//   loaded: false,
+//   staging: true,
+//   token: '',
+//   username: '',
+//   listId: ''
+// }
 
+app.get('/test-method/:argument', (req, res) => {
+  prospect.processJob(req.params.argument);
+
+})
+
+const MAXPOSTCOUNT = 2000;
 const testListDetails = {
   "loaded": true,
   "staging": true,
-  "token": "nnZdA6NCvRNrUp5tjNu4VEUz",
-  "username": "lawrencehunt_co",
-  "listId": "1195"
+  "token": "bazJ7F8eZ1H9fxviE7Tjcy2t",
+  "username": "bybibeauty",
+  "analyzed_username": "bybibeauty",
+  "listId": "1367",
+  'prospect_job_id': 37
 }
 
 // const testListDetails = {
@@ -66,18 +77,93 @@ getValue = (url, value, terminus = '/') => {
 }
 
 getSubmitURL = listDetails => {
-  var submitURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
+  // var submitURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
+  var submitURL = 'https://staging.truefluence.io/users/';
   submitURL = submitURL + listDetails.username + '/prospects/' + listDetails.listId + '.csv?token=';
   submitURL = submitURL + listDetails.token;
   return submitURL;
 }
 
 getDownloadURL = listDetails => {
-  var downloadURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
+  // var downloadURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
+  var downloadURL = 'https://staging.truefluence.io/users/';
   downloadURL = downloadURL + listDetails.username + '/prospects/' + listDetails.listId + '.json?token=';
   downloadURL = downloadURL + listDetails.token;
   return downloadURL;
 }
+
+app.get('/test-proxy', (req, res) => {
+
+})
+
+app.get('/test-create-prospect-list/:user', (req, res) => {
+
+})
+
+app.get('/verify-list/:jobId', (req, res) => {
+  const listDetails = {
+    loaded: false,
+    staging: false,
+    token: '',
+    username: '',
+    listId: '',
+    prospect_job_id: req.params.jobId
+  }
+  database.getJobByJobId(req.params.jobId)
+    .then(job => {
+      listDetails.token = job.token;
+      listDetails.username = job.primary_username;
+      listDetails.analyzed_username = job.analyzed_username;
+      listDetails.listId = job.prospect_list_id;
+      listDetails.loaded = listDetails.username ? true : false;
+
+      const downloadURL = getDownloadURL(listDetails);
+      tfBridge.verifyList(downloadURL)
+        .then(verified => {
+          console.log(verified);
+          let message = 'list is' + ' ' + (verified ? '' : 'not') + ' ' + 'complete.';
+          res.send(message);
+        })
+    });
+    
+})
+
+app.get('/test-job-number-convert/:jobId', (req, res) => {
+  database.getJobByJobId(7)
+    .then(job => {
+      console.log(job);
+      res.json(job);
+    })
+})
+
+// {
+//   "username": "freemanssportingclub",
+//     "jobid"
+//   "upload_url": "192.241.192.44:5760/howdy",
+//     "follower_count": { "min": 20000, "ideal": 70000, "max": 300000 },
+//   "recent_average_like_rate": { "ideal": 800 },
+//   "recent_average_comment_rate": { "ideal": 50 },
+//   "terms": {
+//     "aligned": ["fashion", "blogger", "styl", "menswear", "influencer", "ambassador", "men", "cloth"],
+//       "misaligned": []
+//   }
+// }
+app.post('/test-filter-parameters', (req, res) => {
+  res.send('ok');
+  console.log(req.body);
+  const job = {
+    filter_params: 'test',
+    id: req.body.job_id
+  }
+  console.log(job);
+  // database.updateJob(job)
+  //   .then(updated => {
+      prospect.getProspects(req.body.job_id, req.body.filter_params, req.body.return_amount)
+        .then(result => {
+          console.log('index: ', result);
+        })
+    // })
+})
 
 app.get('/batch-likers-test/:username', (req, res) => {
   res.send('OK');
@@ -90,7 +176,7 @@ app.get('/batch-likers-test/:username', (req, res) => {
 app.get('/health_ping', (req, res) => {
   res.send('OK'); 
 })
-
+//
 app.get('/list-details', (req, res) => {
   console.log('getting list details');
   if (listDetails.loaded) {
@@ -100,82 +186,151 @@ app.get('/list-details', (req, res) => {
   }
 })
 
-app.get('/test-create-job', (req, res) => {
-  if (testListDetails.loaded) {
-    database.listIdExists(testListDetails.listId)
-      .then(exists => {
-        if (!exists) {
-          console.log('doesn\'t exist, adding');
-          const job = {};
-          job.prospect_list_id = testListDetails.listId;
-          job.token = testListDetails.token;
-          job.primary_username = testListDetails.username;
-          job.analyzed_username = testListDetails.username;
-          job.stage = 'initialized';
-          job.filter_params = JSON.stringify({});
-    
-          database.createJob(job)
-            .then(result => {
-              res.send(result);
-            })
+app.post('/create-list', (req, res) => {
 
-        } else {
-          res.send('list id already exists!');
-        }
-      })
-  } else {
-    res.send('prospect list details not loaded');
-  }
 })
 
-app.get('/initiate-prospect-job', (req, res) => {
-  if (testListDetails.loaded) {
-    database.listIdExists(testListDetails.listId)
-      .then(exists => {
-        if (!exists) {
-          res.send('prospect job with this list ID does not exist, please create');
+app.get('/delete-list', (req, res) => {
+
+})
+
+app.get('/hello', (req, res) => {
+  console.log('hello');
+  res.send('it works');
+})
+
+app.post('/create-job', (req, res) => {
+  database.listIdExists(testListDetails.listId)
+    .then(exists => {
+      if (!exists) {
+        console.log('doesn\'t exist, adding');
+        const job = {};
+        job.prospect_list_id = req.params.prospect_list_id;
+        job.token = req.params.token;
+        job.primary_username = req.params.primary_username;
+        job.analyzed_username = req.params.analyzed_username;
+        job.stage = 'initialized';
+        job.filter_params = JSON.stringify({});
+  
+        database.createJob(job)
+          .then(result => {
+            res.send(result);
+          })
+
+      } else {
+        res.send('list id already exists!');
+      }
+    })
+})
+
+
+// you should only need job id.
+app.get('/initiate-prospect-job/:jobId', (req, res) => {
+  const listDetails = {
+    loaded: false,
+    staging: false,
+    token: '',
+    username: '',
+    listId: '',
+    prospect_job_id: req.params.jobId
+  }
+  
+  database.getJobByJobId(req.params.jobId)
+    .then(job => {
+      listDetails.token = job.token;
+      listDetails.username = job.primary_username;
+      listDetails.analyzed_username = job.analyzed_username;
+      listDetails.listId = job.prospect_list_id;
+      listDetails.loaded = listDetails.username ? true : false;
+      var prospectCount = 0;
+      if (listDetails.loaded) {
+        if (job.list_sent) {
+          if (job.ready_to_download) {
+            res.send('ready to download!');
+          } else {
+            res.send('prospect list previously submitted for enrichment, please wait');
+          }
         } else {
-          console.log('job found');
-          database.getJobByListId(testListDetails.listId)
-            .then(job => {
-              console.log('job:', job);
-              if (job.list_sent) {
-                if (job.ready_to_download) {
-                  res.send('ready to download!');
-                } else {
-                  res.send('prospect list previously submitted for enrichment, please wait');
-                }
-              } else {
-                res.send('this job be ready to rock and roll!');
-                prospect.batchLikers(job.analyzed_username)
-                  .then(likers => {
-                    console.log('likers found:', likers.length);
-                    // at this point you will have public likers as an array of objects which contain:
-                    // username, id, picture, fullName, hasAnonymousProfilePicture, isBusiness, isPrivate
-                    console.log('business likers:', likers.filter(liker => {
-                      return liker.isBusiness == true;
-                    }).length);
-                    console.log(job.id);
-                    saveLikersToProspects(likers, job.id)
-                      .then(saveResult => {
-                        
-                        console.log('return from saving prospects:', saveResult);
-                      })
+          res.send('this job be ready to rock and roll!');
+          prospect.batchLikers(job.analyzed_username, listDetails.prospect_job_id, MAXPOSTCOUNT)
+            .then(likers => {
+              console.log('likers found:', likers.length);
+              // at this point you will have public likers as an array of objects which contain:
+              // username, id, picture, fullName, hasAnonymousProfilePicture, isBusiness, isPrivate
+              // console.log('business likers:', likers.filter(liker => {
+              //   return liker.isBusiness == true;
+              // }).length);
+              console.log(job.id);
+              // saveLikersToProspects(likers, job.id)
+              //   .then(saveResult => {
+              messaging.send(likers.length + ' likers saved to prospects, sending to Truefluence');
+              //     console.log('return from saving prospects:', saveResult);
+              //   })const submitURL = getSubmitURL(listDetails);
+              const submitURL = getSubmitURL(listDetails);
+              console.log(submitURL);
+              renderFormattedProspects(listDetails.prospect_job_id)
+                .then(prospects => {
+                  prospectCount = prospects.length;
+                  batchProspects(prospects).map(batch => {
+                    setTimeout(() => {
+                      tfBridge.submitProspects(submitURL, batch);
+                    }, 500);
                   })
-              }
+                })
+                .then(result => {
+                  const updateJob = {
+                    id: listDetails.prospect_job_id,
+                    list_sent: true,
+                    prospect_count: prospectCount
+                  }
+                  console.log('update job:', updateJob);
+                  database.updateJob(updateJob)
+                    .then(done => {
+                      // confirmed that update occurs
+                      // start checking every minute to see if list is finished
+                      
+                    })
+                })
+            })
+            .catch(err => {
+              console.log('batchLikers failure');
+              console.error(err);
+    
             })
         }
-      })
-  } else {
-    res.send('prospect list details not loaded');
-  }
+      } else {
+        console.log('prospect job with id:' + req.params.jobId + ' does not exist');
+      }
+    })
 })
 
-app.get('/test-batch-download-prospects', (req, res) => {
-  const downloadURL = getDownloadURL(testListDetails);
-  tfBridge.downloadProspects(downloadURL, 4);
-  // console.log(downloadURL);
-  res.send('downloaded');
+app.get('/test-batch-download-prospects/:jobId', (req, res) => {
+  const listDetails = {
+    loaded: false,
+    staging: false,
+    token: '',
+    username: '',
+    listId: '',
+    prospect_job_id: req.params.jobId
+  }
+
+  database.getJobByJobId(req.params.jobId)
+    .then(job => {
+      listDetails.token = job.token;
+      listDetails.username = job.primary_username;
+      listDetails.analyzed_username = job.analyzed_username;
+      listDetails.listId = job.prospect_list_id;
+      listDetails.loaded = listDetails.username ? true : false;
+
+      const downloadURL = getDownloadURL(listDetails);
+      res.send('downloading in progress');
+      tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
+        .then(returnObj => {
+          messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
+        });
+      // console.log(downloadURL);
+    })
+
 })
 
 app.get('/test-get-user-list', (req, res) => {
@@ -184,43 +339,58 @@ app.get('/test-get-user-list', (req, res) => {
   res.send('received');
 })
 
-app.get('/test-render-send-prospects', (req, res) => {
+// this should also only require the job id.
+
+app.get('/test-render-send-prospects/:jobId', (req, res) => {
   res.send('ok');
-  var prospectCount;
-
-  
-  const prospectJobId = 4; // HEY, make this dynamic
-
-
-  if (testListDetails.loaded) {
-    const submitURL = getSubmitURL(testListDetails);
-    console.log(submitURL);
-    renderFormattedProspects(prospectJobId) 
-      .then(prospects => {
-        prospectCount = prospects.length;
-        console.log('prospects to transfer:', prospects.length);
-        // console.log(prospects);
-        batchProspects(prospects).map(batch => {
-          // send each batch to tf
-          setTimeout(() => {
-            tfBridge.submitProspects(submitURL, batch);
-          }, 500);
-        })
-      })
-      .then(result => {
-        const updateJob = {
-          id: prospectJobId,
-          list_sent: true,
-          prospect_count: prospectCount
-        }
-        database.updateJob(updateJob)
-          .then(done => {
-            // confirmed that update occurs
-          })
-      })
-  } else {
-    res.send('error: target prospect list not specified');
+  const listDetails = {
+    loaded: false,
+    staging: false,
+    token: '',
+    username: '',
+    listId: '',
+    prospect_job_id: req.params.jobId
   }
+
+  database.getJobByJobId(req.params.jobId)
+    .then(job => {
+      var prospectCount = 0;
+      listDetails.token = job.token;
+      listDetails.username = job.primary_username;
+      listDetails.analyzed_username = job.analyzed_username;
+      listDetails.listId = job.prospect_list_id;
+      listDetails.loaded = listDetails.username ? true : false;
+
+      if (listDetails.loaded) {
+        const submitURL = getSubmitURL(listDetails);
+        console.log(submitURL);
+        renderFormattedProspects(listDetails.prospect_job_id) 
+          .then(prospects => {
+            prospectCount = prospects.length;
+            batchProspects(prospects).map(batch => {
+              setTimeout(() => {
+                tfBridge.submitProspects(submitURL, batch);
+              }, 500);
+            })
+          })
+          .then(result => {
+            const updateJob = {
+              id: listDetails.prospect_job_id,
+              list_sent: true,
+              prospect_count: prospectCount
+            }
+            database.updateJob(updateJob)
+              .then(done => {
+                // confirmed that update occurs
+              })
+          })
+      } else {
+        res.send('error: target prospect list not specified');
+      }
+    })
+
+
+
 })
 
 batchProspects = (prospects, batchSize = 1000) => {
@@ -241,32 +411,32 @@ renderFormattedProspects = jobId => {
   })
 }
 
-saveLikersToProspects = (likers, jobId) => {
-  console.log('attempgint save:', likers.length);
-  const splicedLikers = spliceDuplicates(likers);
-  console.log('after dupe splice:', splicedLikers.length);
-  return new Promise((resolve, reject) => {
-    async.mapSeries(likers, (liker, next) => {
-      const newProspect = {
-        username: liker.username,
-        external_id: liker.id,
-        prospect_job_id: jobId,
-        relationship_type: 'liker'
-      }
-      database.upsertProspect(newProspect)
-        .then(result => {
-          // result contains internal id of prospect.
-          next();
-        })
-    }, err => {
-      // update job to a new stage
-      database.updateJobStage(jobId, 'Primed')
-        .then(result => {
-          resolve(result);
-        })
-    })
-  })
-}
+// saveLikersToProspects = (likers, jobId) => {
+//   console.log('attempgint save:', likers.length);
+//   const splicedLikers = spliceDuplicates(likers);
+//   console.log('after dupe splice:', splicedLikers.length);
+//   return new Promise((resolve, reject) => {
+//     async.mapSeries(likers, (liker, next) => {
+//       const newProspect = {
+//         username: liker.username,
+//         external_id: liker.id,
+//         prospect_job_id: jobId,
+//         relationship_type: 'liker'
+//       }
+//       database.upsertProspect(newProspect)
+//         .then(result => {
+//           // result contains internal id of prospect.
+//           next();
+//         })
+//     }, err => {
+//       // update job to a new stage
+//       database.updateJobStage(jobId, 'Primed')
+//         .then(result => {
+//           resolve(result[0]);
+//         })
+//     })
+//   })
+// }
 
 
 
@@ -457,14 +627,19 @@ app.post('/enrich', (req, res) => {
           })
       })
   }, err => {
+    // filtering users for influencers
+    // store.dispatch({
+    //   type: 'CHANGE_STAGE',
+    //   stage: 'filter'
+    // });
     database.getUsers(userIds)
       .then(influencers => {
         const headers = ['id', 'externalId', 'username', 'postCount', 'followerCount', 'followingCount', 'following/follower ratio', 'recentPostCount', 'recentAvLikes', 'recentAvComments', 'engagementRatio', 'postFrequency(Hr)', 'website'];
         var influencerData = influencers.map(influencer => { // refactor this mess
-          return influencer.id +',' + influencer.external_id + ',' + influencer.username + ',' + influencer.post_count + ',' + influencer.follower_count + ',' + 
-          influencer.following_count + ',' + (influencer.following_count / influencer.follower_count) + ',' + influencer.recent_post_count + ',' + (influencer.recent_like_count / influencer.recent_post_count) + ',' +
-          (influencer.recent_comment_count / influencer.recent_post_count) + ',' + (influencer.recent_like_count / influencer.recent_post_count) / influencer.follower_count + ',' + ((influencer.recent_post_duration / 3600) / influencer.recent_post_count) + ',' +
-          influencer.external_url;
+          return influencer.id + ',' + influencer.external_id + ',' + influencer.username + ',' + influencer.post_count + ',' + influencer.follower_count + ',' +
+            influencer.following_count + ',' + (influencer.following_count / influencer.follower_count) + ',' + influencer.recent_post_count + ',' + (influencer.recent_like_count / influencer.recent_post_count) + ',' +
+            (influencer.recent_comment_count / influencer.recent_post_count) + ',' + (influencer.recent_like_count / influencer.recent_post_count) / influencer.follower_count + ',' + ((influencer.recent_post_duration / 3600) / influencer.recent_post_count) + ',' +
+            influencer.external_url;
         });
         fileHandler.writeToCSV(influencerData, 'csv-enrich-data', headers)
           .then(result => {
@@ -476,6 +651,44 @@ app.post('/enrich', (req, res) => {
       })
   });
 })
+const scrapeSave = (username, bypass = false) => { // now with more resume-ability!
+  username = username.trim();
+  console.log('scraping', username);
+  var thisId;
+  return new Promise((resolve, reject) => {
+    database.getUserByUsername(username)
+      .then(user => {
+        // console.log('user:', user);
+        if (!user || bypass || user.recent_like_count == 0 || user.recent_like_count == null) {
+          Scraper(username)
+            .then(user => {
+              database.upsertUser(user)
+                .then(result => {
+                  database.getEIdFromExternalId(user.external_id, 'users')
+                    .then(id => {
+                      resolve({ id: id[0].id, external_id: user.external_id });
+                    })
+                })
+                .catch(err => {
+                  console.log('upsert attemp failure');
+                  reject(err);
+                })
+            })
+            .catch(err => {
+              console.log('scraper failure');
+              reject(err);
+            })
+        } else {
+          console.log('skipping');
+          resolve({ id: user.id, external_id: user.external_id });
+        }
+      })
+      .catch(err => {
+        console.log('get user by username failure');
+        reject(err);
+      })
+  });
+}
 
 app.get('/mentions/:username/:mention', (req, res) => {
   const focusUsername = req.params.username;

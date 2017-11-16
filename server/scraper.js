@@ -21,7 +21,7 @@ function Scraper(username) {
           const { user } = ParseScrape(dataJSON);
           resolve(user);
         }
-        catch(err){
+        catch (err) {
           reject(err);
         }
       });

@@ -1,8 +1,8 @@
 function tfScore(user, filter) {
   var score = 0;
   var nullModifier = 100;
-  const avLikeCount = user.recent_like_count / user.recent_post_count;
-  const avCommentCount = user.recent_comment_count / user.recent_post_count;
+  const avLikeCount = user.recent_average_likes;
+  const avCommentCount = user.recent_average_comments;
   const likeRatio = avLikeCount / user.follower_count;
   const commentRatio = avCommentCount / user.follower_count;
   const ffRatio = user.following_count / user.follower_count;
@@ -45,15 +45,20 @@ function tfScore(user, filter) {
 
   // console.log('youngest post:', youngestPost);
   // most recent post
-  console.log('score before point', score);
-  console.log('youngestPost:', youngestPost);
-  if (youngestPost) {
-    score += graduatedScore(youngestPost, 0.0, 12, 168, 10);
+  // console.log('score before point', score);
+  // console.log('youngestPost:', youngestPost);
+  // if (youngestPost) {
+  //   score += graduatedScore(youngestPost, 0.0, 12, 168, 10);
+  // } else {
+  //   nullModifier -= 10;
+  // }
+  // console.log('score after point', score);
+  if (filter.days_since_last_post) {
+    score += graduatedScore(user.days_since_last_post, filter.days_since_last_post.min, 
+      filter.days_since_last_post.ideal, filter.days_since_last_post.max, 10);
   } else {
     nullModifier -= 10;
   }
-  console.log('score after point', score);
-
   //add debuffs here
   // if (postFrequency > 300) {
   //   score *= 0.9;

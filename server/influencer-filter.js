@@ -7,6 +7,18 @@ class InfluencerFilter { // comments, please.
     const { follower_count, follower_following_ratio,
             terms, recent_average_comment_rate,
             recent_average_like_rate } = settings;
+    const days_since_last_post = { max: 30, ideal: 1 };
+
+    if (days_since_last_post) {
+      this.days_since_last_post = days_since_last_post;
+      this.days_since_last_post.filter = user => {
+        if (user.days_since_last_post != null) {
+          return evaluate(user.days_since_last_post, this);
+        } else {
+          return false;
+        }
+      }
+    }
 
     if (follower_count) {
       this.follower_count = follower_count;
@@ -31,7 +43,7 @@ class InfluencerFilter { // comments, please.
     if (recent_average_comment_rate){
       this.recent_average_comment_rate = recent_average_comment_rate;
       this.recent_average_comment_rate.filter = function(user) {
-        const avCommentCount = user.recent_comment_count / user.recent_post_count;
+        const avCommentCount = user.recent_average_comments;
         return evaluate(avCommentCount, this);
       }
     }
@@ -39,7 +51,7 @@ class InfluencerFilter { // comments, please.
     if (recent_average_like_rate) {
       this.recent_average_like_rate = recent_average_like_rate;
       this.recent_average_like_rate.filter = function(user) {
-        const avLikeCount = user.recent_like_count / user.recent_post_count;
+        const avLikeCount = user.recent_average_likes;
         return evaluate(avLikeCount, this);
       }
     }

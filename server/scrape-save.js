@@ -4,7 +4,7 @@ const database = new Database();
 function ScrapeSave() {
 
 }
-
+//
 ScrapeSave.prototype.scrapeSave = function (username, bypass = false) { // now with more resume-ability!
   console.log('scraping', username);
   var thisId;
@@ -15,7 +15,9 @@ ScrapeSave.prototype.scrapeSave = function (username, bypass = false) { // now w
           Scraper(username)
             .then(user => {
               var tempUser = Object.assign({}, user);
-              delete tempUser.youngest_post;
+              if (tempUser.youngest_post) {
+                delete tempUser.youngest_post;
+              }
               database.upsertUser(tempUser)
                 .then(result => {
                   database.getEIdFromExternalId(user.external_id, 'users')
@@ -32,7 +34,7 @@ ScrapeSave.prototype.scrapeSave = function (username, bypass = false) { // now w
               console.log('scraper failure');
               setTimeout(() => {
                 reject(err);
-              }, 120000);
+              }, 4000);
             })
         } else {
           console.log('skipping');
