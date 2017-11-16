@@ -7,7 +7,7 @@
     "test": "mocha",
     "bundle": "browserify client/ -t babelify -o server/public/main.js",
     "bundle:watch": "watchify client/ -vd -t babelify -o server/public/main.js",
-    "start": "node .",
+    "start": "RDS_USERNAME=prospectorprod node .",
     "start:watch": "nodemon --ignore cookies/*.json --ignore server/cookies/*.json .",
     "watch": "run-p bundle:watch start:watch",
     "migrate:make": "knex migrate:make",
