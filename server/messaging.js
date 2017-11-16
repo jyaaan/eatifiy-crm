@@ -1,4 +1,5 @@
 const twilio = require('twilio');
+console.log(require('../envs'));
 
 class Messaging {
   constructor() {
