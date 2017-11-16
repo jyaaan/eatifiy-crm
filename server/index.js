@@ -205,10 +205,10 @@ app.post('/create-job', (req, res) => {
       if (!exists) {
         console.log('doesn\'t exist, adding');
         const job = {};
-        job.prospect_list_id = req.params.prospect_list_id;
-        job.token = req.params.token;
-        job.primary_username = req.params.primary_username;
-        job.analyzed_username = req.params.analyzed_username;
+        job.prospect_list_id = req.body.prospect_list_id;
+        job.token = req.body.token;
+        job.primary_username = req.body.primary_username;
+        job.analyzed_username = req.body.analyzed_username;
         job.stage = 'initialized';
         job.filter_params = JSON.stringify({});
   
