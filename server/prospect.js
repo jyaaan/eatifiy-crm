@@ -45,17 +45,17 @@ Prospect.prototype.processJob = jobId => {
     })
 }
 
-Prospect.prototype.batchLikers = function (username, jobId) {
+Prospect.prototype.batchLikers = function (username, jobId, maxPostCount = 2000) {
   const timeStart = Date.now();
   console.log('Getting all likers for', username);
   return new Promise((resolve, reject) => {
     scrapeSave.scrapeSave(username, true)
       .then(user => {
-        this.getAllLikers(user.external_id, user.post_count, timeStart, jobId)
+        this.getAllLikers(user.external_id, user.post_count, timeStart, jobId, maxPostCount)
           .then(likers => {
-            resolve(likers);
             const timeComplete = Date.now();
             console.log('time taken (sec):', (timeComplete - timeStart) / 1000);
+            resolve(likers);
           })
         // resolve(user);
       })
@@ -88,7 +88,7 @@ Prospect.prototype.deepLookup = function (username) {
 
 var totalLikersProcessed = 0;
 // will result in array of [username, external_id]
-Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart, jobId) {
+Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart, jobId, maxPostCount = 2000) {
   const errorThreshold = 10;
   var likers = [];
   console.log('Getting all likers for', externalId);
@@ -97,14 +97,14 @@ Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart, jo
   var errorCounter = 0;
   totalLikersProcessed = 0;
   return new Promise((resolve, reject) => {
-    ig.initializeMediaFeed(externalId, currentSession.session, reqProxy.getProxy('http')) //, reqProxy.getProxy('http')
+    ig.initializeMediaFeed(externalId, currentSession.session) //, reqProxy.getProxy('http')
       .then(feed => {
         function retrieve() {
           feed.get()
             .then(medias => {
               mediaCounter++;
               async.mapSeries(medias, (media, next) => {
-                getMediaLikers(media, likers, reqProxy.getProxy('http')) //, reqProxy.getProxy('http')
+                getMediaLikers(media, likers) //, reqProxy.getProxy('http')
                   .then(newLikers => {
                     // add these likers here rather than down stream.
                     saveLikersToProspects(newLikers, jobId)
@@ -125,6 +125,7 @@ Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart, jo
                         console.log('time elapsed (sec):', timeElapsed.toFixed(2));
                         console.log('predicted total job duration (sec):', predictedTotal.toFixed(0));
                         console.log('predicted time remaining (sec):', (predictedTotal - timeElapsed).toFixed(0));
+                        console.log('errors encountered:', errorCounter);
                         setTimeout(() => {
                           next();
                         }, 1000)
@@ -140,7 +141,7 @@ Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart, jo
                     }, 120000)
                   })
               }, err => { // when medias are done, check to see if more medias exist
-                if (feed.moreAvailable && errorCounter < errorThreshold && counter < 2000) {
+                if (feed.moreAvailable && errorCounter < errorThreshold && counter < maxPostCount) {
                   console.log('More medias available');
 
                   setTimeout(() => {
@@ -151,16 +152,16 @@ Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart, jo
                   console.log('too many errors encountered');
                   database.updateJobStage(jobId, 'Primed')
                     .then(result => {
-                      resolve(result[0]);
+                      // resolve(result[0]);
+                      resolve(likers);
                     })
-                  // resolve(likers);
                 } else {
                   console.log('All likers retrieved');
                   database.updateJobStage(jobId, 'Primed')
                     .then(result => {
-                      resolve(result[0]);
+                      // resolve(result[0]);
+                      resolve(likers);
                     })
-                  // resolve(likers);
                 }
               })
             })

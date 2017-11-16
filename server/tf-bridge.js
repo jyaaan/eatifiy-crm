@@ -34,12 +34,22 @@ TFBridge.prototype.submitProspects = function (url, users) {
 // first get meta data. 
 // 
 
-TFBridge.prototype.verifyList = (url, jobId) => {
-  // skip_medias=true&skip_counts=true&filters[unrefreshed]=true&per_page=1
-  const options = {
-    url: url + 'skip_medias=true&skip_counts=true&filters[unrefreshed]=true&per_page=1',
-    method: 'GET'
-  }
+TFBridge.prototype.verifyList = (url) => {
+  return new Promise((resolve, reject) => {
+    const options = {
+      url: url + '&skip_medias=true&skip_counts=true&filters[unrefreshed]=true&per_page=1',
+      method: 'GET'
+    }
+    request(options, (err, res, bod) => {
+      if (err) {
+        console.error(err);
+        reject(err);
+      } else {
+        const bodyObj = JSON.parse(bod);
+        resolve(bodyObj.instagram_users.length == 0);
+      }
+    })
+  })
 }
 
 TFBridge.prototype.downloadProspects = function (url, jobId) {

@@ -4,7 +4,7 @@ const database = new Database();
 function ScrapeSave() {
 
 }
-
+//
 ScrapeSave.prototype.scrapeSave = function (username, bypass = false) { // now with more resume-ability!
   console.log('scraping', username);
   var thisId;

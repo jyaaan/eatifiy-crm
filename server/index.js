@@ -47,15 +47,15 @@ app.get('/test-method/:argument', (req, res) => {
 
 })
 
-
+const MAXPOSTCOUNT = 2000;
 const testListDetails = {
   "loaded": true,
   "staging": true,
-  "token": "gKeLCoASy5eTj4QvuDVy2LZV",
-  "username": "nibmor",
-  "analyzed_username": "nibmor",
-  "listId": "1308",
-  'prospect_job_id': 30
+  "token": "bazJ7F8eZ1H9fxviE7Tjcy2t",
+  "username": "bybibeauty",
+  "analyzed_username": "bybibeauty",
+  "listId": "1367",
+  'prospect_job_id': 37
 }
 
 // const testListDetails = {
@@ -98,6 +98,34 @@ app.get('/test-proxy', (req, res) => {
 
 app.get('/test-create-prospect-list/:user', (req, res) => {
 
+})
+
+app.get('/verify-list/:jobId', (req, res) => {
+  const listDetails = {
+    loaded: false,
+    staging: false,
+    token: '',
+    username: '',
+    listId: '',
+    prospect_job_id: req.params.jobId
+  }
+  database.getJobByJobId(req.params.jobId)
+    .then(job => {
+      listDetails.token = job.token;
+      listDetails.username = job.primary_username;
+      listDetails.analyzed_username = job.analyzed_username;
+      listDetails.listId = job.prospect_list_id;
+      listDetails.loaded = listDetails.username ? true : false;
+
+      const downloadURL = getDownloadURL(listDetails);
+      tfBridge.verifyList(downloadURL)
+        .then(verified => {
+          console.log(verified);
+          let message = 'list is' + ' ' + (verified ? '' : 'not') + ' ' + 'complete.';
+          res.send(message);
+        })
+    });
+    
 })
 
 app.get('/test-job-number-convert/:jobId', (req, res) => {
@@ -158,32 +186,41 @@ app.get('/list-details', (req, res) => {
   }
 })
 
-app.get('/test-create-job', (req, res) => {
-  if (testListDetails.loaded) {
-    database.listIdExists(testListDetails.listId)
-      .then(exists => {
-        if (!exists) {
-          console.log('doesn\'t exist, adding');
-          const job = {};
-          job.prospect_list_id = testListDetails.listId;
-          job.token = testListDetails.token;
-          job.primary_username = testListDetails.username;
-          job.analyzed_username = testListDetails.analyzed_username;
-          job.stage = 'initialized';
-          job.filter_params = JSON.stringify({});
-    
-          database.createJob(job)
-            .then(result => {
-              res.send(result);
-            })
+app.post('/create-list', (req, res) => {
 
-        } else {
-          res.send('list id already exists!');
-        }
-      })
-  } else {
-    res.send('prospect list details not loaded');
-  }
+})
+
+app.get('/delete-list', (req, res) => {
+
+})
+
+app.get('/hello', (req, res) => {
+  console.log('hello');
+  res.send('it works');
+})
+
+app.post('/create-job', (req, res) => {
+  database.listIdExists(testListDetails.listId)
+    .then(exists => {
+      if (!exists) {
+        console.log('doesn\'t exist, adding');
+        const job = {};
+        job.prospect_list_id = req.params.prospect_list_id;
+        job.token = req.params.token;
+        job.primary_username = req.params.primary_username;
+        job.analyzed_username = req.params.analyzed_username;
+        job.stage = 'initialized';
+        job.filter_params = JSON.stringify({});
+  
+        database.createJob(job)
+          .then(result => {
+            res.send(result);
+          })
+
+      } else {
+        res.send('list id already exists!');
+      }
+    })
 })
 
 
@@ -205,7 +242,7 @@ app.get('/initiate-prospect-job/:jobId', (req, res) => {
       listDetails.analyzed_username = job.analyzed_username;
       listDetails.listId = job.prospect_list_id;
       listDetails.loaded = listDetails.username ? true : false;
-
+      var prospectCount = 0;
       if (listDetails.loaded) {
         if (job.list_sent) {
           if (job.ready_to_download) {
@@ -215,20 +252,45 @@ app.get('/initiate-prospect-job/:jobId', (req, res) => {
           }
         } else {
           res.send('this job be ready to rock and roll!');
-          prospect.batchLikers(job.analyzed_username, listDetails.prospect_job_id)
+          prospect.batchLikers(job.analyzed_username, listDetails.prospect_job_id, MAXPOSTCOUNT)
             .then(likers => {
               console.log('likers found:', likers.length);
               // at this point you will have public likers as an array of objects which contain:
               // username, id, picture, fullName, hasAnonymousProfilePicture, isBusiness, isPrivate
-              console.log('business likers:', likers.filter(liker => {
-                return liker.isBusiness == true;
-              }).length);
+              // console.log('business likers:', likers.filter(liker => {
+              //   return liker.isBusiness == true;
+              // }).length);
               console.log(job.id);
               // saveLikersToProspects(likers, job.id)
               //   .then(saveResult => {
-              messaging.send(likers.length + ' likers saved to prospects');
+              messaging.send(likers.length + ' likers saved to prospects, sending to Truefluence');
               //     console.log('return from saving prospects:', saveResult);
-              //   })
+              //   })const submitURL = getSubmitURL(listDetails);
+              const submitURL = getSubmitURL(listDetails);
+              console.log(submitURL);
+              renderFormattedProspects(listDetails.prospect_job_id)
+                .then(prospects => {
+                  prospectCount = prospects.length;
+                  batchProspects(prospects).map(batch => {
+                    setTimeout(() => {
+                      tfBridge.submitProspects(submitURL, batch);
+                    }, 500);
+                  })
+                })
+                .then(result => {
+                  const updateJob = {
+                    id: listDetails.prospect_job_id,
+                    list_sent: true,
+                    prospect_count: prospectCount
+                  }
+                  console.log('update job:', updateJob);
+                  database.updateJob(updateJob)
+                    .then(done => {
+                      // confirmed that update occurs
+                      // start checking every minute to see if list is finished
+                      
+                    })
+                })
             })
             .catch(err => {
               console.log('batchLikers failure');
@@ -292,6 +354,7 @@ app.get('/test-render-send-prospects/:jobId', (req, res) => {
 
   database.getJobByJobId(req.params.jobId)
     .then(job => {
+      var prospectCount = 0;
       listDetails.token = job.token;
       listDetails.username = job.primary_username;
       listDetails.analyzed_username = job.analyzed_username;
