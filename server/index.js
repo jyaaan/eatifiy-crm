@@ -813,13 +813,14 @@ app.get('/lookup/:username', (req, res) => {
             res.json(user);
           })
       } else {
-        scrapeSave(req.params.username)
-          .then(scrape => {
-            database.getUserByEId(scrape.id)
-              .then(user => {
-                res.json(user);
-              })
-          })
+        // scrapeSave(req.params.username)
+        //   .then(scrape => {
+        //     database.getUserByEId(scrape.id)
+        //       .then(user => {
+        //         res.json(user);
+        //       })
+        //   })
+        res.send('user not found in database!');
       }
     })
 })
