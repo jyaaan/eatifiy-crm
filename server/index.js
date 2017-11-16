@@ -200,7 +200,7 @@ app.get('/hello', (req, res) => {
 })
 
 app.post('/create-job', (req, res) => {
-  database.listIdExists(testListDetails.listId)
+  database.listIdExists(req.body.prospect_list_id)
     .then(exists => {
       if (!exists) {
         console.log('doesn\'t exist, adding');
