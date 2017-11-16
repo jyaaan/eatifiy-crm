@@ -1,5 +1,7 @@
 const twilio = require('twilio');
-console.log(require('../envs'));
+const envs = require('../envs');
+Object.assign(process.env, envs);
+console.log('process.env:', process.env);
 
 class Messaging {
   constructor() {
