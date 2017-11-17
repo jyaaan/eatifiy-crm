@@ -454,6 +454,15 @@ Database.prototype.getAllJobs = function () {
     })
 }
 
+Database.prototype.getJobsByStage = function (stage) {
+  return knex('prospect-jobs')
+    .select('*')
+    .where('stage', stage)
+    .then(jobs => {
+      return jobs;
+    })
+}
+
 Database.prototype.getJobByListId = function (listId) {
   return knex('prospect-jobs')
     .select('*')
