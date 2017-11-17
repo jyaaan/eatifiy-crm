@@ -445,6 +445,15 @@ Loaded - all users have been added to users table and prospects updated with use
 Refreshing
 Complete
 */
+
+Database.prototype.getAllJobs = function () {
+  return knex('prospect-jobs')
+    .select('*')
+    .then(jobs => {
+      return jobs[0];
+    })
+}
+
 Database.prototype.getJobByListId = function (listId) {
   return knex('prospect-jobs')
     .select('*')

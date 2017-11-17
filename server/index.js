@@ -100,6 +100,20 @@ app.get('/test-create-prospect-list/:user', (req, res) => {
 
 })
 
+app.get('/list-jobs/:stage', (req, res) => {
+  // if stage is all, get all jobs and return
+  if (req.params.stage = 'all') {
+    database.getAllJobs()
+      .then(jobs => {
+        res.JSON(jobs);
+      })
+  } else {
+    // otherwise, get jobs of specific stage
+    res.send('nothing');
+  }
+  
+})
+
 app.get('/verify-list/:jobId', (req, res) => {
   const listDetails = {
     loaded: false,
@@ -223,6 +237,84 @@ app.post('/create-job', (req, res) => {
     })
 })
 
+const startProspectJob = jobId => {
+  const listDetails = {
+    loaded: false,
+    staging: false,
+    token: '',
+    username: '',
+    listId: '',
+    prospect_job_id: jobId
+  }
+
+  database.getJobByJobId(req.params.jobId)
+    .then(job => {
+      listDetails.token = job.token;
+      listDetails.username = job.primary_username;
+      listDetails.analyzed_username = job.analyzed_username;
+      listDetails.listId = job.prospect_list_id;
+      listDetails.loaded = listDetails.username ? true : false;
+      var prospectCount = 0;
+      if (listDetails.loaded) {
+        if (job.list_sent) {
+          if (job.ready_to_download) {
+            res.send('ready to download!');
+          } else {
+            res.send('prospect list previously submitted for enrichment, please wait');
+          }
+        } else {
+          res.send('this job be ready to rock and roll!');
+          prospect.batchLikers(job.analyzed_username, listDetails.prospect_job_id, MAXPOSTCOUNT)
+            .then(likers => {
+              console.log('likers found:', likers.length);
+              // at this point you will have public likers as an array of objects which contain:
+              // username, id, picture, fullName, hasAnonymousProfilePicture, isBusiness, isPrivate
+              // console.log('business likers:', likers.filter(liker => {
+              //   return liker.isBusiness == true;
+              // }).length);
+              console.log(job.id);
+              // saveLikersToProspects(likers, job.id)
+              //   .then(saveResult => {
+              messaging.send(likers.length + ' likers saved to prospects, sending to Truefluence');
+              //     console.log('return from saving prospects:', saveResult);
+              //   })const submitURL = getSubmitURL(listDetails);
+              const submitURL = getSubmitURL(listDetails);
+              console.log(submitURL);
+              renderFormattedProspects(listDetails.prospect_job_id)
+                .then(prospects => {
+                  prospectCount = prospects.length;
+                  batchProspects(prospects).map(batch => {
+                    setTimeout(() => {
+                      tfBridge.submitProspects(submitURL, batch);
+                    }, 500);
+                  })
+                })
+                .then(result => {
+                  const updateJob = {
+                    id: listDetails.prospect_job_id,
+                    list_sent: true,
+                    prospect_count: prospectCount
+                  }
+                  console.log('update job:', updateJob);
+                  database.updateJob(updateJob)
+                    .then(done => {
+                      // confirmed that update occurs
+                      // start checking every minute to see if list is finished
+
+                    })
+                })
+            })
+            .catch(err => {
+              console.log('batchLikers failure');
+              console.error(err);
+
+            })
+        }
+      } else {
+        console.log('prospect job with id:' + req.params.jobId + ' does not exist');
+      }
+    })
+}
 
 // you should only need job id.
 app.get('/initiate-prospect-job/:jobId', (req, res) => {
