@@ -450,7 +450,7 @@ Database.prototype.getAllJobs = function () {
   return knex('prospect-jobs')
     .select('*')
     .then(jobs => {
-      return jobs[0];
+      return jobs;
     })
 }
 

@@ -106,7 +106,7 @@ app.get('/list-jobs/:stage', (req, res) => {
   if (req.params.stage = 'all') {
     database.getAllJobs()
       .then(jobs => {
-        res.JSON(jobs);
+        res.send(jobs);
       })
   } else {
     // otherwise, get jobs of specific stage
