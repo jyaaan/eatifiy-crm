@@ -103,7 +103,7 @@ app.get('/test-create-prospect-list/:user', (req, res) => {
 app.get('/list-jobs/:stage', (req, res) => {
   console.log('list jobs:', req.params.stage);
   // if stage is all, get all jobs and return
-  if (req.params.stage = 'all') {
+  if (req.params.stage == 'all') {
     database.getAllJobs()
       .then(jobs => {
         res.send(jobs);
