@@ -200,15 +200,15 @@ app.get('/hello', (req, res) => {
 })
 
 app.post('/create-job', (req, res) => {
-  database.listIdExists(testListDetails.listId)
+  database.listIdExists(req.body.prospect_list_id)
     .then(exists => {
       if (!exists) {
         console.log('doesn\'t exist, adding');
         const job = {};
-        job.prospect_list_id = req.params.prospect_list_id;
-        job.token = req.params.token;
-        job.primary_username = req.params.primary_username;
-        job.analyzed_username = req.params.analyzed_username;
+        job.prospect_list_id = req.body.prospect_list_id;
+        job.token = req.body.token;
+        job.primary_username = req.body.primary_username;
+        job.analyzed_username = req.body.analyzed_username;
         job.stage = 'initialized';
         job.filter_params = JSON.stringify({});
   
@@ -813,13 +813,14 @@ app.get('/lookup/:username', (req, res) => {
             res.json(user);
           })
       } else {
-        scrapeSave(req.params.username)
-          .then(scrape => {
-            database.getUserByEId(scrape.id)
-              .then(user => {
-                res.json(user);
-              })
-          })
+        // scrapeSave(req.params.username)
+        //   .then(scrape => {
+        //     database.getUserByEId(scrape.id)
+        //       .then(user => {
+        //         res.json(user);
+        //       })
+        //   })
+        res.send('user not found in database!');
       }
     })
 })
