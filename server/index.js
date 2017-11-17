@@ -109,6 +109,7 @@ app.get('/list-jobs/:stage', (req, res) => {
         res.send(jobs);
       })
   } else {
+    console.log('not all');
     // otherwise, get jobs of specific stage
     database.getJobsByStage(req.params.stage)
       .then(jobs => {
@@ -118,7 +119,6 @@ app.get('/list-jobs/:stage', (req, res) => {
           res.send('No jobs found.');
         }
       })
-    res.send('nothing');
   }
   
 })
