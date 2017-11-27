@@ -33,7 +33,8 @@ const http = require('http').createServer(app);
 
 app.use(staticMiddleware);
 app.use(bodyParser.json());
-
+const envs = require('../envs');
+Object.assign(process.env, envs);
 // const listDetails = {
 //   loaded: false,
 //   staging: true,
@@ -47,16 +48,21 @@ app.get('/test-method/:argument', (req, res) => {
 
 })
 
+app.post('/gather', (req, res) => {
+  console.log(req.body);
+  res.send('received');
+})
+
 const MAXPOSTCOUNT = 2000;
-const testListDetails = {
-  "loaded": true,
-  "staging": true,
-  "token": "bazJ7F8eZ1H9fxviE7Tjcy2t",
-  "username": "bybibeauty",
-  "analyzed_username": "bybibeauty",
-  "listId": "1367",
-  'prospect_job_id': 37
-}
+// const testListDetails = {
+//   "loaded": true,
+//   "staging": true,
+//   "token": "g1bPmhLH6mghJ9RHS5XAAaNQ",
+//   "username": "missionbicycle",
+//   "analyzed_username": "sfbike",
+//   "listId": "1379",
+//   'prospect_job_id': 38
+// }
 
 // const testListDetails = {
 //   "loaded": true,
