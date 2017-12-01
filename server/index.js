@@ -53,6 +53,10 @@ app.post('/gather', (req, res) => {
   res.send('received');
 })
 
+app.put('/distill', (req, res) => {
+
+});
+
 const MAXPOSTCOUNT = 2000;
 // const testListDetails = {
 //   "loaded": true,
@@ -93,6 +97,14 @@ getSubmitURL = listDetails => {
 getDownloadURL = listDetails => {
   // var downloadURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
   var downloadURL = 'https://staging.truefluence.io/users/';
+  downloadURL = downloadURL + listDetails.username + '/prospects/' + listDetails.listId + '.json?token=';
+  downloadURL = downloadURL + listDetails.token;
+  return downloadURL;
+}
+
+getDownloadURL2 = listDetails => {
+  // var downloadURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
+  var downloadURL = 'https://search.truefluence.io/users/';
   downloadURL = downloadURL + listDetails.username + '/prospects/' + listDetails.listId + '.json?token=';
   downloadURL = downloadURL + listDetails.token;
   return downloadURL;
@@ -146,7 +158,8 @@ app.get('/verify-list/:jobId', (req, res) => {
       listDetails.listId = job.prospect_list_id;
       listDetails.loaded = listDetails.username ? true : false;
 
-      const downloadURL = getDownloadURL(listDetails);
+      const downloadURL = getDownloadURLSearch(listDetails);
+      console.log('trying:', downloadURL);
       tfBridge.verifyList(downloadURL)
         .then(verified => {
           console.log(verified);
@@ -156,6 +169,21 @@ app.get('/verify-list/:jobId', (req, res) => {
     });
     
 })
+getSubmitURLSearch = listDetails => {
+  // var submitURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
+  var submitURL = 'https://search.truefluence.io/users/';
+  submitURL = submitURL + listDetails.username + '/prospects/' + listDetails.listId + '.csv?token=';
+  submitURL = submitURL + listDetails.token;
+  return submitURL;
+}
+
+getDownloadURLSearch = listDetails => {
+  // var downloadURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
+  var downloadURL = 'https://search.truefluence.io/users/';
+  downloadURL = downloadURL + listDetails.username + '/lists/' + listDetails.listId + '.json?token=';
+  downloadURL = downloadURL + listDetails.token;
+  return downloadURL;
+}
 
 app.get('/test-job-number-convert/:jobId', (req, res) => {
   database.getJobByJobId(7)
@@ -370,10 +398,11 @@ app.get('/initiate-prospect-job/:jobId', (req, res) => {
               console.log(job.id);
               // saveLikersToProspects(likers, job.id)
               //   .then(saveResult => {
-              messaging.send(likers.length + ' likers saved to prospects, sending to Truefluence');
+              // messaging.send(likers.length + ' likers saved to prospects, sending to Truefluence');
               //     console.log('return from saving prospects:', saveResult);
               //   })const submitURL = getSubmitURL(listDetails);
-              const submitURL = getSubmitURL(listDetails);
+              const submitURL = getSubmitURLSearch(listDetails);
+              const downloadURL = getDownloadURLSearch(listDetails);
               console.log(submitURL);
               renderFormattedProspects(listDetails.prospect_job_id)
                 .then(prospects => {
@@ -383,6 +412,7 @@ app.get('/initiate-prospect-job/:jobId', (req, res) => {
                       tfBridge.submitProspects(submitURL, batch);
                     }, 500);
                   })
+                  return('baddd');
                 })
                 .then(result => {
                   const updateJob = {
@@ -393,11 +423,55 @@ app.get('/initiate-prospect-job/:jobId', (req, res) => {
                   console.log('update job:', updateJob);
                   database.updateJob(updateJob)
                     .then(done => {
+                      return('holla!');
+                      // res.end();
                       // confirmed that update occurs
                       // start checking every minute to see if list is finished
-                      
+                      // var checkJob = setInterval(checkIfRefreshed, 60000);
+                      // function checkIfRefreshed() {
+                      //   tfBridge.verifyList(downloadURL)
+                      //     .then(verified => {
+                      //       if (verified) {
+                      //         console.log('refresh complete, killing recurring job and initializing download');
+                      //         clearInterval(checkJob);
+                      //         res.send('downloading in progress');
+                      //         tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
+                      //           .then(returnObj => {
+                      //             messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
+                      //           });
+                      //       } else {
+                      //         console.log('refresh not complete, retrying in 60 seconds');
+                      //       }
+                      //     })
+                      // }
                     })
                 })
+            })
+            .then(thing => {
+              if (thing = 'holla!') {
+                const verifyURL = getDownloadURLSearch(listDetails);
+                const downloadURL = getDownloadURL2(listDetails);
+                console.log('starting checking routing');
+                var checkJob = setInterval(checkIfRefreshed, 10000);
+                function checkIfRefreshed() {
+                  tfBridge.verifyList(verifyURL)
+                    .then(verified => {
+                      if (verified) {
+                        console.log('refresh complete, killing recurring job and initializing download');
+                        clearInterval(checkJob);
+                        console.log('downloading in progress');
+                        tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
+                          .then(returnObj => {
+                            messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
+                          });
+                      } else {
+                        console.log('refresh not complete, retrying in 60 seconds');
+                      }
+                    })
+                }
+              } else {
+                console.log('no holla');
+              }
             })
             .catch(err => {
               console.log('batchLikers failure');
@@ -410,6 +484,23 @@ app.get('/initiate-prospect-job/:jobId', (req, res) => {
       }
     })
 })
+
+// const checkIfRefreshed = (url, job, jobId) => {
+//   tfBridge.verifyList(url)
+//     .then(verified => {
+//       if (verified) {
+//         console.log('refresh complete, killing recurring job and initializing download');
+//         clearInterval(job);
+//         res.send('downloading in progress');
+//         tfBridge.downloadProspects(url, jobId)
+//           .then(returnObj => {
+//             messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + jobId);
+//           });
+//       } else {
+//         console.log('refresh not complete, retrying in 60 seconds');
+//       }
+//     })
+// }
 
 app.get('/test-batch-download-prospects/:jobId', (req, res) => {
   const listDetails = {
