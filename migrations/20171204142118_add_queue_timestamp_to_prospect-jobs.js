@@ -1,7 +1,9 @@
 
 exports.up = function (knex, Promise) {
   const query = knex.schema.table('prospect-jobs', table => {
-    table.unique('prospect_list_id');
+    table.timestamp('queued_at');
+    table.boolean('queued');
+    table.boolean('in_progress');
   })
 
   return query;
@@ -9,6 +11,10 @@ exports.up = function (knex, Promise) {
 
 exports.down = function (knex, Promise) {
   const query = knex.schema.table('prospect-jobs', table => {
-    table.dropColumn('prospect_list_id');
+    table.dropColumn('queued_at');
+    table.dropColumn('queued');
+    table.dropColumn('in_progress');
   });
+
+  return query;
 };
