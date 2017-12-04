@@ -402,8 +402,8 @@ app.get('/initiate-prospect-job/:jobId', (req, res) => {
               // messaging.send(likers.length + ' likers saved to prospects, sending to Truefluence');
               //     console.log('return from saving prospects:', saveResult);
               //   })const submitURL = getSubmitURL(listDetails);
-              const submitURL = getSubmitURLSearch(listDetails);
-              const downloadURL = getDownloadURLSearch(listDetails);
+              const submitURL = getSubmitURL(listDetails);
+              const downloadURL = getDownloadURL(listDetails);
               console.log(submitURL);
               renderFormattedProspects(listDetails.prospect_job_id)
                 .then(prospects => {
@@ -450,8 +450,8 @@ app.get('/initiate-prospect-job/:jobId', (req, res) => {
             })
             .then(thing => {
               if (thing = 'holla!') {
-                const verifyURL = getDownloadURLSearch(listDetails);
-                const downloadURL = getDownloadURL2(listDetails);
+                const verifyURL = getDownloadURL(listDetails);
+                const downloadURL = getDownloadURL(listDetails);
                 console.log('starting checking routing');
                 setTimeout(() => {
                   var checkJob = setInterval(checkIfRefreshed, 60000);
