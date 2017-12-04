@@ -166,7 +166,7 @@ app.get('/verify-list/:jobId', (req, res) => {
       listDetails.listId = job.prospect_list_id;
       listDetails.loaded = listDetails.username ? true : false;
 
-      const downloadURL = getDownloadURLSearch(listDetails);
+      const downloadURL = getDownloadURL(listDetails);
       console.log('trying:', downloadURL);
       tfBridge.verifyList(downloadURL)
         .then(verified => {
