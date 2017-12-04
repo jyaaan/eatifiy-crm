@@ -43,6 +43,14 @@ Object.assign(process.env, envs);
 //   listId: ''
 // }
 
+app.get('/test-scoring', (req, res) => {
+  database.analyzeLikes(50000, 100000)
+    .then(analysisObj => {
+      console.log('analysis result', analysisObj);
+      res.send('200');
+    })
+})
+
 app.get('/test-method/:argument', (req, res) => {
   prospect.processJob(req.params.argument);
 
@@ -452,23 +460,25 @@ app.get('/initiate-prospect-job/:jobId', (req, res) => {
                 const verifyURL = getDownloadURLSearch(listDetails);
                 const downloadURL = getDownloadURL2(listDetails);
                 console.log('starting checking routing');
-                var checkJob = setInterval(checkIfRefreshed, 10000);
-                function checkIfRefreshed() {
-                  tfBridge.verifyList(verifyURL)
-                    .then(verified => {
-                      if (verified) {
-                        console.log('refresh complete, killing recurring job and initializing download');
-                        clearInterval(checkJob);
-                        console.log('downloading in progress');
-                        tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
-                          .then(returnObj => {
-                            messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
-                          });
-                      } else {
-                        console.log('refresh not complete, retrying in 60 seconds');
-                      }
-                    })
-                }
+                setTimeout(() => {
+                  var checkJob = setInterval(checkIfRefreshed, 60000);
+                  function checkIfRefreshed() {
+                    tfBridge.verifyList(verifyURL)
+                      .then(verified => {
+                        if (verified) {
+                          console.log('refresh complete, killing recurring job and initializing download');
+                          clearInterval(checkJob);
+                          console.log('downloading in progress');
+                          tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
+                            .then(returnObj => {
+                              messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
+                            });
+                        } else {
+                          console.log('refresh not complete, retrying in 60 seconds');
+                        }
+                      })
+                  }
+                }, 300000);
               } else {
                 console.log('no holla');
               }
@@ -520,7 +530,7 @@ app.get('/test-batch-download-prospects/:jobId', (req, res) => {
       listDetails.listId = job.prospect_list_id;
       listDetails.loaded = listDetails.username ? true : false;
 
-      const downloadURL = getDownloadURL(listDetails);
+      const downloadURL = getDownloadURL2(listDetails);
       res.send('downloading in progress');
       tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
         .then(returnObj => {
