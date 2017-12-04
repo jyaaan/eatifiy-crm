@@ -193,13 +193,6 @@ getDownloadURLSearch = listDetails => {
   return downloadURL;
 }
 
-app.get('/test-job-number-convert/:jobId', (req, res) => {
-  database.getJobByJobId(7)
-    .then(job => {
-      console.log(job);
-      res.json(job);
-    })
-})
 
 // {
 //   "username": "freemanssportingclub",
@@ -530,7 +523,7 @@ app.get('/test-batch-download-prospects/:jobId', (req, res) => {
       listDetails.listId = job.prospect_list_id;
       listDetails.loaded = listDetails.username ? true : false;
 
-      const downloadURL = getDownloadURL2(listDetails);
+      const downloadURL = getDownloadURL(listDetails);
       res.send('downloading in progress');
       tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
         .then(returnObj => {
