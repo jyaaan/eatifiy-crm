@@ -37,7 +37,7 @@ TFBridge.prototype.submitProspects = function (url, users) {
 TFBridge.prototype.verifyList = (url) => {
   return new Promise((resolve, reject) => {
     const options = {
-      url: url,
+      url: url + '&skip_medias=true&skip_counts=true&filters[unrefreshed]=true&per_page=1',
       method: 'GET'
     }
     request(options, (err, res, bod) => {
@@ -46,7 +46,7 @@ TFBridge.prototype.verifyList = (url) => {
         reject(err);
       } else {
         const bodyObj = JSON.parse(bod);
-        resolve(!(bodyObj.list.refreshing));
+        resolve(bodyObj.instagram_users.length == 0);
         // bodyObj.list.refreshing
         // bodyObj.instagram_users.length == 0
         // '&skip_medias=true&skip_counts=true&filters[unrefreshed]=true&per_page=1'
