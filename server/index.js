@@ -60,7 +60,7 @@ app.get('/get-oldest', (req, res) => {
   database.getOldestQueuedJob()
     .then(oldestJob => {
       console.log(oldestJob);
-      res.JSON(oldestJob);
+      res.json(oldestJob);
     })
 })
 
