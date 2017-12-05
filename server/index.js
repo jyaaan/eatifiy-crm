@@ -5,6 +5,10 @@ const bodyParser = require('body-parser');
 const IG = require('./ig');
 const Database = require('./database').Database;
 const database = new Database();
+
+// add things here to set all in-progress to false
+
+
 const ParseScrape = require('./parse-scrape');
 const Scraper = require('./scraper');
 // const ScrapeSave = require('./scrape-save');
@@ -23,8 +27,8 @@ const currentSession = { initialized: false, session: {} };
 const Prospect = require('./prospect');
 const prospect = new Prospect();
 
-const Messaging = require('./messaging');
-const messaging = new Messaging();
+// const Messaging = require('./messaging');
+// const messaging = new Messaging();
 
 const TFBridge = require('./tf-bridge');
 const tfBridge = new TFBridge();
@@ -33,8 +37,11 @@ const http = require('http').createServer(app);
 
 app.use(staticMiddleware);
 app.use(bodyParser.json());
-const envs = require('../envs');
-Object.assign(process.env, envs);
+// const envs = require('../envs');
+// Object.assign(process.env, envs);
+
+
+
 // const listDetails = {
 //   loaded: false,
 //   staging: true,
@@ -42,6 +49,12 @@ Object.assign(process.env, envs);
 //   username: '',
 //   listId: ''
 // }
+
+var schedule = require('node-schedule');
+
+var recurringJob = schedule.scheduleJob('*/5 * * * *', () => {
+  console.log('ho ho!');
+})
 
 app.get('/test-scoring', (req, res) => {
   database.analyzeLikes(50000, 100000)
@@ -150,21 +163,22 @@ app.get('/list-jobs/:stage', (req, res) => {
 })
 
 app.get('/verify-list/:jobId', (req, res) => {
-  const listDetails = {
-    loaded: false,
-    staging: false,
-    token: '',
-    username: '',
-    listId: '',
-    prospect_job_id: req.params.jobId
-  }
+  // const listDetails = {
+  //   loaded: false,
+  //   staging: false,
+  //   token: '',
+  //   username: '',
+  //   listId: '',
+  //   prospect_job_id: req.params.jobId
+  // }
   database.getJobByJobId(req.params.jobId)
     .then(job => {
-      listDetails.token = job.token;
-      listDetails.username = job.primary_username;
-      listDetails.analyzed_username = job.analyzed_username;
-      listDetails.listId = job.prospect_list_id;
-      listDetails.loaded = listDetails.username ? true : false;
+      const listDetails = parseListDetails(job);
+      // listDetails.token = job.token;
+      // listDetails.username = job.primary_username;
+      // listDetails.analyzed_username = job.analyzed_username;
+      // listDetails.listId = job.prospect_list_id;
+      // listDetails.loaded = listDetails.username ? true : false;
 
       const downloadURL = getDownloadURL(listDetails);
       console.log('trying:', downloadURL);
@@ -174,10 +188,27 @@ app.get('/verify-list/:jobId', (req, res) => {
           let message = 'list is' + ' ' + (verified ? '' : 'not') + ' ' + 'complete.';
           res.send(message);
         })
-    });
+    })
+    .catch(err => {
+      console.error(err);
+      res.send(err);
+    })
     
 })
-getSubmitURLSearch = listDetails => {
+
+const parseListDetails = job => {
+  return {
+    loaded: true,
+    staging: true,
+    token: job.token,
+    username: job.primary_username,
+    analyzed_username: job.analyzed_username,
+    listId: job.prospect_list_id,
+    prospect_job_id: job.id
+  }
+}
+
+const getSubmitURLSearch = listDetails => {
   // var submitURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
   var submitURL = 'https://search.truefluence.io/users/';
   submitURL = submitURL + listDetails.username + '/prospects/' + listDetails.listId + '.csv?token=';
@@ -185,7 +216,7 @@ getSubmitURLSearch = listDetails => {
   return submitURL;
 }
 
-getDownloadURLSearch = listDetails => {
+const getDownloadURLSearch = listDetails => {
   // var downloadURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
   var downloadURL = 'https://search.truefluence.io/users/';
   downloadURL = downloadURL + listDetails.username + '/lists/' + listDetails.listId + '.json?token=';
@@ -282,22 +313,23 @@ app.post('/create-job', (req, res) => {
 })
 
 const startProspectJob = jobId => {
-  const listDetails = {
-    loaded: false,
-    staging: false,
-    token: '',
-    username: '',
-    listId: '',
-    prospect_job_id: jobId
-  }
+  // const listDetails = {
+  //   loaded: false,
+  //   staging: false,
+  //   token: '',
+  //   username: '',
+  //   listId: '',
+  //   prospect_job_id: jobId
+  // }
 
   database.getJobByJobId(req.params.jobId)
     .then(job => {
-      listDetails.token = job.token;
-      listDetails.username = job.primary_username;
-      listDetails.analyzed_username = job.analyzed_username;
-      listDetails.listId = job.prospect_list_id;
-      listDetails.loaded = listDetails.username ? true : false;
+      const listDetails = parseListDetails(job);
+      // listDetails.token = job.token;
+      // listDetails.username = job.primary_username;
+      // listDetails.analyzed_username = job.analyzed_username;
+      // listDetails.listId = job.prospect_list_id;
+      // listDetails.loaded = listDetails.username ? true : false;
       var prospectCount = 0;
       if (listDetails.loaded) {
         if (job.list_sent) {
@@ -358,26 +390,31 @@ const startProspectJob = jobId => {
         console.log('prospect job with id:' + req.params.jobId + ' does not exist');
       }
     })
+    .catch(err => {
+      console.error(err);
+
+    })
 }
 
 // you should only need job id.
 app.get('/initiate-prospect-job/:jobId', (req, res) => {
-  const listDetails = {
-    loaded: false,
-    staging: false,
-    token: '',
-    username: '',
-    listId: '',
-    prospect_job_id: req.params.jobId
-  }
+  // const listDetails = {
+  //   loaded: false,
+  //   staging: false,
+  //   token: '',
+  //   username: '',
+  //   listId: '',
+  //   prospect_job_id: req.params.jobId
+  // }
   
   database.getJobByJobId(req.params.jobId)
     .then(job => {
-      listDetails.token = job.token;
-      listDetails.username = job.primary_username;
-      listDetails.analyzed_username = job.analyzed_username;
-      listDetails.listId = job.prospect_list_id;
-      listDetails.loaded = listDetails.username ? true : false;
+      const listDetails = parseListDetails(job);
+      // listDetails.token = job.token;
+      // listDetails.username = job.primary_username;
+      // listDetails.analyzed_username = job.analyzed_username;
+      // listDetails.listId = job.prospect_list_id;
+      // listDetails.loaded = listDetails.username ? true : false;
       var prospectCount = 0;
       if (listDetails.loaded) {
         if (job.list_sent) {
@@ -506,22 +543,23 @@ app.get('/initiate-prospect-job/:jobId', (req, res) => {
 // }
 
 app.get('/test-batch-download-prospects/:jobId', (req, res) => {
-  const listDetails = {
-    loaded: false,
-    staging: false,
-    token: '',
-    username: '',
-    listId: '',
-    prospect_job_id: req.params.jobId
-  }
+  // const listDetails = {
+  //   loaded: false,
+  //   staging: false,
+  //   token: '',
+  //   username: '',
+  //   listId: '',
+  //   prospect_job_id: req.params.jobId
+  // }
 
   database.getJobByJobId(req.params.jobId)
     .then(job => {
-      listDetails.token = job.token;
-      listDetails.username = job.primary_username;
-      listDetails.analyzed_username = job.analyzed_username;
-      listDetails.listId = job.prospect_list_id;
-      listDetails.loaded = listDetails.username ? true : false;
+      const listDetails = parseListDetails(job);
+      // listDetails.token = job.token;
+      // listDetails.username = job.primary_username;
+      // listDetails.analyzed_username = job.analyzed_username;
+      // listDetails.listId = job.prospect_list_id;
+      // listDetails.loaded = listDetails.username ? true : false;
 
       const downloadURL = getDownloadURL(listDetails);
       res.send('downloading in progress');
@@ -544,23 +582,24 @@ app.get('/test-get-user-list', (req, res) => {
 
 app.get('/test-render-send-prospects/:jobId', (req, res) => {
   res.send('ok');
-  const listDetails = {
-    loaded: false,
-    staging: false,
-    token: '',
-    username: '',
-    listId: '',
-    prospect_job_id: req.params.jobId
-  }
+  // const listDetails = {
+  //   loaded: false,
+  //   staging: false,
+  //   token: '',
+  //   username: '',
+  //   listId: '',
+  //   prospect_job_id: req.params.jobId
+  // }
 
   database.getJobByJobId(req.params.jobId)
     .then(job => {
       var prospectCount = 0;
-      listDetails.token = job.token;
-      listDetails.username = job.primary_username;
-      listDetails.analyzed_username = job.analyzed_username;
-      listDetails.listId = job.prospect_list_id;
-      listDetails.loaded = listDetails.username ? true : false;
+      const listDetails = parseListDetails(job);
+      // listDetails.token = job.token;
+      // listDetails.username = job.primary_username;
+      // listDetails.analyzed_username = job.analyzed_username;
+      // listDetails.listId = job.prospect_list_id;
+      // listDetails.loaded = listDetails.username ? true : false;
 
       if (listDetails.loaded) {
         const submitURL = getSubmitURL(listDetails);
@@ -594,7 +633,7 @@ app.get('/test-render-send-prospects/:jobId', (req, res) => {
 
 })
 
-batchProspects = (prospects, batchSize = 1000) => {
+batchProspects = (prospects, batchSize = 100) => {
   return prospects.map((prospect, i) => {
     return i%batchSize === 0 ? prospects.slice(i, i + batchSize) : null;
   }).filter(elem => { return elem; });

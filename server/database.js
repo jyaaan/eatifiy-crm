@@ -164,7 +164,7 @@ function Database() {
 }
 
 function calculateZ(value, avg, std) {
-
+  return (value - avg) / std;
 }
 
 function standardDeviation(values){
@@ -223,6 +223,26 @@ function GetZPercent(z) {
 
 
 // test functions
+
+Database.prototype.getOldestQueuedJob = function () {
+  return knex('prospect-jobs')
+    .select('*')
+    .whereNot('stage', 'Downloaded')
+    .orderBy('updated_at', 'asc')
+    .limit(1)
+}
+
+Database.prototype.addJobToQueue = function (jobId) {
+  const timeNow = new Date(Date.now()).toISOString();
+  return knex('prospect-jobs')
+    .where('id', jobId)
+    .update({
+      queued_at: timeNow,
+      updated_at: timeNow,
+      queued: true
+    })
+    .returning('stage')
+}
 
 Database.prototype.analyzeLikes = function (min, max) {
   return new Promise((resolve, reject) => {
@@ -694,6 +714,15 @@ Database.prototype.getJobByJobId = function (jobId) {
     .where('id', jobId)
     .then(job => {
       return job[0];
+    })
+}
+
+Database.prototype.jobExists = function (jobId) {
+  return kenx('prospect-jobs')
+    .count('*')
+    .where('id', jobId)
+    .then(jobCount => {
+      console.log('jobCount:', jobCount);
     })
 }
 
