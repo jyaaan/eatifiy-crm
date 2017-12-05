@@ -5,10 +5,6 @@ const bodyParser = require('body-parser');
 const IG = require('./ig');
 const Database = require('./database').Database;
 const database = new Database();
-
-// add things here to set all in-progress to false
-
-
 const ParseScrape = require('./parse-scrape');
 const Scraper = require('./scraper');
 // const ScrapeSave = require('./scrape-save');
@@ -27,8 +23,8 @@ const currentSession = { initialized: false, session: {} };
 const Prospect = require('./prospect');
 const prospect = new Prospect();
 
-// const Messaging = require('./messaging');
-// const messaging = new Messaging();
+const Messaging = require('./messaging');
+const messaging = new Messaging();
 
 const TFBridge = require('./tf-bridge');
 const tfBridge = new TFBridge();
@@ -37,24 +33,22 @@ const http = require('http').createServer(app);
 
 app.use(staticMiddleware);
 app.use(bodyParser.json());
-// const envs = require('../envs');
-// Object.assign(process.env, envs);
 
+const envs = require('../envs');
+Object.assign(process.env, envs);
 
+const JobManager = require('./job-manager');
+const jobManager = new JobManager();
+jobManager.resetInProgress();
 
-// const listDetails = {
-//   loaded: false,
-//   staging: true,
-//   token: '',
-//   username: '',
-//   listId: ''
-// }
 
 var schedule = require('node-schedule');
-
-var recurringJob = schedule.scheduleJob('*/5 * * * *', () => {
-  console.log('ho ho!');
-})
+var recurringJob;
+setTimeout(() => {
+  recurringJob = schedule.scheduleJob('*/5 * * * *', () => {
+    console.log('ho ho!');
+  })
+}, 60000);
 
 app.get('/get-oldest', (req, res) => {
   database.getOldestQueuedJob()
@@ -87,23 +81,6 @@ app.put('/distill', (req, res) => {
 });
 
 const MAXPOSTCOUNT = 2000;
-// const testListDetails = {
-//   "loaded": true,
-//   "staging": true,
-//   "token": "g1bPmhLH6mghJ9RHS5XAAaNQ",
-//   "username": "missionbicycle",
-//   "analyzed_username": "sfbike",
-//   "listId": "1379",
-//   'prospect_job_id': 38
-// }
-
-// const testListDetails = {
-//   "loaded": true,
-//   "staging": true,
-//   "token": "thatboyaintright",
-//   "username": "lawrencehunt_co",
-//   "listId": "1"
-// }
 
 getValue = (url, value, terminus = '/') => {
   if (url.indexOf(value) > 0) {
@@ -139,10 +116,6 @@ getDownloadURL2 = listDetails => {
   return downloadURL;
 }
 
-app.get('/test-proxy', (req, res) => {
-
-})
-
 app.get('/test-create-prospect-list/:user', (req, res) => {
 
 })
@@ -171,22 +144,10 @@ app.get('/list-jobs/:stage', (req, res) => {
 })
 
 app.get('/verify-list/:jobId', (req, res) => {
-  // const listDetails = {
-  //   loaded: false,
-  //   staging: false,
-  //   token: '',
-  //   username: '',
-  //   listId: '',
-  //   prospect_job_id: req.params.jobId
-  // }
+
   database.getJobByJobId(req.params.jobId)
     .then(job => {
       const listDetails = parseListDetails(job);
-      // listDetails.token = job.token;
-      // listDetails.username = job.primary_username;
-      // listDetails.analyzed_username = job.analyzed_username;
-      // listDetails.listId = job.prospect_list_id;
-      // listDetails.loaded = listDetails.username ? true : false;
 
       const downloadURL = getDownloadURL(listDetails);
       console.log('trying:', downloadURL);
@@ -232,19 +193,6 @@ const getDownloadURLSearch = listDetails => {
   return downloadURL;
 }
 
-
-// {
-//   "username": "freemanssportingclub",
-//     "jobid"
-//   "upload_url": "192.241.192.44:5760/howdy",
-//     "follower_count": { "min": 20000, "ideal": 70000, "max": 300000 },
-//   "recent_average_like_rate": { "ideal": 800 },
-//   "recent_average_comment_rate": { "ideal": 50 },
-//   "terms": {
-//     "aligned": ["fashion", "blogger", "styl", "menswear", "influencer", "ambassador", "men", "cloth"],
-//       "misaligned": []
-//   }
-// }
 app.post('/test-filter-parameters', (req, res) => {
   res.send('ok');
   console.log(req.body);
@@ -253,13 +201,10 @@ app.post('/test-filter-parameters', (req, res) => {
     id: req.body.job_id
   }
   console.log(job);
-  // database.updateJob(job)
-  //   .then(updated => {
-      prospect.getProspects(req.body.job_id, req.body.filter_params, req.body.return_amount)
-        .then(result => {
-          console.log('index: ', result);
-        })
-    // })
+  prospect.getProspects(req.body.job_id, req.body.filter_params, req.body.return_amount)
+    .then(result => {
+      console.log('index: ', result);
+    })
 })
 
 app.get('/batch-likers-test/:username', (req, res) => {
@@ -321,23 +266,11 @@ app.post('/create-job', (req, res) => {
 })
 
 const startProspectJob = jobId => {
-  // const listDetails = {
-  //   loaded: false,
-  //   staging: false,
-  //   token: '',
-  //   username: '',
-  //   listId: '',
-  //   prospect_job_id: jobId
-  // }
 
   database.getJobByJobId(req.params.jobId)
     .then(job => {
       const listDetails = parseListDetails(job);
-      // listDetails.token = job.token;
-      // listDetails.username = job.primary_username;
-      // listDetails.analyzed_username = job.analyzed_username;
-      // listDetails.listId = job.prospect_list_id;
-      // listDetails.loaded = listDetails.username ? true : false;
+
       var prospectCount = 0;
       if (listDetails.loaded) {
         if (job.list_sent) {
@@ -351,17 +284,7 @@ const startProspectJob = jobId => {
           prospect.batchLikers(job.analyzed_username, listDetails.prospect_job_id, MAXPOSTCOUNT)
             .then(likers => {
               console.log('likers found:', likers.length);
-              // at this point you will have public likers as an array of objects which contain:
-              // username, id, picture, fullName, hasAnonymousProfilePicture, isBusiness, isPrivate
-              // console.log('business likers:', likers.filter(liker => {
-              //   return liker.isBusiness == true;
-              // }).length);
-              console.log(job.id);
-              // saveLikersToProspects(likers, job.id)
-              //   .then(saveResult => {
               messaging.send(likers.length + ' likers saved to prospects, sending to Truefluence');
-              //     console.log('return from saving prospects:', saveResult);
-              //   })const submitURL = getSubmitURL(listDetails);
               const submitURL = getSubmitURL(listDetails);
               console.log(submitURL);
               renderFormattedProspects(listDetails.prospect_job_id)
@@ -404,25 +327,11 @@ const startProspectJob = jobId => {
     })
 }
 
-// you should only need job id.
 app.get('/initiate-prospect-job/:jobId', (req, res) => {
-  // const listDetails = {
-  //   loaded: false,
-  //   staging: false,
-  //   token: '',
-  //   username: '',
-  //   listId: '',
-  //   prospect_job_id: req.params.jobId
-  // }
   
   database.getJobByJobId(req.params.jobId)
     .then(job => {
       const listDetails = parseListDetails(job);
-      // listDetails.token = job.token;
-      // listDetails.username = job.primary_username;
-      // listDetails.analyzed_username = job.analyzed_username;
-      // listDetails.listId = job.prospect_list_id;
-      // listDetails.loaded = listDetails.username ? true : false;
       var prospectCount = 0;
       if (listDetails.loaded) {
         if (job.list_sent) {
@@ -436,17 +345,7 @@ app.get('/initiate-prospect-job/:jobId', (req, res) => {
           prospect.batchLikers(job.analyzed_username, listDetails.prospect_job_id, MAXPOSTCOUNT)
             .then(likers => {
               console.log('likers found:', likers.length);
-              // at this point you will have public likers as an array of objects which contain:
-              // username, id, picture, fullName, hasAnonymousProfilePicture, isBusiness, isPrivate
-              // console.log('business likers:', likers.filter(liker => {
-              //   return liker.isBusiness == true;
-              // }).length);
               console.log(job.id);
-              // saveLikersToProspects(likers, job.id)
-              //   .then(saveResult => {
-              // messaging.send(likers.length + ' likers saved to prospects, sending to Truefluence');
-              //     console.log('return from saving prospects:', saveResult);
-              //   })const submitURL = getSubmitURL(listDetails);
               const submitURL = getSubmitURL(listDetails);
               const downloadURL = getDownloadURL(listDetails);
               console.log(submitURL);
@@ -533,41 +432,11 @@ app.get('/initiate-prospect-job/:jobId', (req, res) => {
     })
 })
 
-// const checkIfRefreshed = (url, job, jobId) => {
-//   tfBridge.verifyList(url)
-//     .then(verified => {
-//       if (verified) {
-//         console.log('refresh complete, killing recurring job and initializing download');
-//         clearInterval(job);
-//         res.send('downloading in progress');
-//         tfBridge.downloadProspects(url, jobId)
-//           .then(returnObj => {
-//             messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + jobId);
-//           });
-//       } else {
-//         console.log('refresh not complete, retrying in 60 seconds');
-//       }
-//     })
-// }
-
 app.get('/test-batch-download-prospects/:jobId', (req, res) => {
-  // const listDetails = {
-  //   loaded: false,
-  //   staging: false,
-  //   token: '',
-  //   username: '',
-  //   listId: '',
-  //   prospect_job_id: req.params.jobId
-  // }
 
   database.getJobByJobId(req.params.jobId)
     .then(job => {
       const listDetails = parseListDetails(job);
-      // listDetails.token = job.token;
-      // listDetails.username = job.primary_username;
-      // listDetails.analyzed_username = job.analyzed_username;
-      // listDetails.listId = job.prospect_list_id;
-      // listDetails.loaded = listDetails.username ? true : false;
 
       const downloadURL = getDownloadURL(listDetails);
       res.send('downloading in progress');
@@ -575,7 +444,6 @@ app.get('/test-batch-download-prospects/:jobId', (req, res) => {
         .then(returnObj => {
           messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
         });
-      // console.log(downloadURL);
     })
 
 })
@@ -586,28 +454,13 @@ app.get('/test-get-user-list', (req, res) => {
   res.send('received');
 })
 
-// this should also only require the job id.
-
 app.get('/test-render-send-prospects/:jobId', (req, res) => {
   res.send('ok');
-  // const listDetails = {
-  //   loaded: false,
-  //   staging: false,
-  //   token: '',
-  //   username: '',
-  //   listId: '',
-  //   prospect_job_id: req.params.jobId
-  // }
 
   database.getJobByJobId(req.params.jobId)
     .then(job => {
       var prospectCount = 0;
       const listDetails = parseListDetails(job);
-      // listDetails.token = job.token;
-      // listDetails.username = job.primary_username;
-      // listDetails.analyzed_username = job.analyzed_username;
-      // listDetails.listId = job.prospect_list_id;
-      // listDetails.loaded = listDetails.username ? true : false;
 
       if (listDetails.loaded) {
         const submitURL = getSubmitURL(listDetails);
@@ -636,12 +489,9 @@ app.get('/test-render-send-prospects/:jobId', (req, res) => {
         res.send('error: target prospect list not specified');
       }
     })
-
-
-
 })
 
-batchProspects = (prospects, batchSize = 100) => {
+batchProspects = (prospects, batchSize = 1000) => {
   return prospects.map((prospect, i) => {
     return i%batchSize === 0 ? prospects.slice(i, i + batchSize) : null;
   }).filter(elem => { return elem; });
@@ -658,35 +508,6 @@ renderFormattedProspects = jobId => {
       })
   })
 }
-
-// saveLikersToProspects = (likers, jobId) => {
-//   console.log('attempgint save:', likers.length);
-//   const splicedLikers = spliceDuplicates(likers);
-//   console.log('after dupe splice:', splicedLikers.length);
-//   return new Promise((resolve, reject) => {
-//     async.mapSeries(likers, (liker, next) => {
-//       const newProspect = {
-//         username: liker.username,
-//         external_id: liker.id,
-//         prospect_job_id: jobId,
-//         relationship_type: 'liker'
-//       }
-//       database.upsertProspect(newProspect)
-//         .then(result => {
-//           // result contains internal id of prospect.
-//           next();
-//         })
-//     }, err => {
-//       // update job to a new stage
-//       database.updateJobStage(jobId, 'Primed')
-//         .then(result => {
-//           resolve(result[0]);
-//         })
-//     })
-//   })
-// }
-
-
 
 // https://staging.truefluence.io/users/eatify/prospects/1013.json?token=oiUBxMQ9KzvBezCyGX1gLDMS&per_page=2&page=5
 app.post('/prospect', (req, res) => {
@@ -875,11 +696,6 @@ app.post('/enrich', (req, res) => {
           })
       })
   }, err => {
-    // filtering users for influencers
-    // store.dispatch({
-    //   type: 'CHANGE_STAGE',
-    //   stage: 'filter'
-    // });
     database.getUsers(userIds)
       .then(influencers => {
         const headers = ['id', 'externalId', 'username', 'postCount', 'followerCount', 'followingCount', 'following/follower ratio', 'recentPostCount', 'recentAvLikes', 'recentAvComments', 'engagementRatio', 'postFrequency(Hr)', 'website'];
@@ -899,6 +715,7 @@ app.post('/enrich', (req, res) => {
       })
   });
 })
+
 const scrapeSave = (username, bypass = false) => { // now with more resume-ability!
   username = username.trim();
   console.log('scraping', username);
@@ -1061,13 +878,6 @@ app.get('/lookup/:username', (req, res) => {
             res.json(user);
           })
       } else {
-        // scrapeSave(req.params.username)
-        //   .then(scrape => {
-        //     database.getUserByEId(scrape.id)
-        //       .then(user => {
-        //         res.json(user);
-        //       })
-        //   })
         res.send('user not found in database!');
       }
     })
