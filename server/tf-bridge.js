@@ -55,9 +55,13 @@ TFBridge.prototype.verifyList = (url) => {
   })
 }
 
+
+// allow this to be resumed on fail
 TFBridge.prototype.downloadProspects = function (url, jobId) {
-  const perPage = 1000;
   console.log('starting download of prospects');
+  const perPage = 1000;
+  var processUserCount = 0;
+  var downloadErrorCount = 0;
   const timeStart = Date.now();
   var userDebug = [];
   //skip_medias=true&skip_counts=true&filters[unrefreshed]=true&per_page=1
@@ -65,8 +69,7 @@ TFBridge.prototype.downloadProspects = function (url, jobId) {
     url: url + '&skip_medias=true&per_page=' + perPage + '&page=1',
     method: 'GET'
   };
-  var processUserCount = 0;
-  console.log(options.url);
+  // console.log(options.url);
   return new Promise((resolve, reject) => {
     request(options, (err, res, bod) => {
       if (err) {
@@ -129,6 +132,27 @@ TFBridge.prototype.downloadProspects = function (url, jobId) {
               });
               // console.log(result.instagram_users[0]);
             })
+            .catch(err => {
+              console.error(err);
+              if (downloadErrorCount < 5) {
+                console.log('error encountered on download attempt, resuming after 120 seconds');
+                downloadErrorCount++;
+                setTimeout(() => {
+                  console.log('attempting to resume');
+                  next();
+                }, 120000);
+              } else {
+                // mark job as error and continue.
+                const jobError = {
+                  id: jobId,
+                  stage: 'DOWNLOAD ERROR'
+                }
+                database.updateJob(jobError)
+                  .then(result => {
+                    next();
+                  })
+              }
+            })
         }, err => {
           const jobUpdate = {
             id: jobId,
@@ -180,13 +204,17 @@ const parseUserData = rawData => {
 const getRequest = (options) => {
   return new Promise((resolve, reject) => {
     request(options, (err, res, bod) => {
-      try {
-        const parsed = JSON.parse(res.body);
-        resolve(parsed);
-      }
-      catch (err) {
-        const parsed = JSON.parse(bod);
-        resolve(parsed);
+      if (err) {
+        reject(err);
+      } else {
+        try {
+          const parsed = JSON.parse(res.body);
+          resolve(parsed);
+        }
+        catch (error) {
+          const parsed = JSON.parse(bod);
+          resolve(parsed);
+        }
       }
     })
   })
