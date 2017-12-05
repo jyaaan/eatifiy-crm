@@ -56,8 +56,8 @@ var recurringJob = schedule.scheduleJob('*/5 * * * *', () => {
   console.log('ho ho!');
 })
 
-app.get('/get-oldest/:jobId', (req, res) => {
-  database.getOldestQueuedJob(req.params.jobId)
+app.get('/get-oldest', (req, res) => {
+  database.getOldestQueuedJob()
     .then(oldestJob => {
       console.log(oldestJob);
       res.JSON(oldestJob);
