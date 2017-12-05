@@ -56,6 +56,14 @@ var recurringJob = schedule.scheduleJob('*/5 * * * *', () => {
   console.log('ho ho!');
 })
 
+app.get('/get-oldest/:jobId', (req, res) => {
+  database.getOldestQueuedJob(req.params.jobId)
+    .then(oldestJob => {
+      console.log(oldestJob);
+      res.JSON(oldestJob);
+    })
+})
+
 app.get('/test-scoring', (req, res) => {
   database.analyzeLikes(50000, 100000)
     .then(analysisObj => {
