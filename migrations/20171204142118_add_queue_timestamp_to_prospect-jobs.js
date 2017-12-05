@@ -1,9 +1,9 @@
 
 exports.up = function (knex, Promise) {
   const query = knex.schema.table('prospect-jobs', table => {
-    table.timestamp('queued_at');
-    table.boolean('queued');
-    table.boolean('in_progress');
+    table.timestamp('queued_at').defaultTo(null);
+    table.boolean('queued').defaultTo(false);
+    table.boolean('in_progress').defaultTo(false);
   })
 
   return query;
