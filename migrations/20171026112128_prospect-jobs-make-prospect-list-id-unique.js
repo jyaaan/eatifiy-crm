@@ -8,5 +8,7 @@ exports.up = function (knex, Promise) {
 };
 
 exports.down = function (knex, Promise) {
-
+  const query = knex.schema.table('prospect-jobs', table => {
+    table.dropColumn('prospect_list_id');
+  });
 };

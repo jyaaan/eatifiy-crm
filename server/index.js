@@ -33,15 +33,38 @@ const http = require('http').createServer(app);
 
 app.use(staticMiddleware);
 app.use(bodyParser.json());
+
 const envs = require('../envs');
 Object.assign(process.env, envs);
-// const listDetails = {
-//   loaded: false,
-//   staging: true,
-//   token: '',
-//   username: '',
-//   listId: ''
-// }
+
+const JobManager = require('./job-manager');
+const jobManager = new JobManager();
+jobManager.resetInProgress();
+
+
+var schedule = require('node-schedule');
+var recurringJob;
+setTimeout(() => {
+  recurringJob = schedule.scheduleJob('*/5 * * * *', () => {
+    console.log('ho ho!');
+  })
+}, 60000);
+
+app.get('/get-oldest', (req, res) => {
+  database.getOldestQueuedJob()
+    .then(oldestJob => {
+      console.log(oldestJob);
+      res.json(oldestJob);
+    })
+})
+
+app.get('/test-scoring', (req, res) => {
+  database.analyzeLikes(50000, 100000)
+    .then(analysisObj => {
+      console.log('analysis result', analysisObj);
+      res.send('200');
+    })
+})
 
 app.get('/test-method/:argument', (req, res) => {
   prospect.processJob(req.params.argument);
@@ -53,24 +76,11 @@ app.post('/gather', (req, res) => {
   res.send('received');
 })
 
-const MAXPOSTCOUNT = 2000;
-// const testListDetails = {
-//   "loaded": true,
-//   "staging": true,
-//   "token": "g1bPmhLH6mghJ9RHS5XAAaNQ",
-//   "username": "missionbicycle",
-//   "analyzed_username": "sfbike",
-//   "listId": "1379",
-//   'prospect_job_id': 38
-// }
+app.put('/distill', (req, res) => {
 
-// const testListDetails = {
-//   "loaded": true,
-//   "staging": true,
-//   "token": "thatboyaintright",
-//   "username": "lawrencehunt_co",
-//   "listId": "1"
-// }
+});
+
+const MAXPOSTCOUNT = 2000;
 
 getValue = (url, value, terminus = '/') => {
   if (url.indexOf(value) > 0) {
@@ -98,9 +108,13 @@ getDownloadURL = listDetails => {
   return downloadURL;
 }
 
-app.get('/test-proxy', (req, res) => {
-
-})
+getDownloadURL2 = listDetails => {
+  // var downloadURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
+  var downloadURL = 'https://search.truefluence.io/users/';
+  downloadURL = downloadURL + listDetails.username + '/prospects/' + listDetails.listId + '.json?token=';
+  downloadURL = downloadURL + listDetails.token;
+  return downloadURL;
+}
 
 app.get('/test-create-prospect-list/:user', (req, res) => {
 
@@ -130,53 +144,55 @@ app.get('/list-jobs/:stage', (req, res) => {
 })
 
 app.get('/verify-list/:jobId', (req, res) => {
-  const listDetails = {
-    loaded: false,
-    staging: false,
-    token: '',
-    username: '',
-    listId: '',
-    prospect_job_id: req.params.jobId
-  }
+
   database.getJobByJobId(req.params.jobId)
     .then(job => {
-      listDetails.token = job.token;
-      listDetails.username = job.primary_username;
-      listDetails.analyzed_username = job.analyzed_username;
-      listDetails.listId = job.prospect_list_id;
-      listDetails.loaded = listDetails.username ? true : false;
+      const listDetails = parseListDetails(job);
 
       const downloadURL = getDownloadURL(listDetails);
+      console.log('trying:', downloadURL);
       tfBridge.verifyList(downloadURL)
         .then(verified => {
           console.log(verified);
           let message = 'list is' + ' ' + (verified ? '' : 'not') + ' ' + 'complete.';
           res.send(message);
         })
-    });
+    })
+    .catch(err => {
+      console.error(err);
+      res.send(err);
+    })
     
 })
 
-app.get('/test-job-number-convert/:jobId', (req, res) => {
-  database.getJobByJobId(7)
-    .then(job => {
-      console.log(job);
-      res.json(job);
-    })
-})
+const parseListDetails = job => {
+  return {
+    loaded: true,
+    staging: true,
+    token: job.token,
+    username: job.primary_username,
+    analyzed_username: job.analyzed_username,
+    listId: job.prospect_list_id,
+    prospect_job_id: job.id
+  }
+}
 
-// {
-//   "username": "freemanssportingclub",
-//     "jobid"
-//   "upload_url": "192.241.192.44:5760/howdy",
-//     "follower_count": { "min": 20000, "ideal": 70000, "max": 300000 },
-//   "recent_average_like_rate": { "ideal": 800 },
-//   "recent_average_comment_rate": { "ideal": 50 },
-//   "terms": {
-//     "aligned": ["fashion", "blogger", "styl", "menswear", "influencer", "ambassador", "men", "cloth"],
-//       "misaligned": []
-//   }
-// }
+const getSubmitURLSearch = listDetails => {
+  // var submitURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
+  var submitURL = 'https://search.truefluence.io/users/';
+  submitURL = submitURL + listDetails.username + '/prospects/' + listDetails.listId + '.csv?token=';
+  submitURL = submitURL + listDetails.token;
+  return submitURL;
+}
+
+const getDownloadURLSearch = listDetails => {
+  // var downloadURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
+  var downloadURL = 'https://search.truefluence.io/users/';
+  downloadURL = downloadURL + listDetails.username + '/lists/' + listDetails.listId + '.json?token=';
+  downloadURL = downloadURL + listDetails.token;
+  return downloadURL;
+}
+
 app.post('/test-filter-parameters', (req, res) => {
   res.send('ok');
   console.log(req.body);
@@ -185,13 +201,10 @@ app.post('/test-filter-parameters', (req, res) => {
     id: req.body.job_id
   }
   console.log(job);
-  // database.updateJob(job)
-  //   .then(updated => {
-      prospect.getProspects(req.body.job_id, req.body.filter_params, req.body.return_amount)
-        .then(result => {
-          console.log('index: ', result);
-        })
-    // })
+  prospect.getProspects(req.body.job_id, req.body.filter_params, req.body.return_amount)
+    .then(result => {
+      console.log('index: ', result);
+    })
 })
 
 app.get('/batch-likers-test/:username', (req, res) => {
@@ -253,22 +266,11 @@ app.post('/create-job', (req, res) => {
 })
 
 const startProspectJob = jobId => {
-  const listDetails = {
-    loaded: false,
-    staging: false,
-    token: '',
-    username: '',
-    listId: '',
-    prospect_job_id: jobId
-  }
 
   database.getJobByJobId(req.params.jobId)
     .then(job => {
-      listDetails.token = job.token;
-      listDetails.username = job.primary_username;
-      listDetails.analyzed_username = job.analyzed_username;
-      listDetails.listId = job.prospect_list_id;
-      listDetails.loaded = listDetails.username ? true : false;
+      const listDetails = parseListDetails(job);
+
       var prospectCount = 0;
       if (listDetails.loaded) {
         if (job.list_sent) {
@@ -282,17 +284,7 @@ const startProspectJob = jobId => {
           prospect.batchLikers(job.analyzed_username, listDetails.prospect_job_id, MAXPOSTCOUNT)
             .then(likers => {
               console.log('likers found:', likers.length);
-              // at this point you will have public likers as an array of objects which contain:
-              // username, id, picture, fullName, hasAnonymousProfilePicture, isBusiness, isPrivate
-              // console.log('business likers:', likers.filter(liker => {
-              //   return liker.isBusiness == true;
-              // }).length);
-              console.log(job.id);
-              // saveLikersToProspects(likers, job.id)
-              //   .then(saveResult => {
               messaging.send(likers.length + ' likers saved to prospects, sending to Truefluence');
-              //     console.log('return from saving prospects:', saveResult);
-              //   })const submitURL = getSubmitURL(listDetails);
               const submitURL = getSubmitURL(listDetails);
               console.log(submitURL);
               renderFormattedProspects(listDetails.prospect_job_id)
@@ -329,26 +321,17 @@ const startProspectJob = jobId => {
         console.log('prospect job with id:' + req.params.jobId + ' does not exist');
       }
     })
+    .catch(err => {
+      console.error(err);
+
+    })
 }
 
-// you should only need job id.
 app.get('/initiate-prospect-job/:jobId', (req, res) => {
-  const listDetails = {
-    loaded: false,
-    staging: false,
-    token: '',
-    username: '',
-    listId: '',
-    prospect_job_id: req.params.jobId
-  }
   
   database.getJobByJobId(req.params.jobId)
     .then(job => {
-      listDetails.token = job.token;
-      listDetails.username = job.primary_username;
-      listDetails.analyzed_username = job.analyzed_username;
-      listDetails.listId = job.prospect_list_id;
-      listDetails.loaded = listDetails.username ? true : false;
+      const listDetails = parseListDetails(job);
       var prospectCount = 0;
       if (listDetails.loaded) {
         if (job.list_sent) {
@@ -362,18 +345,9 @@ app.get('/initiate-prospect-job/:jobId', (req, res) => {
           prospect.batchLikers(job.analyzed_username, listDetails.prospect_job_id, MAXPOSTCOUNT)
             .then(likers => {
               console.log('likers found:', likers.length);
-              // at this point you will have public likers as an array of objects which contain:
-              // username, id, picture, fullName, hasAnonymousProfilePicture, isBusiness, isPrivate
-              // console.log('business likers:', likers.filter(liker => {
-              //   return liker.isBusiness == true;
-              // }).length);
               console.log(job.id);
-              // saveLikersToProspects(likers, job.id)
-              //   .then(saveResult => {
-              messaging.send(likers.length + ' likers saved to prospects, sending to Truefluence');
-              //     console.log('return from saving prospects:', saveResult);
-              //   })const submitURL = getSubmitURL(listDetails);
               const submitURL = getSubmitURL(listDetails);
+              const downloadURL = getDownloadURL(listDetails);
               console.log(submitURL);
               renderFormattedProspects(listDetails.prospect_job_id)
                 .then(prospects => {
@@ -383,6 +357,7 @@ app.get('/initiate-prospect-job/:jobId', (req, res) => {
                       tfBridge.submitProspects(submitURL, batch);
                     }, 500);
                   })
+                  return('baddd');
                 })
                 .then(result => {
                   const updateJob = {
@@ -393,11 +368,57 @@ app.get('/initiate-prospect-job/:jobId', (req, res) => {
                   console.log('update job:', updateJob);
                   database.updateJob(updateJob)
                     .then(done => {
+                      return('holla!');
+                      // res.end();
                       // confirmed that update occurs
                       // start checking every minute to see if list is finished
-                      
+                      // var checkJob = setInterval(checkIfRefreshed, 60000);
+                      // function checkIfRefreshed() {
+                      //   tfBridge.verifyList(downloadURL)
+                      //     .then(verified => {
+                      //       if (verified) {
+                      //         console.log('refresh complete, killing recurring job and initializing download');
+                      //         clearInterval(checkJob);
+                      //         res.send('downloading in progress');
+                      //         tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
+                      //           .then(returnObj => {
+                      //             messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
+                      //           });
+                      //       } else {
+                      //         console.log('refresh not complete, retrying in 60 seconds');
+                      //       }
+                      //     })
+                      // }
                     })
                 })
+            })
+            .then(thing => {
+              if (thing = 'holla!') {
+                const verifyURL = getDownloadURL(listDetails);
+                const downloadURL = getDownloadURL(listDetails);
+                console.log('starting checking routing');
+                setTimeout(() => {
+                  var checkJob = setInterval(checkIfRefreshed, 60000);
+                  function checkIfRefreshed() {
+                    tfBridge.verifyList(verifyURL)
+                      .then(verified => {
+                        if (verified) {
+                          console.log('refresh complete, killing recurring job and initializing download');
+                          clearInterval(checkJob);
+                          console.log('downloading in progress');
+                          tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
+                            .then(returnObj => {
+                              messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
+                            });
+                        } else {
+                          console.log('refresh not complete, retrying in 60 seconds');
+                        }
+                      })
+                  }
+                }, 300000);
+              } else {
+                console.log('no holla');
+              }
             })
             .catch(err => {
               console.log('batchLikers failure');
@@ -412,22 +433,10 @@ app.get('/initiate-prospect-job/:jobId', (req, res) => {
 })
 
 app.get('/test-batch-download-prospects/:jobId', (req, res) => {
-  const listDetails = {
-    loaded: false,
-    staging: false,
-    token: '',
-    username: '',
-    listId: '',
-    prospect_job_id: req.params.jobId
-  }
 
   database.getJobByJobId(req.params.jobId)
     .then(job => {
-      listDetails.token = job.token;
-      listDetails.username = job.primary_username;
-      listDetails.analyzed_username = job.analyzed_username;
-      listDetails.listId = job.prospect_list_id;
-      listDetails.loaded = listDetails.username ? true : false;
+      const listDetails = parseListDetails(job);
 
       const downloadURL = getDownloadURL(listDetails);
       res.send('downloading in progress');
@@ -435,7 +444,6 @@ app.get('/test-batch-download-prospects/:jobId', (req, res) => {
         .then(returnObj => {
           messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
         });
-      // console.log(downloadURL);
     })
 
 })
@@ -446,27 +454,13 @@ app.get('/test-get-user-list', (req, res) => {
   res.send('received');
 })
 
-// this should also only require the job id.
-
 app.get('/test-render-send-prospects/:jobId', (req, res) => {
   res.send('ok');
-  const listDetails = {
-    loaded: false,
-    staging: false,
-    token: '',
-    username: '',
-    listId: '',
-    prospect_job_id: req.params.jobId
-  }
 
   database.getJobByJobId(req.params.jobId)
     .then(job => {
       var prospectCount = 0;
-      listDetails.token = job.token;
-      listDetails.username = job.primary_username;
-      listDetails.analyzed_username = job.analyzed_username;
-      listDetails.listId = job.prospect_list_id;
-      listDetails.loaded = listDetails.username ? true : false;
+      const listDetails = parseListDetails(job);
 
       if (listDetails.loaded) {
         const submitURL = getSubmitURL(listDetails);
@@ -495,9 +489,6 @@ app.get('/test-render-send-prospects/:jobId', (req, res) => {
         res.send('error: target prospect list not specified');
       }
     })
-
-
-
 })
 
 batchProspects = (prospects, batchSize = 1000) => {
@@ -517,35 +508,6 @@ renderFormattedProspects = jobId => {
       })
   })
 }
-
-// saveLikersToProspects = (likers, jobId) => {
-//   console.log('attempgint save:', likers.length);
-//   const splicedLikers = spliceDuplicates(likers);
-//   console.log('after dupe splice:', splicedLikers.length);
-//   return new Promise((resolve, reject) => {
-//     async.mapSeries(likers, (liker, next) => {
-//       const newProspect = {
-//         username: liker.username,
-//         external_id: liker.id,
-//         prospect_job_id: jobId,
-//         relationship_type: 'liker'
-//       }
-//       database.upsertProspect(newProspect)
-//         .then(result => {
-//           // result contains internal id of prospect.
-//           next();
-//         })
-//     }, err => {
-//       // update job to a new stage
-//       database.updateJobStage(jobId, 'Primed')
-//         .then(result => {
-//           resolve(result[0]);
-//         })
-//     })
-//   })
-// }
-
-
 
 // https://staging.truefluence.io/users/eatify/prospects/1013.json?token=oiUBxMQ9KzvBezCyGX1gLDMS&per_page=2&page=5
 app.post('/prospect', (req, res) => {
@@ -734,11 +696,6 @@ app.post('/enrich', (req, res) => {
           })
       })
   }, err => {
-    // filtering users for influencers
-    // store.dispatch({
-    //   type: 'CHANGE_STAGE',
-    //   stage: 'filter'
-    // });
     database.getUsers(userIds)
       .then(influencers => {
         const headers = ['id', 'externalId', 'username', 'postCount', 'followerCount', 'followingCount', 'following/follower ratio', 'recentPostCount', 'recentAvLikes', 'recentAvComments', 'engagementRatio', 'postFrequency(Hr)', 'website'];
@@ -758,6 +715,7 @@ app.post('/enrich', (req, res) => {
       })
   });
 })
+
 const scrapeSave = (username, bypass = false) => { // now with more resume-ability!
   username = username.trim();
   console.log('scraping', username);
@@ -920,13 +878,6 @@ app.get('/lookup/:username', (req, res) => {
             res.json(user);
           })
       } else {
-        // scrapeSave(req.params.username)
-        //   .then(scrape => {
-        //     database.getUserByEId(scrape.id)
-        //       .then(user => {
-        //         res.json(user);
-        //       })
-        //   })
         res.send('user not found in database!');
       }
     })

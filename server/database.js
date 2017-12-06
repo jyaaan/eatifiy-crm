@@ -1,23 +1,160 @@
-// const knex = require('knex')({
-//   client: 'postgresql',
-//   connection: {
-//     user: 'johny',
-//     password: 'peanut',
-//     database: 'eatify-crm',
-//     host: 'localhost',
-//     port: '5432'
-//   }
-// });
 const knex = require('knex')({
   client: 'postgresql',
   connection: {
-    user: process.env.RDS_USERNAME,
-    password: process.env.RDS_PASSWORD,
-    database: process.env.RDS_DB_NAME,
-    port: process.env.RDS_PORT,
-    host: process.env.RDS_HOSTNAME
+    user: 'johny',
+    password: 'peanut',
+    database: 'eatify-crm',
+    host: 'localhost',
+    port: '5432'
   }
 });
+// const knex = require('knex')({
+//   client: 'postgresql',
+//   connection: {
+//     user: process.env.RDS_USERNAME,
+//     password: process.env.RDS_PASSWORD,
+//     database: process.env.RDS_DB_NAME,
+//     port: process.env.RDS_PORT,
+//     host: process.env.RDS_HOSTNAME
+//   }
+// });
+
+const scoreEvaluator = {
+  1: {
+    min: 0,
+    max: 1000,
+    avg: 0,
+    std: 0
+  },
+  2: {
+    min: 1000,
+    max: 2000,
+    avg: 0,
+    std: 0
+  },
+  3: {
+    min: 2000,
+    max: 3000,
+    avg: 0,
+    std: 0
+  },
+  4: {
+    min: 3000,
+    max: 4000,
+    avg: 0,
+    std: 0
+  },
+  5: {
+    min: 4000,
+    max: 5000,
+    avg: 0,
+    std: 0
+  },
+  6: {
+    min: 5000,
+    max: 10000,
+    avg: 0,
+    std: 0
+  },
+  7: {
+    min: 10000,
+    max: 20000,
+    avg: 0,
+    std: 0
+  },
+  8: {
+    min: 20000,
+    max: 30000,
+    avg: 0,
+    std: 0
+  },
+  9: {
+    min: 30000,
+    max: 40000,
+    avg: 0,
+    std: 0
+  },
+  10: {
+    min: 40000,
+    max: 50000,
+    avg: 0,
+    std: 0
+  },
+  11: {
+    min: 50000,
+    max: 60000,
+    avg: 0,
+    std: 0
+  },
+  12: {
+    min: 60000,
+    max: 70000,
+    avg: 0,
+    std: 0
+  },
+  13: {
+    min: 70000,
+    max: 80000,
+    avg: 0,
+    std: 0
+  },
+  14: {
+    min: 80000,
+    max: 90000,
+    avg: 0,
+    std: 0
+  },
+  15: {
+    min: 90000,
+    max: 100000,
+    avg: 0,
+    std: 0
+  },
+  16: {
+    min: 100000,
+    max: 150000,
+    avg: 0,
+    std: 0
+  },
+  17: {
+    min: 150000,
+    max: 200000,
+    avg: 0,
+    std: 0
+  },
+  18: {
+    min: 200000,
+    max: 300000,
+    avg: 0,
+    std: 0
+  },
+  18: {
+    min: 200000,
+    max: 300000,
+    avg: 0,
+    std: 0
+  },
+  19: {
+    min: 300000,
+    max: 500000,
+    avg: 0,
+    std: 0
+  },
+  20: {
+    min: 500000,
+    max: 1000000,
+    avg: 0,
+    std: 0
+  },
+  21: {
+    min: 1000000,
+    max: 5000000,
+    avg: 0,
+    std: 0
+  }
+}
+
+
 
 const async = require('async');
 const InfluencerFilter = require('./influencer-filter');
@@ -26,7 +163,106 @@ function Database() {
 
 }
 
+function calculateZ(value, avg, std) {
+  return (value - avg) / std;
+}
+
+function standardDeviation(values){
+  return new Promise((resolve, reject) => {
+    const avg = average(values);
+    console.log(avg);
+    const squareDiffs = values.map(function(value){
+      var diff = value - avg;
+      var sqrDiff = diff * diff;
+      return sqrDiff;
+    });
+    
+    var avgSquareDiff = average(squareDiffs);
+  
+    var stdDev = Math.sqrt(avgSquareDiff);
+    resolve({ stdev: stdDev, avg: avg });
+  })
+}
+
+function average(data){
+  var sum = data.reduce(function(sum, value){
+    return sum + value;
+  }, 0);
+
+  var avg = sum / data.length;
+  return avg;
+}
+
+function GetZPercent(z) {
+  //z == number of standard deviations from the mean
+
+  //if z is greater than 6.5 standard deviations from the mean
+  //the number of significant digits will be outside of a reasonable 
+  //range
+  if (z < -6.5)
+    return 0;
+  if (z > 6.5)
+    return 1;
+
+  var factK = 1;
+  var sum = 0;
+  var term = 1;
+  var k = 0;
+  var loopStop = Math.exp(-23);
+  while (Math.abs(term) > loopStop) {
+    term = .3989422804 * Math.pow(-1, k) * Math.pow(z, k) / (2 * k + 1) / Math.pow(2, k) * Math.pow(z, k + 1) / factK;
+    sum += term;
+    k++;
+    factK *= k;
+
+  }
+  sum += 0.5;
+
+  return sum * 100;
+}
+
+
 // test functions
+
+Database.prototype.getOldestQueuedJob = function () {
+  return knex('prospect-jobs')
+    .select('*')
+    .whereNot('stage', 'Downloaded')
+    .orderBy('updated_at', 'asc')
+    .limit(1)
+}
+
+Database.prototype.addJobToQueue = function (jobId) {
+  const timeNow = new Date(Date.now()).toISOString();
+  return knex('prospect-jobs')
+    .where('id', jobId)
+    .update({
+      queued_at: timeNow,
+      updated_at: timeNow,
+      queued: true
+    })
+    .returning('stage')
+}
+
+Database.prototype.analyzeLikes = function (min, max) {
+  return new Promise((resolve, reject) => {
+    knex('users')
+    .select('recent_average_likes')
+    .where('follower_count', '>', min)
+    .andWhere('follower_count', '<=', max)
+    .andWhere('recent_average_likes', '>', 0)
+    .then(likes => {
+      const formattedLikes = likes.map(like => {
+        return Number(like.recent_average_likes);
+      })
+      // console.log(formattedLikes);
+      standardDeviation(formattedLikes)
+        .then(stats => {
+          resolve(stats);
+        })
+    })
+  })
+}
 
 Database.prototype.getThousand = function () {
   // SELECT username, external_id FROM users LIMIT 1000;
@@ -478,6 +714,15 @@ Database.prototype.getJobByJobId = function (jobId) {
     .where('id', jobId)
     .then(job => {
       return job[0];
+    })
+}
+
+Database.prototype.jobExists = function (jobId) {
+  return kenx('prospect-jobs')
+    .count('*')
+    .where('id', jobId)
+    .then(jobCount => {
+      console.log('jobCount:', jobCount);
     })
 }
 
