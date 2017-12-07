@@ -59,13 +59,41 @@ setTimeout(() => {
   // Every 5 minutes
   recurringJob5 = schedule.scheduleJob('*/5 * * * *', () => {
     console.log('ho ho!');
-    console.log('jobManager is ' + jobManager.available ? '' : 'not ' + 'available');
   });
-
+  
   // Every 1 minute
   recurringJob1 = schedule.scheduleJob('*/1 * * * *', () => {
     console.log('hi hi!');
-
+    console.log('jobManager is ' + (jobManager.available ? '' : 'not ') + 'available');
+    jobManager.getQueuedRefreshJobs()
+      .then(jobs => {
+        console.log('new refresh jobs: ' + jobs.map(job => { return job.id }));
+      })
+    
+    // parseListDetails(job);
+    // const verifyURL = getDownloadURL(listDetails);
+    // var checkJob = setInterval(checkIfRefreshed, 60000);
+    // function checkIfRefreshed() {
+      //   tfBridge.verifyList(verifyURL)
+      //     .then(verified => {
+        //       if (verified) {
+    //         console.log('refresh complete, killing recurring job and initializing download');
+    //         clearInterval(checkJob);
+    //         console.log('downloading in progress');
+    //         tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
+    //           .then(returnObj => {
+      //             messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
+    //           });
+    //       } else {
+      //         console.log('refresh not complete, retrying in 60 seconds');
+    //       }
+    //     })
+    // }
+  });
+  
+  // Every 1 minute stagger 30 test
+  recurringJob1Staggered = schedule.scheduleJob('30 * * * * *', () => {
+    console.log('staggered');
     // assume we have urls
     async.mapSeries(refreshJobURLs, (refreshURL, next) => {
       tfBridge.verifyList(refreshURL)
@@ -75,33 +103,15 @@ setTimeout(() => {
           }
         })
     })
-    // parseListDetails(job);
-    // const verifyURL = getDownloadURL(listDetails);
-    // var checkJob = setInterval(checkIfRefreshed, 60000);
-    // function checkIfRefreshed() {
-    //   tfBridge.verifyList(verifyURL)
-    //     .then(verified => {
-    //       if (verified) {
-    //         console.log('refresh complete, killing recurring job and initializing download');
-    //         clearInterval(checkJob);
-    //         console.log('downloading in progress');
-    //         tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
-    //           .then(returnObj => {
-    //             messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
-    //           });
-    //       } else {
-    //         console.log('refresh not complete, retrying in 60 seconds');
-    //       }
-    //     })
-    // }
-  });
-
-  // Every 1 minute stagger 30 test
-  recurringJob1Staggered = schedule.scheduleJob('30 * * * * *', () => {
-    console.log('staggered');
   })
-}, 60000);
+}, 30000);
 
+app.get('/test-refresh-jobs', (req, res) => {
+  jobManager.getQueuedRefreshJobs()
+    .then(jobs => {
+      res.json(jobs);
+    })
+})
 
 app.get('/get-oldest', (req, res) => {
   database.getOldestQueuedJob()

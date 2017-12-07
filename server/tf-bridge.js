@@ -109,7 +109,6 @@ TFBridge.prototype.createProspectList = function (username, token) {
         console.log(res);
         const prospectListId = res.body.list.id;
         const token = res.body.list.token;
-        const prospectList
         resolve(res);
       }
     })
@@ -193,6 +192,28 @@ TFBridge.prototype.downloadProspects = function (url, jobId) {
           }, err => {
             next();
           });
+        })
+        .catch(err => {
+          console.error(err);
+          if (downloadErrorCount < 5) {
+            console.log('error encountered on download attempt, resuming after 120 seconds');
+            downloadErrorCount++;
+            setTimeout(() => {
+              console.log('attempting to resume');
+              next();
+            }, 120000);
+          } else {
+            // mark job as error and continue.
+            const jobError = {
+              id: jobId,
+              in_progress: false,
+              stage: 'DOWNLOAD ERROR'
+            }
+            database.updateJob(jobError)
+              .then(result => {
+                next();
+              })
+          }
         })
     }, () => {
       return latestInstagramUsers > 0;
