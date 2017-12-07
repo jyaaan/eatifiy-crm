@@ -694,9 +694,6 @@ Database.prototype.getJobsByStage = function (stage) {
   return knex('prospect-jobs')
     .select('*')
     .where('stage', stage)
-    .then(jobs => {
-      return jobs;
-    })
 }
 
 Database.prototype.getJobByListId = function (listId) {
@@ -706,6 +703,12 @@ Database.prototype.getJobByListId = function (listId) {
     .then(job => {
       return job[0];
     });
+}
+
+Database.prototype.getJobs = function (searchValues) {
+  return knex('prospect-jobs')
+    .select('*')
+    .where(searchValues)
 }
 
 Database.prototype.getJobByJobId = function (jobId) {
@@ -760,6 +763,28 @@ Database.prototype.listIdExists = function (listId) {
     .then(result => {
       return (result[0].count > 0);
     })
+}
+
+Database.prototype.resetInProgress = function () {
+  const timeNow = new Date(Date.now()).toISOString();
+  return knex('prospect-jobs')
+    .where('in_progress', true)
+    .update({
+      in_progress: false,
+      queued: true,
+      queued_at: timeNow,
+      updated_at: timeNow
+    });
+}
+
+Database.prototype.removeAllQueued = function () {
+  const timeNow = new Date(Date.now()).toISOString();
+  return knex('prospect-jobs')
+    .where('queued', true)
+    .update({
+      queued: false,
+      updated_at: timeNow
+    });
 }
 
 // SUGGESTIONS

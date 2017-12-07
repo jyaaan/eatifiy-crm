@@ -38,17 +38,70 @@ const envs = require('../envs');
 Object.assign(process.env, envs);
 
 const JobManager = require('./job-manager');
-const jobManager = new JobManager();
+const jobManager = new JobManager(database);
+
+// Initialization routines and parameters
 jobManager.resetInProgress();
+const MAXPOSTCOUNT = 2000;
+var refreshJobs = [];
+var refreshJobURLs = [];
 
-
+// Recurring jobs starting a minute after initialization
 var schedule = require('node-schedule');
-var recurringJob;
+var recurringJob5;
+var recurringJob1;
+var recurringJob1Staggered;
+
 setTimeout(() => {
-  recurringJob = schedule.scheduleJob('*/5 * * * *', () => {
+  // delayed jobs
+  refreshJobs = Object.assign(refreshJobs, jobManager.getRefreshJobs());
+
+  // Every 5 minutes
+  recurringJob5 = schedule.scheduleJob('*/5 * * * *', () => {
     console.log('ho ho!');
+    console.log('jobManager is ' + jobManager.available ? '' : 'not ' + 'available');
+  });
+
+  // Every 1 minute
+  recurringJob1 = schedule.scheduleJob('*/1 * * * *', () => {
+    console.log('hi hi!');
+
+    // assume we have urls
+    async.mapSeries(refreshJobURLs, (refreshURL, next) => {
+      tfBridge.verifyList(refreshURL)
+        .then(verified => {
+          if (verified) {
+            // update job and remove this from job.
+          }
+        })
+    })
+    // parseListDetails(job);
+    // const verifyURL = getDownloadURL(listDetails);
+    // var checkJob = setInterval(checkIfRefreshed, 60000);
+    // function checkIfRefreshed() {
+    //   tfBridge.verifyList(verifyURL)
+    //     .then(verified => {
+    //       if (verified) {
+    //         console.log('refresh complete, killing recurring job and initializing download');
+    //         clearInterval(checkJob);
+    //         console.log('downloading in progress');
+    //         tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
+    //           .then(returnObj => {
+    //             messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
+    //           });
+    //       } else {
+    //         console.log('refresh not complete, retrying in 60 seconds');
+    //       }
+    //     })
+    // }
+  });
+
+  // Every 1 minute stagger 30 test
+  recurringJob1Staggered = schedule.scheduleJob('30 * * * * *', () => {
+    console.log('staggered');
   })
 }, 60000);
+
 
 app.get('/get-oldest', (req, res) => {
   database.getOldestQueuedJob()
@@ -57,6 +110,8 @@ app.get('/get-oldest', (req, res) => {
       res.json(oldestJob);
     })
 })
+
+//test generic job search functions
 
 app.get('/test-scoring', (req, res) => {
   database.analyzeLikes(50000, 100000)
@@ -72,15 +127,17 @@ app.get('/test-method/:argument', (req, res) => {
 })
 
 app.post('/gather', (req, res) => {
+  console.log('gather request');
   console.log(req.body);
   res.send('received');
 })
 
 app.put('/distill', (req, res) => {
-
+  console.log('distill request');
+  console.log(req.body);
+  res.send('received');
 });
 
-const MAXPOSTCOUNT = 2000;
 
 getValue = (url, value, terminus = '/') => {
   if (url.indexOf(value) > 0) {
@@ -92,23 +149,23 @@ getValue = (url, value, terminus = '/') => {
   }
 }
 
-getSubmitURL = listDetails => {
-  // var submitURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
-  var submitURL = 'https://staging.truefluence.io/users/';
-  submitURL = submitURL + listDetails.username + '/prospects/' + listDetails.listId + '.csv?token=';
-  submitURL = submitURL + listDetails.token;
-  return submitURL;
-}
+// getSubmitURL = listDetails => {
+//   // var submitURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
+//   var submitURL = 'https://staging.truefluence.io/users/';
+//   submitURL = submitURL + listDetails.username + '/prospects/' + listDetails.listId + '.csv?token=';
+//   submitURL = submitURL + listDetails.token;
+//   return submitURL;
+// }
+
+// getDownloadURL = listDetails => {
+//   // var downloadURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
+//   var downloadURL = 'https://staging.truefluence.io/users/';
+//   downloadURL = downloadURL + listDetails.username + '/prospects/' + listDetails.listId + '.json?token=';
+//   downloadURL = downloadURL + listDetails.token;
+//   return downloadURL;
+// }
 
 getDownloadURL = listDetails => {
-  // var downloadURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
-  var downloadURL = 'https://staging.truefluence.io/users/';
-  downloadURL = downloadURL + listDetails.username + '/prospects/' + listDetails.listId + '.json?token=';
-  downloadURL = downloadURL + listDetails.token;
-  return downloadURL;
-}
-
-getDownloadURL2 = listDetails => {
   // var downloadURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
   var downloadURL = 'https://search.truefluence.io/users/';
   downloadURL = downloadURL + listDetails.username + '/prospects/' + listDetails.listId + '.json?token=';
@@ -116,8 +173,11 @@ getDownloadURL2 = listDetails => {
   return downloadURL;
 }
 
-app.get('/test-create-prospect-list/:user', (req, res) => {
-
+app.get('/test-create-prospect-list/:username', (req, res) => {
+  tfBridge.createProspectList(req.params.username, 'LXJrk8BevkpMvGoNUA4SR3L1-u')
+    .then(result => {
+      res.send(result);
+    })
 })
 
 app.get('/list-jobs/:stage', (req, res) => {
@@ -140,16 +200,13 @@ app.get('/list-jobs/:stage', (req, res) => {
         }
       })
   }
-  
 })
 
 app.get('/verify-list/:jobId', (req, res) => {
-
   database.getJobByJobId(req.params.jobId)
     .then(job => {
       const listDetails = parseListDetails(job);
-
-      const downloadURL = getDownloadURL(listDetails);
+      const downloadURL = getSubmitURL(listDetails);
       console.log('trying:', downloadURL);
       tfBridge.verifyList(downloadURL)
         .then(verified => {
@@ -162,7 +219,6 @@ app.get('/verify-list/:jobId', (req, res) => {
       console.error(err);
       res.send(err);
     })
-    
 })
 
 const parseListDetails = job => {
@@ -177,10 +233,10 @@ const parseListDetails = job => {
   }
 }
 
-const getSubmitURLSearch = listDetails => {
+const getSubmitURL = listDetails => {
   // var submitURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
   var submitURL = 'https://search.truefluence.io/users/';
-  submitURL = submitURL + listDetails.username + '/prospects/' + listDetails.listId + '.csv?token=';
+  submitURL = submitURL + listDetails.username + '/lists/' + listDetails.listId + '.csv?token=';
   submitURL = submitURL + listDetails.token;
   return submitURL;
 }
@@ -236,11 +292,6 @@ app.get('/delete-list', (req, res) => {
 
 })
 
-app.get('/hello', (req, res) => {
-  console.log('hello');
-  res.send('it works');
-})
-
 app.post('/create-job', (req, res) => {
   database.listIdExists(req.body.prospect_list_id)
     .then(exists => {
@@ -266,11 +317,9 @@ app.post('/create-job', (req, res) => {
 })
 
 const startProspectJob = jobId => {
-
   database.getJobByJobId(req.params.jobId)
     .then(job => {
       const listDetails = parseListDetails(job);
-
       var prospectCount = 0;
       if (listDetails.loaded) {
         if (job.list_sent) {
@@ -307,14 +356,12 @@ const startProspectJob = jobId => {
                     .then(done => {
                       // confirmed that update occurs
                       // start checking every minute to see if list is finished
-
                     })
                 })
             })
             .catch(err => {
               console.log('batchLikers failure');
               console.error(err);
-
             })
         }
       } else {
@@ -323,12 +370,10 @@ const startProspectJob = jobId => {
     })
     .catch(err => {
       console.error(err);
-
     })
 }
 
 app.get('/initiate-prospect-job/:jobId', (req, res) => {
-  
   database.getJobByJobId(req.params.jobId)
     .then(job => {
       const listDetails = parseListDetails(job);
@@ -433,11 +478,9 @@ app.get('/initiate-prospect-job/:jobId', (req, res) => {
 })
 
 app.get('/test-batch-download-prospects/:jobId', (req, res) => {
-
   database.getJobByJobId(req.params.jobId)
     .then(job => {
       const listDetails = parseListDetails(job);
-
       const downloadURL = getDownloadURL(listDetails);
       res.send('downloading in progress');
       tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
@@ -445,7 +488,6 @@ app.get('/test-batch-download-prospects/:jobId', (req, res) => {
           messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
         });
     })
-
 })
 
 app.get('/test-get-user-list', (req, res) => {
@@ -456,12 +498,10 @@ app.get('/test-get-user-list', (req, res) => {
 
 app.get('/test-render-send-prospects/:jobId', (req, res) => {
   res.send('ok');
-
   database.getJobByJobId(req.params.jobId)
     .then(job => {
       var prospectCount = 0;
       const listDetails = parseListDetails(job);
-
       if (listDetails.loaded) {
         const submitURL = getSubmitURL(listDetails);
         console.log(submitURL);
@@ -653,7 +693,6 @@ app.post('/preload-prospects', (req, res) => {
   console.log('loading prospects');
   const usernames = req.body.usernames;
   const primaryUsername = req.body.primaryUsername;
-  
   async.mapSeries(usernames, (username, next) => {
     database.createProspect(primaryUsername, username)
       .then(result => {
@@ -735,7 +774,7 @@ const scrapeSave = (username, bypass = false) => { // now with more resume-abili
                     })
                 })
                 .catch(err => {
-                  console.log('upsert attemp failure');
+                  console.log('upsert attempt failure');
                   reject(err);
                 })
             })
@@ -842,16 +881,13 @@ app.get('/get-report-rank', (req, res) => {
             topRanked = topRanked.map(rank => {
               return rank.suggested_id;
             });
-
             topRankedDedupe = spliceDuplicates(topRanked);
-
             results = topRankedDedupe.map(user => {
               var filtered = topRanked.filter(result => {
                 return result == user;
               })
               return [user, filtered.length];
             });
-
             async.mapSeries(results, (result, next) => {
               database.getUsernameFromEId(result[0])
                 .then(username => {
@@ -965,7 +1001,6 @@ const queueFollowing = (following, primaryUserEId) => {
     })
   })
 }
-
 
 const PORT = process.env.PORT;
 

@@ -15,7 +15,7 @@ const tfScore = require('./tf-score');
 const InfluencerFilter = require('./influencer-filter');
 const request = require('request');
 
-
+// look to change this so that we can re-use the same cookie until expiration
 ig.initialize()
   .then(result => {
     console.log('initializing session');
@@ -33,17 +33,14 @@ function Prospect() {
 
 }
 
-Prospect.prototype.processJob = jobId => {
-  const timeStart = Date.now();
-
-  console.log('initializing job for id:', jobId);
-
-  // grab latest stage for job
-  database.getJobByJobId(jobId)
-    .then(job => {
-      console.log(job);
-    })
-}
+// Prospect.prototype.processJob = jobId => {
+//   const timeStart = Date.now();
+//   console.log('initializing job for id:', jobId);
+//   database.getJobByJobId(jobId)
+//     .then(job => {
+//       console.log(job);
+//     })
+// }
 
 Prospect.prototype.batchLikers = function (username, jobId, maxPostCount = 2000) {
   const timeStart = Date.now();
@@ -106,11 +103,8 @@ Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart, jo
               async.mapSeries(medias, (media, next) => {
                 getMediaLikers(media, likers) //, reqProxy.getProxy('http')
                   .then(newLikers => {
-                    // add these likers here rather than down stream.
                     saveLikersToProspects(newLikers, jobId)
                       .then(saveResult => {
-                        // console.log('save successful');
-                        // messaging.send(newLikers.length + ' likers saved to prospects');
                         console.log('return from saving prospects:', saveResult);
                         counter++;
                         totalLikersProcessed += newLikers.length
@@ -221,7 +215,6 @@ Prospect.prototype.getProspects = function (jobId, params, returnAmount = 250) {
 
 Prospect.prototype.likers = function (username, params, targetCandidateAmount = 300, returnCount = 100) { // can be broken into 5 functions
   // var targetCandidateAmount = 200;
-
   console.log('Getting likers for', username);
   const currentFilter = new InfluencerFilter(params);
   var arrLikers = [];
@@ -240,10 +233,6 @@ Prospect.prototype.likers = function (username, params, targetCandidateAmount = 
                 async.mapSeries(medias, (media, next) => {
                   getCandidates(media, currentFilter, arrCandidates)
                     .then(candidates => {
-                      // if (arrCandidates.length >= targetCandidateAmount) {
-                      //   console.log('size met, skipping');
-                      //   next();
-                      // }
                       arrCandidates = arrCandidates.concat(...candidates);
                       console.log('candidate list length:', arrCandidates.length);
                       next();
@@ -287,8 +276,7 @@ Prospect.prototype.likers = function (username, params, targetCandidateAmount = 
         })
     })
 }
-// app.post('/prospect', (req, res) => {
-// })
+
 const convertAndSend = (array, header, url) => {
   console.log('testing csv send');
   var rows = [
@@ -496,6 +484,5 @@ const reqProxy = {
     return addressBuilder;
   }
 }
-
 
 module.exports = Prospect

@@ -13,19 +13,34 @@ TFBridge.prototype.getProspectList = function (listURL, token, batchID) {
 
 }
 
-TFBridge.prototype.createProspectList = function (username, staging = true) {
-  var url = 'https://' + (staging ? 'staging.' : 'app.') + 'truefluence.io/:' + username + '/lists.json'
-  var options = {
-    url: url,
-    method: 'POST',
-    headers: [
-      {
-        name: 'Content-Type',
-        value: 'application/csv'
+TFBridge.prototype.createProspectList = function (username, token, staging = true) {
+  console.log('attempting to create list for:', username);
+  return new Promise((resolve, reject) => {
+    var url = 'https://' + (staging ? 'staging.' : 'app.') + 'truefluence.io/:' + username + '/lists.json?token=' + token;
+    var options = {
+      url: url,
+      method: 'POST',
+      headers: [
+        {
+          name: 'Content-Type',
+          value: 'application/csv'
+        }
+      ],
+      body: {
+        name: username,
+        type: 'List::Prospect'
+      },
+      json: true
+    };
+    request(options, (err, res, bod) => {
+      if (err) {
+        console.error(err);
+        reject(err);
+      } else {
+        resolve('List created');
       }
-    ],
-    body: csvFile
-  };
+    })
+  })
 }
 
 TFBridge.prototype.submitProspects = function (url, users) {
@@ -37,7 +52,7 @@ TFBridge.prototype.submitProspects = function (url, users) {
 TFBridge.prototype.verifyList = (url) => {
   return new Promise((resolve, reject) => {
     const options = {
-      url: url + '&skip_medias=true&skip_counts=true&filters[unrefreshed]=true&per_page=1',
+      url: url,
       method: 'GET'
     }
     request(options, (err, res, bod) => {
@@ -46,7 +61,7 @@ TFBridge.prototype.verifyList = (url) => {
         reject(err);
       } else {
         const bodyObj = JSON.parse(bod);
-        resolve(bodyObj.instagram_users.length == 0);
+        resolve(bodyObj.list.refreshing);
         // bodyObj.list.refreshing
         // bodyObj.instagram_users.length == 0
         // '&skip_medias=true&skip_counts=true&filters[unrefreshed]=true&per_page=1'
@@ -145,6 +160,7 @@ TFBridge.prototype.downloadProspects = function (url, jobId) {
                 // mark job as error and continue.
                 const jobError = {
                   id: jobId,
+                  in_progress: false,
                   stage: 'DOWNLOAD ERROR'
                 }
                 database.updateJob(jobError)
@@ -154,21 +170,25 @@ TFBridge.prototype.downloadProspects = function (url, jobId) {
               }
             })
         }, err => {
-          const jobUpdate = {
-            id: jobId,
-            stage: 'Downloaded'
+          if (downloadErrorCount < 5) {
+            const jobUpdate = {
+              id: jobId,
+              stage: 'Downloaded'
+            }
+            database.updateJob(jobUpdate)
+              .then(result => {
+                console.log('list downloaded, job updated');
+                console.log('total users processed:', processUserCount);
+                const timeComplete = Date.now();
+                const duration = (timeComplete - timeStart) / 1000;
+                console.log('time taken (sec):', duration);
+                resolve({count: processUserCount, duration: duration});
+                // done:
+                // convertAndSend(userDebug, ['username', 'user_id'])
+              })
+          } else {
+            reject('DOWNLOAD ERROR');
           }
-          database.updateJob(jobUpdate)
-            .then(result => {
-              console.log('list downloaded, job updated');
-              console.log('total users processed:', processUserCount);
-              const timeComplete = Date.now();
-              const duration = (timeComplete - timeStart) / 1000;
-              console.log('time taken (sec):', duration);
-              resolve({count: processUserCount, duration: duration});
-              // done:
-              // convertAndSend(userDebug, ['username', 'user_id'])
-            })
         })
       }
     });
