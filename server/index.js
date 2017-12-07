@@ -206,7 +206,7 @@ app.get('/verify-list/:jobId', (req, res) => {
   database.getJobByJobId(req.params.jobId)
     .then(job => {
       const listDetails = parseListDetails(job);
-      const downloadURL = getSubmitURL(listDetails);
+      const downloadURL = getVerifyURL(listDetails);
       console.log('trying:', downloadURL);
       tfBridge.verifyList(downloadURL)
         .then(verified => {
@@ -231,6 +231,13 @@ const parseListDetails = job => {
     listId: job.prospect_list_id,
     prospect_job_id: job.id
   }
+}
+
+const getVerifyURL = listDetails => {
+  var verifyURL = 'https://search.truefluence.io/users/';
+  verifyURL = verifyURL + listDetails.username + '/lists/' + listDetails.listId + '.json?token=';
+  verifyURL = verifyURL + listDetails.token;
+  return verifyURL;
 }
 
 const getSubmitURL = listDetails => {
@@ -485,6 +492,7 @@ app.get('/test-batch-download-prospects/:jobId', (req, res) => {
       res.send('downloading in progress');
       tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
         .then(returnObj => {
+          // messaging.send(returnObj);
           messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
         });
     })

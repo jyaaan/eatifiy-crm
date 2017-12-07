@@ -12,11 +12,80 @@ function TFBridge() {
 TFBridge.prototype.getProspectList = function (listURL, token, batchID) {
 
 }
-
-TFBridge.prototype.createProspectList = function (username, token, staging = true) {
+/*
+{
+  statusCode: 200,
+    body: {
+    list: {
+      id: 1535,
+        created_at: "2017-12-07T23:05:56.017Z",
+          updated_at: "2017-12-07T23:05:56.017Z",
+            user_id: 6,
+              settings: { },
+      approved: false,
+        token: "LB1qPbb9UV4zKNtvtJfN8j5V",
+          count: 0,
+            refreshed_at: null,
+              message: "",
+                name: "truefluence9",
+                  notes: "",
+                    indexed_at: null,
+                      began_indexing_at: null,
+                        refreshing: false,
+                          can_download: true,
+                            can_import: null,
+                              can_delete_shown: null,
+                                can_request_campaign: false
+    },
+    url: "https://search.truefluence.io/users/truefluence9/lists.json"
+  },
+  headers: {
+    cache - control: "max-age=0, private, must-revalidate",
+      content - type: "application/json; charset=utf-8",
+        date: "Thu, 07 Dec 2017 23:05:56 GMT",
+          etag: "W/"589d015763b20edf5767558897626551"",
+            server: "nginx/1.12.1",
+              vary: "Origin",
+                x - content - type - options: "nosniff",
+                  x - frame - options: "SAMEORIGIN",
+                    x - request - id: "5f8336d2-1069-4834-b788-eef5a8a7904c",
+                      x - runtime: "0.035060",
+                        x - xss - protection: "1; mode=block",
+                          content - length: "475",
+                            connection: "Close"
+  },
+  request: {
+    uri: {
+      protocol: "https:",
+        slashes: true,
+          auth: null,
+            host: "search.truefluence.io",
+              port: 443,
+                hostname: "search.truefluence.io",
+                  hash: null,
+                    search: "?api_token=LXJrk8BevkpMvGoNUA4SR3L1-u",
+                      query: "api_token=LXJrk8BevkpMvGoNUA4SR3L1-u",
+                        pathname: "/users/truefluence9/lists.json",
+                          path: "/users/truefluence9/lists.json?api_token=LXJrk8BevkpMvGoNUA4SR3L1-u",
+                            href: "https://search.truefluence.io/users/truefluence9/lists.json?api_token=LXJrk8BevkpMvGoNUA4SR3L1-u"
+    },
+    method: "POST",
+      headers: {
+      0: {
+        name: "Content-Type",
+          value: "application/csv"
+      },
+      accept: "application/json",
+        content - type: "application/json",
+          content - length: 47
+    }
+  }
+}
+*/
+TFBridge.prototype.createProspectList = function (username, token) {
   console.log('attempting to create list for:', username);
   return new Promise((resolve, reject) => {
-    var url = 'https://' + (staging ? 'staging.' : 'app.') + 'truefluence.io/:' + username + '/lists.json?token=' + token;
+    var url = 'https://search.truefluence.io/users/truefluence9/lists.json?api_token=' + token;
     var options = {
       url: url,
       method: 'POST',
@@ -37,7 +106,11 @@ TFBridge.prototype.createProspectList = function (username, token, staging = tru
         console.error(err);
         reject(err);
       } else {
-        resolve('List created');
+        console.log(res);
+        const prospectListId = res.body.list.id;
+        const token = res.body.list.token;
+        const prospectList
+        resolve(res);
       }
     })
   })
@@ -50,6 +123,7 @@ TFBridge.prototype.submitProspects = function (url, users) {
 // 
 
 TFBridge.prototype.verifyList = (url) => {
+  console.log('verifying', url);
   return new Promise((resolve, reject) => {
     const options = {
       url: url,
@@ -62,17 +136,93 @@ TFBridge.prototype.verifyList = (url) => {
       } else {
         const bodyObj = JSON.parse(bod);
         resolve(bodyObj.list.refreshing);
-        // bodyObj.list.refreshing
-        // bodyObj.instagram_users.length == 0
-        // '&skip_medias=true&skip_counts=true&filters[unrefreshed]=true&per_page=1'
       }
     })
   })
 }
 
+TFBridge.prototype.downloadProspects = function (url, jobId) {
+  console.log('starting async download of prospects');
+
+  const perPage = 1000;
+  var processedUserCount = 0;
+  var downloadErrorCount = 0;
+  var scrollId = null;
+  var latestInstagramUsers = 0;
+  const timeStart = Date.now();
+
+  return new Promise((resolve, reject) => {
+    async.doWhilst(next => {
+      var options = {
+        url: url + '&skip_medias=true&per_page=' + perPage + (scrollId ? ('&scroll_id=' + scrollId) : '&page=1'),
+        method: 'GET'
+      };
+      getRequest(options)
+        .then(result => {
+          scrollId = result.meta.scroll_id;
+          latestInstagramUsers = result.instagram_users.length;
+          processedUserCount += latestInstagramUsers;
+          console.log('number of results received:', result.instagram_users.length);
+          console.log('total processed:', processedUserCount);
+
+          async.mapSeries(result.instagram_users, (user, cb) => {
+            const parsedUser = parseUserData(user);
+
+            database.upsertUser(parsedUser)
+              .then(result => {
+                // userDebug.push([parsedUser.username, result]);
+                // fill user_id column in prospects table for corresponding thingof thing
+                // need job id, 
+                const updateProspect = {
+                  user_id: result,
+                  prospect_job_id: jobId,
+                  username: parsedUser.username
+                };
+                database.updateProspect(updateProspect)
+                  .then(finisher => {
+                    cb();
+                  })
+                  .catch(err => {
+                    console.error('update prospect error', err);
+                  })
+              })
+              .catch(err => {
+                console.error('update user error:', err);
+                cb();
+              })
+          }, err => {
+            next();
+          });
+        })
+    }, () => {
+      return latestInstagramUsers > 0;
+    }, err => {
+      if (downloadErrorCount < 5) {
+        const jobUpdate = {
+          id: jobId,
+          stage: 'Downloaded'
+        }
+        database.updateJob(jobUpdate)
+          .then(result => {
+            console.log('list downloaded, job updated');
+            console.log('total users processed:', processedUserCount);
+            const timeComplete = Date.now();
+            const duration = (timeComplete - timeStart) / 1000;
+            console.log('time taken (sec):', duration);
+            resolve({ count: processedUserCount, duration: duration });
+            // done:
+            // convertAndSend(userDebug, ['username', 'user_id'])
+          })
+      } else {
+        reject('DOWNLOAD ERROR');
+      }
+    });
+  })
+}
+
 
 // allow this to be resumed on fail
-TFBridge.prototype.downloadProspects = function (url, jobId) {
+TFBridge.prototype.downloadProspectsLEGACY = function (url, jobId) {
   console.log('starting download of prospects');
   const perPage = 1000;
   var processUserCount = 0;
@@ -85,36 +235,41 @@ TFBridge.prototype.downloadProspects = function (url, jobId) {
     method: 'GET'
   };
   // console.log(options.url);
+  var counter = 1;
+  var processedCount = 0;
   return new Promise((resolve, reject) => {
     request(options, (err, res, bod) => {
       if (err) {
         console.error(err);
       } else {
-        // try {
-        //   const bodyObj = JSON.parse(res.body);
-        // }
-        // catch (err) {
-        //   const bodyObj = JSON.parse(bod);
-        // }
         const bodyObj = JSON.parse(bod);
-        console.log(Object.keys(bodyObj));
         var pageTracker = new Array(bodyObj.meta.total_pages);
+        var scrollId = bodyObj.meta.scroll_id;
   
-        for (let i = 0; i < pageTracker.length; i++) {
-          pageTracker[i] = i + 1;
+        for (let i = 0; i < pageTracker - 1; i++) {
+          pageTracker[i] = i + 2;
         }
+
+        processedCount += bodyObj.instagram_users.length;
+
         console.log('creatd page tracker of length:', pageTracker.length);
         async.mapSeries(pageTracker, (page, next) => {
-          //load, confirm, 
+          //load, confirm,
           var currOption = {
-            url: url + '&skip_medias=true&skip_counts=true&per_page=' + perPage + '&page=' + page,
+            url: url + '&skip_medias=true&per_page=' + perPage + '&scroll_id=' + scrollId,
             method: 'GET'
           }
           console.log('trying:', currOption.url);
           getRequest(currOption)
             .then(result => {
-              // parse out the 
-  
+              counter++;
+              console.log('current page:', counter);
+              // console.log(result.meta);
+              scrollId = result.meta.scroll_id;
+              processedCount += result.instagram_users.length;
+              console.log('number of results received:', result.instagram_users.length);
+              console.log('total processed:', processedCount);
+              // next();
               async.mapSeries(result.instagram_users, (user, cb) => {
                 const parsedUser = parseUserData(user);
 
@@ -145,7 +300,7 @@ TFBridge.prototype.downloadProspects = function (url, jobId) {
                 console.log('finished page:', page);
                 next();
               });
-              // console.log(result.instagram_users[0]);
+              console.log(result.instagram_users[0]);
             })
             .catch(err => {
               console.error(err);
