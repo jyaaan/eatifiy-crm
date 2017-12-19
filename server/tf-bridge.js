@@ -149,17 +149,22 @@ TFBridge.prototype.downloadProspects = function (url, jobId) {
   var scrollId = null;
   var latestInstagramUsers = 0;
   const timeStart = Date.now();
-
+  var currentURL = url + '&skip_medias=true'
   return new Promise((resolve, reject) => {
     async.doWhilst(next => {
       var options = {
-        url: url + '&skip_medias=true&per_page=' + perPage + (scrollId ? ('&scroll_id=' + scrollId) : '&page=1'),
+        url: currentURL,
         method: 'GET'
       };
       getRequest(options)
         .then(result => {
           scrollId = result.meta.scroll_id;
           latestInstagramUsers = result.instagram_users.length;
+          if (result.meta.next_page_url == '' || typeof result.meta.next_page_url == undefined) {
+            currentURL = null;
+          } else {
+            currentURL = result.meta.next_page_url;
+          }
           processedUserCount += latestInstagramUsers;
           console.log('number of results received:', result.instagram_users.length);
           console.log('total processed:', processedUserCount);
@@ -216,7 +221,7 @@ TFBridge.prototype.downloadProspects = function (url, jobId) {
           }
         })
     }, () => {
-      return latestInstagramUsers > 0;
+      return (latestInstagramUsers > 0 && currentURL);
     }, err => {
       if (downloadErrorCount < 5) {
         const jobUpdate = {
@@ -231,8 +236,6 @@ TFBridge.prototype.downloadProspects = function (url, jobId) {
             const duration = (timeComplete - timeStart) / 1000;
             console.log('time taken (sec):', duration);
             resolve({ count: processedUserCount, duration: duration });
-            // done:
-            // convertAndSend(userDebug, ['username', 'user_id'])
           })
       } else {
         reject('DOWNLOAD ERROR');
