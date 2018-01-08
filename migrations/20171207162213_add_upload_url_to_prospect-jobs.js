@@ -1,15 +1,15 @@
 
-exports.up = function (knex, Promise) {
+exports.up = function(knex, Promise) {
   const query = knex.schema.table('prospect_jobs', table => {
-    table.boolean('list_sent').defaultTo(false);
+    table.string('upload_url').defaultTo(null);
   })
 
   return query;
 };
 
-exports.down = function (knex, Promise) {
+exports.down = function(knex, Promise) {
   const query = knex.schema.table('prospect_jobs', table => {
-    table.dropColumn('list_sent');
+    table.dropColumn('upload_url');
   });
 
   return query;

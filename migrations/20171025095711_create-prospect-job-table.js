@@ -1,6 +1,6 @@
 
 exports.up = function (knex, Promise) {
-  const query = knex.schema.createTable('prospect-jobs', table => {
+  const query = knex.schema.createTable('prospect_jobs', table => {
     table.increments('id').notNull();
 
     table.integer('prospect_list_id');
@@ -20,7 +20,7 @@ exports.up = function (knex, Promise) {
 };
 
 exports.down = function (knex, Promise) {
-  const query = knex.schema.dropTable('prospect-jobs');
+  const query = knex.schema.dropTable('prospect_jobs');
 
   return query;
 };
