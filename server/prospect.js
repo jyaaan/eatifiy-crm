@@ -33,15 +33,6 @@ function Prospect() {
 
 }
 
-// Prospect.prototype.processJob = jobId => {
-//   const timeStart = Date.now();
-//   console.log('initializing job for id:', jobId);
-//   database.getJobByJobId(jobId)
-//     .then(job => {
-//       console.log(job);
-//     })
-// }
-
 Prospect.prototype.batchLikers = function (username, jobId, maxPostCount = 2000) {
   const timeStart = Date.now();
   console.log('Getting all likers for', username);
@@ -124,7 +115,10 @@ Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart, jo
                           next();
                         }, 1000)
                       })
-                    
+                      .catch(err => {
+                        console.error(err);
+                        // next();
+                      })
                   })
                   .catch(err => {
                     console.log('error detected, waiting to restart');
@@ -316,7 +310,41 @@ const convertAndSave = (array, header, name = 'aaaa prospect output') => {
   fileHandler.saveCSV(csvFile, name);
 }
 
+const BatchDB = require('./batch_db');
+const batchDB = new BatchDB();
+
 const saveLikersToProspects = (likers, jobId) => {
+  console.log('attempgint save:', likers.length);
+  const timeNow = new Date(Date.now()).toISOString();
+  // const splicedLikers = spliceDuplicates(likers);
+  // console.log('after dupe splice:', splicedLikers.length);
+  return new Promise((resolve, reject) => {
+    if (likers.length > 0) {
+      const formattedLikers = likers.map(liker => {
+        return {
+          username: liker.username,
+          external_id: liker.id,
+          prospect_job_id: jobId,
+          relationship_type: 'liker',
+          created_at: timeNow,
+          updated_at: timeNow
+        }
+      })
+      database.raw(batchDB.upsertProspects(formattedLikers))
+        .then(result => {
+          resolve(result.length);
+        })
+        .catch(err => {
+          console.error(err);
+          reject(err);
+        });
+    } else {
+      resolve(0);
+    }
+  })
+}
+
+const saveLikersToProspectsLEGACY = (likers, jobId) => {
   console.log('attempgint save:', likers.length);
   // const splicedLikers = spliceDuplicates(likers);
   // console.log('after dupe splice:', splicedLikers.length);

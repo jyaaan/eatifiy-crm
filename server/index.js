@@ -34,15 +34,14 @@ const http = require('http').createServer(app);
 app.use(staticMiddleware);
 app.use(bodyParser.json());
 
-const envs = require('../envs');
-Object.assign(process.env, envs);
+
 
 const JobManager = require('./job-manager');
 const jobManager = new JobManager(database);
 
 // Initialization routines and parameters
 jobManager.resetInProgress();
-const MAXPOSTCOUNT = 2000;
+const MAXPOSTCOUNT = 1500;
 var refreshJobs = [];
 var refreshJobURLs = [];
 
@@ -58,16 +57,13 @@ setTimeout(() => {
 
   // Every 5 minutes
   recurringJob5 = schedule.scheduleJob('*/5 * * * *', () => {
-    console.log('ho ho!');
   });
   
   // Every 1 minute
   recurringJob1 = schedule.scheduleJob('*/1 * * * *', () => {
-    console.log('hi hi!');
-    console.log('jobManager is ' + (jobManager.available ? '' : 'not ') + 'available');
     jobManager.getQueuedRefreshJobs()
       .then(jobs => {
-        console.log('new refresh jobs: ' + jobs.map(job => { return job.id }));
+        // console.log('new refresh jobs: ' + jobs.map(job => { return job.id }));
       })
     
     // parseListDetails(job);
@@ -93,7 +89,6 @@ setTimeout(() => {
   
   // Every 1 minute stagger 30 test
   recurringJob1Staggered = schedule.scheduleJob('30 * * * * *', () => {
-    console.log('staggered');
     // assume we have urls
     async.mapSeries(refreshJobURLs, (refreshURL, next) => {
       tfBridge.verifyList(refreshURL)
@@ -106,6 +101,9 @@ setTimeout(() => {
   })
 }, 30000);
 
+const BatchDB = require('./batch_db');
+const batchDB = new BatchDB();
+
 app.get('/test-refresh-jobs', (req, res) => {
   jobManager.getQueuedRefreshJobs()
     .then(jobs => {
@@ -113,11 +111,17 @@ app.get('/test-refresh-jobs', (req, res) => {
     })
 })
 
-app.get('/get-oldest', (req, res) => {
-  database.getOldestQueuedJob()
-    .then(oldestJob => {
-      console.log(oldestJob);
-      res.json(oldestJob);
+app.get('/test-add-job-to-queue/:jobId', (req, res) => {
+  jobManager.queueJob(req.params.jobId)
+    .then(result => {
+      res.send(result);
+    })
+})
+
+app.get('/test-get-next-queued-job', (req, res) => {
+  jobManager.getNextQueuedJob()
+    .then(job => {
+      res.json(job);
     })
 })
 
@@ -135,11 +139,43 @@ app.get('/test-method/:argument', (req, res) => {
   prospect.processJob(req.params.argument);
 
 })
-
+/*
+{
+  terms: { },
+  prospect_count: '300',
+    candidate_count: '1000',
+      reference_brands: [],
+        username: 'truefluence9',
+          upload_url: 'https://app.truefluence.io/users/truefluence9/prospects/1557.csv?token=krPVzf25sN8BEJTjXXkJ1nQD'
+}
+*/
 app.post('/gather', (req, res) => {
   console.log('gather request');
   console.log(req.body);
-  res.send('received');
+  const newJob = {
+    upload_url: req.body.upload_url,
+    primary_username: req.body.username,
+    analyzed_username: req.body.reference_brands[0], // work on saving reference brands.
+    stage: 'Initialized',
+    queued: false
+  };
+  jobManager.createJob(newJob)
+    .then(jobId => {
+      tfBridge.createProspectList('truefluence9', 'token')
+        .then(newList => {
+          newList.id = jobId;
+          newList.queued = true;
+          database.updateJob(newList)
+            .then(updated => {
+              res.send('list and job created successfully');
+              // should result in job queued 
+            })
+        })
+        .catch(err => {
+          console.error(err);
+          res.send(err);
+        })
+    })
 })
 
 app.put('/distill', (req, res) => {
@@ -159,22 +195,6 @@ getValue = (url, value, terminus = '/') => {
   }
 }
 
-// getSubmitURL = listDetails => {
-//   // var submitURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
-//   var submitURL = 'https://staging.truefluence.io/users/';
-//   submitURL = submitURL + listDetails.username + '/prospects/' + listDetails.listId + '.csv?token=';
-//   submitURL = submitURL + listDetails.token;
-//   return submitURL;
-// }
-
-// getDownloadURL = listDetails => {
-//   // var downloadURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
-//   var downloadURL = 'https://staging.truefluence.io/users/';
-//   downloadURL = downloadURL + listDetails.username + '/prospects/' + listDetails.listId + '.json?token=';
-//   downloadURL = downloadURL + listDetails.token;
-//   return downloadURL;
-// }
-
 getDownloadURL = listDetails => {
   // var downloadURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
   var downloadURL = 'https://search.truefluence.io/users/';
@@ -184,11 +204,12 @@ getDownloadURL = listDetails => {
 }
 
 app.get('/test-create-prospect-list/:username', (req, res) => {
-  tfBridge.createProspectList(req.params.username, 'LXJrk8BevkpMvGoNUA4SR3L1-u')
+  tfBridge.createProspectList(req.params.username, 'LXJrk8BevkpMvGoNUA4SR3L1-u') // save to env var
     .then(result => {
       res.send(result);
     })
 })
+// add returned object here
 
 app.get('/list-jobs/:stage', (req, res) => {
   console.log('list jobs:', req.params.stage);
@@ -253,17 +274,9 @@ const getVerifyURL = listDetails => {
 const getSubmitURL = listDetails => {
   // var submitURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
   var submitURL = 'https://search.truefluence.io/users/';
-  submitURL = submitURL + listDetails.username + '/lists/' + listDetails.listId + '.csv?token=';
+  submitURL = submitURL + listDetails.username + '/prospects/' + listDetails.listId + '.csv?token=';
   submitURL = submitURL + listDetails.token;
   return submitURL;
-}
-
-const getDownloadURLSearch = listDetails => {
-  // var downloadURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
-  var downloadURL = 'https://search.truefluence.io/users/';
-  downloadURL = downloadURL + listDetails.username + '/lists/' + listDetails.listId + '.json?token=';
-  downloadURL = downloadURL + listDetails.token;
-  return downloadURL;
 }
 
 app.post('/test-filter-parameters', (req, res) => {
@@ -280,18 +293,10 @@ app.post('/test-filter-parameters', (req, res) => {
     })
 })
 
-app.get('/batch-likers-test/:username', (req, res) => {
-  res.send('OK');
-  prospect.batchLikers(req.params.username)
-    .then(likers => {
-      console.log('likers found:', likers.length);
-    })
-})
-
 app.get('/health_ping', (req, res) => {
   res.send('OK'); 
 })
-//
+
 app.get('/list-details', (req, res) => {
   console.log('getting list details');
   if (listDetails.loaded) {
@@ -456,15 +461,15 @@ app.get('/initiate-prospect-job/:jobId', (req, res) => {
             })
             .then(thing => {
               if (thing = 'holla!') {
-                const verifyURL = getDownloadURL(listDetails);
+                const verifyURL = getVerifyURL(listDetails);
                 const downloadURL = getDownloadURL(listDetails);
                 console.log('starting checking routing');
                 setTimeout(() => {
                   var checkJob = setInterval(checkIfRefreshed, 60000);
                   function checkIfRefreshed() {
                     tfBridge.verifyList(verifyURL)
-                      .then(verified => {
-                        if (verified) {
+                      .then(refreshing => {
+                        if (!refreshing) {
                           console.log('refresh complete, killing recurring job and initializing download');
                           clearInterval(checkJob);
                           console.log('downloading in progress');
@@ -477,7 +482,7 @@ app.get('/initiate-prospect-job/:jobId', (req, res) => {
                         }
                       })
                   }
-                }, 300000);
+                }, 60000);
               } else {
                 console.log('no holla');
               }
@@ -499,6 +504,7 @@ app.get('/test-batch-download-prospects/:jobId', (req, res) => {
     .then(job => {
       const listDetails = parseListDetails(job);
       const downloadURL = getDownloadURL(listDetails);
+      console.log(downloadURL);
       res.send('downloading in progress');
       tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
         .then(returnObj => {

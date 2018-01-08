@@ -1,23 +1,23 @@
-// const knex = require('knex')({
-//   client: 'postgresql',
-//   connection: {
-//     user: 'johny',
-//     password: 'peanut',
-//     database: 'eatify-crm',
-//     host: 'localhost',
-//     port: '5432'
-//   }
-// });
 const knex = require('knex')({
   client: 'postgresql',
   connection: {
-    user: process.env.RDS_USERNAME,
-    password: process.env.RDS_PASSWORD,
-    database: process.env.RDS_DB_NAME,
-    port: process.env.RDS_PORT,
-    host: process.env.RDS_HOSTNAME
+    user: 'johny',
+    password: 'peanut',
+    database: 'eatify-crm',
+    host: 'localhost',
+    port: '5432'
   }
 });
+// const knex = require('knex')({
+//   client: 'postgresql',
+//   connection: {
+//     user: process.env.RDS_USERNAME,
+//     password: process.env.RDS_PASSWORD,
+//     database: process.env.RDS_DB_NAME,
+//     port: process.env.RDS_PORT,
+//     host: process.env.RDS_HOSTNAME
+//   }
+// });
 
 const scoreEvaluator = {
   1: {
@@ -224,22 +224,37 @@ function GetZPercent(z) {
 
 // test functions
 
-Database.prototype.getOldestQueuedJob = function () {
-  return knex('prospect-jobs')
+Database.prototype.raw = function (query) {
+  return new Promise((resolve, reject) => {
+    knex.raw(query)
+      .then(result => {
+        console.log(result);
+        resolve(result);
+      })
+      .catch(err => {
+        reject(err);
+      })
+  })
+}
+
+Database.prototype.getNextQueuedJob = function () {
+  return knex('prospect_jobs')
     .select('*')
-    .whereNot('stage', 'Downloaded')
-    .orderBy('updated_at', 'asc')
+    .whereNot('stage', 'Refresh')
+    .andWhere('queued', true)
+    .orderBy('queued_at', 'asc')
     .limit(1)
 }
 
 Database.prototype.addJobToQueue = function (jobId) {
   const timeNow = new Date(Date.now()).toISOString();
-  return knex('prospect-jobs')
+  return knex('prospect_jobs')
     .where('id', jobId)
     .update({
       queued_at: timeNow,
       updated_at: timeNow,
-      queued: true
+      queued: true,
+      in_progress: false
     })
     .returning('stage')
 }
@@ -577,7 +592,7 @@ Database.prototype.upsertUser = function (user) {
   return new Promise((resolve, reject) => {
     knex('users')
       .count('*')
-      .where('username', user.username)
+      .where('external_id', user.external_id)
       .then(result => {
         const count = Number(result[0].count);
         if (count > 0) {
@@ -604,10 +619,10 @@ Database.prototype.upsertUser = function (user) {
 }
 
 Database.prototype.getUsersByJobId = function(jobId, minFollowerCount) {
-  const subquery = knex('prospects').select('user_id').where('prospect_job_id', jobId);
+  const subquery = knex('prospects').select('external_id').where('prospect_job_id', jobId);
   return knex('users')
     .select('*')
-    .where('id', 'in', subquery)
+    .where('external_id', 'in', subquery)
     .andWhere('follower_count', '>=', minFollowerCount)
 }
 
@@ -683,7 +698,7 @@ Complete
 */
 
 Database.prototype.getAllJobs = function () {
-  return knex('prospect-jobs')
+  return knex('prospect_jobs')
     .select('*')
     .then(jobs => {
       return jobs;
@@ -691,13 +706,13 @@ Database.prototype.getAllJobs = function () {
 }
 
 Database.prototype.getJobsByStage = function (stage) {
-  return knex('prospect-jobs')
+  return knex('prospect_jobs')
     .select('*')
     .where('stage', stage)
 }
 
 Database.prototype.getJobByListId = function (listId) {
-  return knex('prospect-jobs')
+  return knex('prospect_jobs')
     .select('*')
     .where('prospect_list_id', listId)
     .then(job => {
@@ -706,13 +721,13 @@ Database.prototype.getJobByListId = function (listId) {
 }
 
 Database.prototype.getJobs = function (searchValues) {
-  return knex('prospect-jobs')
+  return knex('prospect_jobs')
     .select('*')
     .where(searchValues)
 }
 
 Database.prototype.getJobByJobId = function (jobId) {
-  return knex('prospect-jobs')
+  return knex('prospect_jobs')
     .select('*')
     .where('id', jobId)
     .then(job => {
@@ -721,7 +736,7 @@ Database.prototype.getJobByJobId = function (jobId) {
 }
 
 Database.prototype.jobExists = function (jobId) {
-  return kenx('prospect-jobs')
+  return kenx('prospect_jobs')
     .count('*')
     .where('id', jobId)
     .then(jobCount => {
@@ -734,7 +749,7 @@ Database.prototype.createJob = function (job) {
   job.created_at = timeNow;
   job.updated_at = timeNow;
   console.log('creating', job);
-  return knex('prospect-jobs')
+  return knex('prospect_jobs')
     .returning('id')
     .insert(job);
 }
@@ -742,7 +757,7 @@ Database.prototype.createJob = function (job) {
 Database.prototype.updateJob = function (job) {
   const timeNow = new Date(Date.now()).toISOString();
   job.updated_at = timeNow;
-  return knex('prospect-jobs')
+  return knex('prospect_jobs')
     .where('id', job.id)
     .returning('id')
     .update(job);
@@ -757,7 +772,7 @@ Database.prototype.updateJobStage = function (jobId, stage) {
 }
 
 Database.prototype.listIdExists = function (listId) {
-  return knex('prospect-jobs')
+  return knex('prospect_jobs')
     .count('*')
     .where('prospect_list_id', listId)
     .then(result => {
@@ -767,7 +782,7 @@ Database.prototype.listIdExists = function (listId) {
 
 Database.prototype.resetInProgress = function () {
   const timeNow = new Date(Date.now()).toISOString();
-  return knex('prospect-jobs')
+  return knex('prospect_jobs')
     .where('in_progress', true)
     .update({
       in_progress: false,
@@ -779,7 +794,7 @@ Database.prototype.resetInProgress = function () {
 
 Database.prototype.removeAllQueued = function () {
   const timeNow = new Date(Date.now()).toISOString();
-  return knex('prospect-jobs')
+  return knex('prospect_jobs')
     .where('queued', true)
     .update({
       queued: false,

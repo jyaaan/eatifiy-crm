@@ -4,6 +4,8 @@ const database = new Database();
 const async = require('async');
 const FileHandler = require('./file-controller');
 const fileHandler = new FileHandler();
+const BatchDB = require('./batch_db');
+const batchDB = new BatchDB();
 
 function TFBridge() {
 
@@ -107,9 +109,7 @@ TFBridge.prototype.createProspectList = function (username, token) {
         reject(err);
       } else {
         console.log(res);
-        const prospectListId = res.body.list.id;
-        const token = res.body.list.token;
-        resolve(res);
+        resolve({ prospect_list_id: res.body.list.id, token: res.body.list.token });
       }
     })
   })
@@ -168,35 +168,21 @@ TFBridge.prototype.downloadProspects = function (url, jobId) {
           processedUserCount += latestInstagramUsers;
           console.log('number of results received:', result.instagram_users.length);
           console.log('total processed:', processedUserCount);
-
-          async.mapSeries(result.instagram_users, (user, cb) => {
-            const parsedUser = parseUserData(user);
-
-            database.upsertUser(parsedUser)
+          const parsedUsers = result.instagram_users.map(user => {
+            return parseUserData(user);
+          });
+          if (latestInstagramUsers > 0) {
+            database.raw(batchDB.upsertUsers(parsedUsers))
               .then(result => {
-                // userDebug.push([parsedUser.username, result]);
-                // fill user_id column in prospects table for corresponding thingof thing
-                // need job id, 
-                const updateProspect = {
-                  user_id: result,
-                  prospect_job_id: jobId,
-                  username: parsedUser.username
-                };
-                database.updateProspect(updateProspect)
-                  .then(finisher => {
-                    cb();
-                  })
-                  .catch(err => {
-                    console.error('update prospect error', err);
-                  })
+                next();
               })
               .catch(err => {
-                console.error('update user error:', err);
-                cb();
-              })
-          }, err => {
+                console.error(err);
+                // next();
+              });
+          } else {
             next();
-          });
+          }
         })
         .catch(err => {
           console.error(err);
@@ -224,6 +210,7 @@ TFBridge.prototype.downloadProspects = function (url, jobId) {
       return (latestInstagramUsers > 0 && currentURL);
     }, err => {
       if (downloadErrorCount < 5) {
+        console.log('finished and downloadErrorCount passed');
         const jobUpdate = {
           id: jobId,
           stage: 'Downloaded'
@@ -376,6 +363,7 @@ TFBridge.prototype.downloadProspectsLEGACY = function (url, jobId) {
 }
 
 const parseUserData = rawData => {
+  const timeNow = new Date(Date.now()).toISOString();
   var parsedUser = {
     external_id: rawData.external_id,
     username: rawData.username,
@@ -395,7 +383,9 @@ const parseUserData = rawData => {
     recent_engagement_rate: rawData.recent_engagement_rate,
     recent_average_comments: rawData.recent_average_comments,
     recent_like_rate: rawData.recent_like_rate,
-    recent_comment_rate: rawData.recent_comment_rate
+    recent_comment_rate: rawData.recent_comment_rate,
+    created_at: timeNow,
+    updated_at: timeNow
   }
   return parsedUser;
 }

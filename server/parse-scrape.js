@@ -39,8 +39,6 @@ const ParseScrape = objJSON => {
       }).reduce((low, curr) => {
           return Math.min(low, curr);
       }, 99999999999999);
-      user.recent_post_duration = youngestPost - oldestPost;
-      user.youngest_post = youngestPost;
 
     medias = objJSON.user.media.nodes.map(media => {
         const formattedMedia = {

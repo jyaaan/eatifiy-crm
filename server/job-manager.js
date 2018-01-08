@@ -66,17 +66,9 @@ class JobManager {
     })
   }
 
-  createJob(jobParams) {
+  createJob(job) {
     return new Promise((resolve, reject) => {
       console.log('adding job');
-      const job = {};
-      job.prospect_list_id = jobParams.prospect_list_id;
-      job.token = jobParams.token;
-      job.primary_username = jobParams.primary_username;
-      job.analyzed_username = jobParams.analyzed_username;
-      job.stage = 'Initialized';
-      job.filter_params = JSON.stringify({});
-  
       this.database.createJob(job)
         .then(result => {
           resolve(result);
@@ -84,6 +76,20 @@ class JobManager {
         .catch(err => {
           console.error('error when attempting to create new job');
           console.error(err);
+          reject(err);
+        })
+    })
+  }
+
+  updateJob(job) {
+    return new Promise((resolve, reject) => {
+      console.log('updating job');
+      this.database.updateJob(job)
+        .then(result => {
+          resolve(result);
+        })
+        .catch(err => {
+          console.error('error when attempting to create new job');
           reject(err);
         })
     })
@@ -98,6 +104,30 @@ class JobManager {
         .then(newRefreshJobs => {
           console.log(newRefreshJobs);
           resolve(newRefreshJobs);
+        })
+    })
+  }
+
+  getNextQueuedJob() {
+    return new Promise((resolve, reject) => {
+      this.database.getNextQueuedJob()
+        .then(job => {
+          resolve(job);
+        })
+        .catch(err => {
+          reject(err);
+        })
+    })
+  }
+
+  queueJob(jobId) {
+    return new Promise((resolve, reject) => {
+      this.database.addJobToQueue(jobId)
+        .then(result => {
+          resolve(result);
+        })
+        .catch(err => {
+          reject(err);
         })
     })
   }
