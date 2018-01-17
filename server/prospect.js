@@ -169,6 +169,100 @@ Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart, jo
   })
 }
 
+// should return a list as well as a 
+Prospect.prototype.analyzeEngagement = function (externalId, postCount, timeStart, jobId, targetLikers = 10000) {
+  const errorThreshold = 10;
+  var likers = [];
+  console.log('Getting all likers for', externalId);
+  var counter = 0;
+  var mediaCounter = 0;
+  var errorCounter = 0;
+  totalLikersProcessed = 0;
+  return new Promise((resolve, reject) => {
+    ig.initializeMediaFeed(externalId, currentSession.session) //, reqProxy.getProxy('http')
+      .then(feed => {
+        function retrieve() {
+          feed.get()
+            .then(medias => {
+              mediaCounter++;
+              async.mapSeries(medias, (media, next) => {
+                getMediaLikers(media, likers) //, reqProxy.getProxy('http')
+                  .then(newLikers => {
+                    saveLikersToProspects(newLikers, jobId)
+                      .then(saveResult => {
+                        console.log('return from saving prospects:', saveResult);
+                        counter++;
+                        totalLikersProcessed += newLikers.length
+                        likers = likers.concat(...newLikers);
+                        var timeNow = Date.now();
+                        var timeElapsed = (timeNow - timeStart) / 1000;
+                        var predictedTotal = (timeElapsed * postCount) / counter;
+                        console.log('\033c');
+                        console.log('got new likers, unique total (processed): ' + likers.length + ' (' + totalLikersProcessed + ')');
+                        console.log(counter + ' out of ' + postCount + ' posts analyzed. ' +
+                          ((counter / postCount) * 100).toFixed(2) + '%');
+                        console.log('time elapsed (sec):', timeElapsed.toFixed(2));
+                        console.log('predicted total job duration (sec):', predictedTotal.toFixed(0));
+                        console.log('predicted time remaining (sec):', (predictedTotal - timeElapsed).toFixed(0));
+                        console.log('errors encountered:', errorCounter);
+                        setTimeout(() => {
+                          next();
+                        }, 1000)
+                      })
+                      .catch(err => {
+                        console.error(err);
+                        // next();
+                      })
+                  })
+                  .catch(err => {
+                    console.log('error detected, waiting to restart');
+                    setTimeout(() => {
+                      console.log('attempting reset');
+                      errorCounter++;
+                      next();
+                    }, 120000)
+                  })
+              }, err => { // when medias are done, check to see if more medias exist
+                if (feed.moreAvailable && errorCounter < errorThreshold && counter < maxPostCount) {
+                  console.log('More medias available');
+
+                  setTimeout(() => {
+                    retrieve();
+                  }, 5000);
+
+                } else if (errorCounter >= errorThreshold) {
+                  console.log('too many errors encountered');
+                  database.updateJobStage(jobId, 'Primed')
+                    .then(result => {
+                      // resolve(result[0]);
+                      resolve(likers);
+                    })
+                } else {
+                  console.log('All likers retrieved');
+                  database.updateJobStage(jobId, 'Primed')
+                    .then(result => {
+                      // resolve(result[0]);
+                      resolve(likers);
+                    })
+                }
+              })
+            })
+            .catch(err => {
+              console.error('error on getting new medias:', err);
+              setTimeout(() => {
+                retrieve();
+              }, 120000)
+            })
+        }
+        retrieve();
+      })
+      .catch(err => {
+        console.log('feed error');
+        console.error(err);
+      })
+  })
+}
+
 // new method for use with tfbridge
 Prospect.prototype.getProspects = function (jobId, params, returnAmount = 250) {
   const currentFilter = new InfluencerFilter(params);
