@@ -41,7 +41,7 @@ const jobManager = new JobManager(database);
 
 // Initialization routines and parameters
 jobManager.resetInProgress();
-const MAXPOSTCOUNT = 1500;
+const MAXPOSTCOUNT = 1000;
 var refreshJobs = [];
 var refreshJobURLs = [];
 

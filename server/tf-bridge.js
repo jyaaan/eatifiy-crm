@@ -178,7 +178,7 @@ TFBridge.prototype.downloadProspects = function (url, jobId) {
               })
               .catch(err => {
                 console.error(err);
-                // next();
+                next();
               });
           } else {
             next();
