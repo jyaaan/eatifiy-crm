@@ -1,12 +1,13 @@
 /*
 Stages:
 Initialized
-Gather
-Send Users
-Refresh Check
-Download
-Distill
-Send Prospects
+Gathering
+Sending Candidates
+Awaiting Refresh
+Downloading
+Awaiting Distill
+Distilling
+Sending Prospects
 Complete
 */
 
@@ -66,12 +67,27 @@ class JobManager {
     })
   }
 
+  getQueuedJobs() {
+    return new Promise((resolve, reject) => {
+      this.database.getJobs({
+        queued: true,
+        in_progress: false
+      })
+        .then(jobs => {
+          resolve(jobs);
+        })
+        .catch(err => {
+          reject(err);
+        })
+    })
+  }
+
   createJob(job) {
     return new Promise((resolve, reject) => {
       console.log('adding job');
       this.database.createJob(job)
         .then(result => {
-          resolve(result);
+          resolve(result[0]);
         })
         .catch(err => {
           console.error('error when attempting to create new job');

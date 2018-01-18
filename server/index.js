@@ -51,6 +51,13 @@ var recurringJob5;
 var recurringJob1;
 var recurringJob1Staggered;
 
+const activeJob = {
+  active: false,
+  in_progress: false,
+  jobId: null,
+  job: {}
+}
+
 setTimeout(() => {
   // delayed jobs
   refreshJobs = Object.assign(refreshJobs, jobManager.getRefreshJobs());
@@ -61,9 +68,25 @@ setTimeout(() => {
   
   // Every 1 minute
   recurringJob1 = schedule.scheduleJob('*/1 * * * *', () => {
-    jobManager.getQueuedRefreshJobs()
+    jobManager.getQueuedJobs()
       .then(jobs => {
-        // console.log('new refresh jobs: ' + jobs.map(job => { return job.id }));
+        console.log('new refresh jobs: ' + jobs.map(job => { return job.id }));
+        if (jobs[0] && !activeJob.active) {
+          activeJob.jobId = jobs[0].id;
+          activeJob.job = jobs[0]
+          activeJob.active = true;
+          const jobUpdate = {
+            id: activeJob.jobId,
+            in_progress: true
+          };
+          jobManager.updateJob(jobUpdate)
+            .then(result => {
+              console.log('current job:', activeJob);
+            })
+        } else {
+          console.log('jobs full');
+          console.log(activeJob);
+        }
       })
     
     // parseListDetails(job);
@@ -90,14 +113,21 @@ setTimeout(() => {
   // Every 1 minute stagger 30 test
   recurringJob1Staggered = schedule.scheduleJob('30 * * * * *', () => {
     // assume we have urls
-    async.mapSeries(refreshJobURLs, (refreshURL, next) => {
-      tfBridge.verifyList(refreshURL)
-        .then(verified => {
-          if (verified) {
-            // update job and remove this from job.
-          }
-        })
-    })
+    // async.mapSeries(refreshJobURLs, (refreshURL, next) => {
+    //   tfBridge.verifyList(refreshURL)
+    //     .then(verified => {
+    //       if (verified) {
+    //         // update job and remove this from job.
+    //       }
+    //     })
+    // })
+    if (activeJob.active && !activeJob.in_progress) {
+      console.log('we gotta start the job!');
+      activeJob.in_progress = true;
+      startProspectJob(activeJob.jobId);
+    } else {
+      console.log('no action will be taken:', activeJob);
+    }
   })
 }, 30000);
 
@@ -140,28 +170,30 @@ app.get('/test-method/:argument', (req, res) => {
 
 })
 /*
-{
-  terms: { },
+{ terms: {},
+  region: '',
+  dream_partners: [],
   prospect_count: '300',
-    candidate_count: '1000',
-      reference_brands: [],
-        username: 'truefluence9',
-          upload_url: 'https://app.truefluence.io/users/truefluence9/prospects/1557.csv?token=krPVzf25sN8BEJTjXXkJ1nQD'
-}
+  candidate_count: '1000',
+  reference_brands: [],
+  username: 'eatifyjohn',
+  upload_url: 'https://app.truefluence.io/users/eatifyjohn/prospects/2446.csv?token=wUrPUFYdJLLbT3qAZ3LVeRfb' }
+
 */
 app.post('/gather', (req, res) => {
   console.log('gather request');
-  console.log(req.body);
+  analyzed_username = req.body.reference_brands[0] ? req.body.reference_brands[0] : req.body.username;
   const newJob = {
     upload_url: req.body.upload_url,
     primary_username: req.body.username,
-    analyzed_username: req.body.reference_brands[0], // work on saving reference brands.
+    analyzed_username: req.body.reference_brands[0] ? req.body.reference_brands[0] : req.body.username,
     stage: 'Initialized',
     queued: false
   };
+  // console.log(newJob);
   jobManager.createJob(newJob)
     .then(jobId => {
-      tfBridge.createProspectList('truefluence9', 'token')
+      tfBridge.createProspectList(newJob.primary_username + ':' + newJob.analyzed_username, 'LXJrk8BevkpMvGoNUA4SR3L1-u')
         .then(newList => {
           newList.id = jobId;
           newList.queued = true;
@@ -203,6 +235,13 @@ getDownloadURL = listDetails => {
   return downloadURL;
 }
 
+/*
+return:
+{
+prospect_list_id: 1637,
+token: "xWNVzMMFcbA5YyVSQiWyMpt5"
+}
+*/
 app.get('/test-create-prospect-list/:username', (req, res) => {
   tfBridge.createProspectList(req.params.username, 'LXJrk8BevkpMvGoNUA4SR3L1-u') // save to env var
     .then(result => {
@@ -339,6 +378,110 @@ app.post('/create-job', (req, res) => {
 })
 
 const startProspectJob = jobId => {
+  database.getJobByJobId(jobId)
+  .then(job => {
+    const listDetails = parseListDetails(job);
+    var prospectCount = 0;
+    if (listDetails.loaded) {
+      if (job.list_sent) {
+        if (job.ready_to_download) {
+          console.log('ready to download!');
+        } else {
+          console.log('prospect list previously submitted for enrichment, please wait');
+        }
+      } else {
+        console.log('this job be ready to rock and roll!');
+        prospect.batchLikers(job.analyzed_username, listDetails.prospect_job_id, MAXPOSTCOUNT)
+          .then(likers => {
+            console.log('likers found:', likers.length);
+            console.log(job.id);
+            const submitURL = getSubmitURL(listDetails);
+            const downloadURL = getDownloadURL(listDetails);
+            console.log(submitURL);
+            renderFormattedProspects(listDetails.prospect_job_id)
+              .then(prospects => {
+                prospectCount = prospects.length;
+                batchProspects(prospects).map(batch => {
+                  setTimeout(() => {
+                    tfBridge.submitProspects(submitURL, batch);
+                  }, 500);
+                })
+                return('baddd');
+              })
+              .then(result => {
+                const updateJob = {
+                  id: listDetails.prospect_job_id,
+                  list_sent: true,
+                  prospect_count: prospectCount
+                }
+                console.log('update job:', updateJob);
+                database.updateJob(updateJob)
+                  .then(done => {
+                    return('holla!');
+                    // res.end();
+                    // confirmed that update occurs
+                    // start checking every minute to see if list is finished
+                    // var checkJob = setInterval(checkIfRefreshed, 60000);
+                    // function checkIfRefreshed() {
+                    //   tfBridge.verifyList(downloadURL)
+                    //     .then(verified => {
+                    //       if (verified) {
+                    //         console.log('refresh complete, killing recurring job and initializing download');
+                    //         clearInterval(checkJob);
+                    //         res.send('downloading in progress');
+                    //         tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
+                    //           .then(returnObj => {
+                    //             messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
+                    //           });
+                    //       } else {
+                    //         console.log('refresh not complete, retrying in 60 seconds');
+                    //       }
+                    //     })
+                    // }
+                  })
+              })
+          })
+          .then(thing => {
+            if (thing = 'holla!') {
+              const verifyURL = getVerifyURL(listDetails);
+              const downloadURL = getDownloadURL(listDetails);
+              console.log('starting checking routing');
+              setTimeout(() => {
+                var checkJob = setInterval(checkIfRefreshed, 60000);
+                function checkIfRefreshed() {
+                  tfBridge.verifyList(verifyURL)
+                    .then(refreshing => {
+                      if (!refreshing) {
+                        console.log('refresh complete, killing recurring job and initializing download');
+                        clearInterval(checkJob);
+                        console.log('downloading in progress');
+                        tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
+                          .then(returnObj => {
+                            messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
+                          });
+                      } else {
+                        console.log('refresh not complete, retrying in 60 seconds');
+                      }
+                    })
+                }
+              }, 60000);
+            } else {
+              console.log('no holla');
+            }
+          })
+          .catch(err => {
+            console.log('batchLikers failure');
+            console.error(err);
+  
+          })
+      }
+    } else {
+      console.log('prospect job with id:' + jobId + ' does not exist');
+    }
+  })
+}
+
+const startProspectJob2 = jobId => {
   database.getJobByJobId(req.params.jobId)
     .then(job => {
       const listDetails = parseListDetails(job);
@@ -399,6 +542,8 @@ app.get('/initiate-prospect-job/:jobId', (req, res) => {
   database.getJobByJobId(req.params.jobId)
     .then(job => {
       const listDetails = parseListDetails(job);
+      console.log(job);
+      // console.log(listDetails);
       var prospectCount = 0;
       if (listDetails.loaded) {
         if (job.list_sent) {

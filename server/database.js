@@ -1,7 +1,7 @@
 const knex = require('knex')({
   client: 'postgresql',
   connection: {
-    user: 'johny',
+    user: 'postgres',
     password: 'peanut',
     database: 'eatify-crm',
     host: 'localhost',
