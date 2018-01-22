@@ -155,7 +155,7 @@ IG.prototype.getLikers = function (media, session, proxyUrl) {
 }
 
 IG.prototype.initialize = function () {
-  return new Client.Session.create(device, storage, 'eatifyjohn', 'occsbootcamp')
+  return new Client.Session.create(device, storage, 'JakeDMachina', 'occsbootcamp')
     .then(session => {
       return session;
     })

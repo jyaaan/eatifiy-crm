@@ -85,14 +85,14 @@ Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart, jo
   var errorCounter = 0;
   totalLikersProcessed = 0;
   return new Promise((resolve, reject) => {
-    ig.initializeMediaFeed(externalId, currentSession.session) //, reqProxy.getProxy('http')
+    ig.initializeMediaFeed(externalId, currentSession.session, reqProxy.getProxy('http'))
       .then(feed => {
         function retrieve() {
           feed.get()
             .then(medias => {
               mediaCounter++;
               async.mapSeries(medias, (media, next) => {
-                getMediaLikers(media, likers) //, reqProxy.getProxy('http')
+                getMediaLikers(media, likers, reqProxy.getProxy('http'))
                   .then(newLikers => {
                     saveLikersToProspects(newLikers, jobId)
                       .then(saveResult => {
@@ -179,14 +179,14 @@ Prospect.prototype.analyzeEngagement = function (externalId, postCount, timeStar
   var errorCounter = 0;
   totalLikersProcessed = 0;
   return new Promise((resolve, reject) => {
-    ig.initializeMediaFeed(externalId, currentSession.session) //, reqProxy.getProxy('http')
+    ig.initializeMediaFeed(externalId, currentSession.session, reqProxy.getProxy('http'))
       .then(feed => {
         function retrieve() {
           feed.get()
             .then(medias => {
               mediaCounter++;
               async.mapSeries(medias, (media, next) => {
-                getMediaLikers(media, likers) //, reqProxy.getProxy('http')
+                getMediaLikers(media, likers, reqProxy.getProxy('http'))
                   .then(newLikers => {
                     saveLikersToProspects(newLikers, jobId)
                       .then(saveResult => {
@@ -595,10 +595,10 @@ const verifyCandidate = (user, filter) => {
 }
 
 const reqProxy = {
-  proxyAddress: '144.208.127.171',
+  proxyAddress: '146.71.87.105',
   port: '65233',
-  username: 'john',
-  password: 'M7g7RqY',
+  username: 'johnyamashiro',
+  password: 'B4h2KrO',
   getProxy: function (mode = 'http') {
     let addressBuilder = (mode == 'https' ? 'https://' : 'http://');
     addressBuilder += this.username + ':' + this.password + '@';

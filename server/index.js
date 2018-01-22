@@ -85,7 +85,7 @@ setTimeout(() => {
             })
         } else {
           console.log('jobs full');
-          console.log(activeJob);
+          // console.log(activeJob);
         }
       })
     
@@ -126,7 +126,7 @@ setTimeout(() => {
       activeJob.in_progress = true;
       startProspectJob(activeJob.jobId);
     } else {
-      console.log('no action will be taken:', activeJob);
+      console.log('no action will be taken:');
     }
   })
 }, 30000);
@@ -199,6 +199,7 @@ app.post('/gather', (req, res) => {
           newList.queued = true;
           database.updateJob(newList)
             .then(updated => {
+              console.log(newList);
               res.send('list and job created successfully');
               // should result in job queued 
             })
@@ -303,9 +304,10 @@ const parseListDetails = job => {
   }
 }
 
+// when pushign verythign to production, make sure you change this.
 const getVerifyURL = listDetails => {
-  var verifyURL = 'https://search.truefluence.io/users/';
-  verifyURL = verifyURL + listDetails.username + '/lists/' + listDetails.listId + '.json?token=';
+  var verifyURL = 'https://search.truefluence.io/users/truefluence9/';
+  verifyURL = verifyURL + 'lists/' + listDetails.listId + '.json?token=';
   verifyURL = verifyURL + listDetails.token;
   return verifyURL;
 }

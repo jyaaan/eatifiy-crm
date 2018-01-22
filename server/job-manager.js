@@ -118,7 +118,7 @@ class JobManager {
         stage: 'Refresh'
       })
         .then(newRefreshJobs => {
-          console.log(newRefreshJobs);
+          // console.log(newRefreshJobs);
           resolve(newRefreshJobs);
         })
     })
