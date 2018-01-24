@@ -237,6 +237,22 @@ Database.prototype.raw = function (query) {
   })
 }
 
+Database.prototype.checkIfDuplicateJob = function(jobObj) {
+  return new Promise((resolve, reject) => {
+    knex('prospect_jobs')
+      .count('*')
+      .where('analyzed_username', jobObj.analyzed_username)
+      .andWhere('target_list_id', jobObj.target_list_id)
+      .andWhere('primary_username', jobObj.primary_username)
+      .then(result => {
+        resolve(result[0].count > 0);
+      })
+      .catch(err => {
+        reject(err);
+      })
+  })
+}
+
 Database.prototype.getNextQueuedJob = function () {
   return knex('prospect_jobs')
     .select('*')

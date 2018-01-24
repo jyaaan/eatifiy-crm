@@ -84,15 +84,23 @@ class JobManager {
 
   createJob(job) {
     return new Promise((resolve, reject) => {
-      console.log('adding job');
-      this.database.createJob(job)
-        .then(result => {
-          resolve(result[0]);
-        })
-        .catch(err => {
-          console.error('error when attempting to create new job');
-          console.error(err);
-          reject(err);
+      console.log(job);
+      this.checkIfDuplicateJob(job)
+        .then(duplicate => {
+          if (!duplicate) {
+            console.log('adding job');
+            this.database.createJob(job)
+              .then(result => {
+                resolve(result[0]);
+              })
+              .catch(err => {
+                console.error('error when attempting to create new job');
+                console.error(err);
+                reject(err);
+              })
+          } else {
+            reject('duplicate job found');
+          }
         })
     })
   }
@@ -142,6 +150,20 @@ class JobManager {
         .then(job => {
           console.log(job);
           resolve(job.in_progress)
+        })
+        .catch(err => {
+          reject(err);
+        })
+    })
+  }
+
+  // { primary_username, analyzed_username, target_list_id}
+  // return boolean
+  checkIfDuplicateJob(jobObj) {
+    return new Promise((resolve, reject) => {
+      this.database.checkIfDuplicateJob(jobObj)
+        .then(result => {
+          resolve(result);
         })
         .catch(err => {
           reject(err);
