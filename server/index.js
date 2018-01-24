@@ -34,14 +34,14 @@ const http = require('http').createServer(app);
 app.use(staticMiddleware);
 app.use(bodyParser.json());
 
-
+// select id, username, 
 
 const JobManager = require('./job-manager');
 const jobManager = new JobManager(database);
 
 // Initialization routines and parameters
 jobManager.resetInProgress();
-const MAXPOSTCOUNT = 1000;
+const MAXPOSTCOUNT = 1200;
 var refreshJobs = [];
 var refreshJobURLs = [];
 
@@ -51,6 +51,17 @@ var recurringJob5;
 var recurringJob1;
 var recurringJob1Staggered;
 
+const activeJob = {
+  active: false,
+  in_progress: false,
+  jobId: null,
+  job: {}
+}
+
+const resetJob = job => {
+
+}
+// SELECT id, primary_username, analyzed_username, stage, queued, in_progress, prospect_count as count from prospect_jobs order by id desc limit 20;
 setTimeout(() => {
   // delayed jobs
   refreshJobs = Object.assign(refreshJobs, jobManager.getRefreshJobs());
@@ -61,9 +72,41 @@ setTimeout(() => {
   
   // Every 1 minute
   recurringJob1 = schedule.scheduleJob('*/1 * * * *', () => {
-    jobManager.getQueuedRefreshJobs()
+    jobManager.getQueuedJobs()
       .then(jobs => {
-        // console.log('new refresh jobs: ' + jobs.map(job => { return job.id }));
+        console.log('new refresh jobs: ' + jobs.map(job => { return job.id }));
+        if (jobs[0] && !activeJob.active) {
+          activeJob.jobId = jobs[0].id;
+          activeJob.job = jobs[0]
+          activeJob.active = true;
+          const jobUpdate = {
+            id: activeJob.jobId,
+            in_progress: true
+          };
+          jobManager.updateJob(jobUpdate)
+            .then(result => {
+              console.log('current job:', activeJob);
+            })
+        } else {
+          // check if active job is in progress.
+          if (activeJob.jobId) {
+            jobManager.checkIfActive(activeJob.jobId)
+            // jobManager.checkIfActive(126)
+              .then(isActive => {
+                if (isActive) {
+                  console.log('jobs full');
+                } else {
+                  activeJob.active = false;
+                  activeJob.in_progress = false;
+                  activeJob.jobId = null;
+                  console.log('job is no longer in progress, loading next');
+                }
+              })
+          } else {
+            // no active job, check should not run.
+          }
+          // console.log(activeJob);
+        }
       })
     
     // parseListDetails(job);
@@ -90,14 +133,31 @@ setTimeout(() => {
   // Every 1 minute stagger 30 test
   recurringJob1Staggered = schedule.scheduleJob('30 * * * * *', () => {
     // assume we have urls
-    async.mapSeries(refreshJobURLs, (refreshURL, next) => {
-      tfBridge.verifyList(refreshURL)
-        .then(verified => {
-          if (verified) {
-            // update job and remove this from job.
-          }
+    // async.mapSeries(refreshJobURLs, (refreshURL, next) => {
+    //   tfBridge.verifyList(refreshURL)
+    //     .then(verified => {
+    //       if (verified) {
+    //         // update job and remove this from job.
+    //       }
+    //     })
+    // })
+    if (activeJob.active && !activeJob.in_progress) {
+      console.log('we gotta start the job!');
+      activeJob.in_progress = true;
+      // set job to in progress, unqueue
+      const jobUpdate = {
+        id: activeJob.jobId,
+        in_progress: true,
+        queued: false,
+        stage: 'Gathering'
+      };
+      jobManager.updateJob(jobUpdate)
+        .then(result => {
+          startProspectJob(activeJob.jobId);
         })
-    })
+    } else {
+      console.log('no action will be taken:');
+    }
   })
 }, 30000);
 
@@ -141,32 +201,57 @@ app.get('/test-method/:argument', (req, res) => {
 })
 /*
 {
-  terms: { },
-  prospect_count: '300',
-    candidate_count: '1000',
-      reference_brands: [],
-        username: 'truefluence9',
-          upload_url: 'https://app.truefluence.io/users/truefluence9/prospects/1557.csv?token=krPVzf25sN8BEJTjXXkJ1nQD'
+prospect_list: {
+id: 1761,
+created_at: "2017-12-09T17:20:09.494-08:00",
+updated_at: "2018-01-22T18:14:58.175-08:00",
+user_id: 189,
+settings: {
+terms: { },
+prospect_count: "300",
+candidate_count: "1000",
+reference_brands: [ ],
+instagram_username: "eatifyjohn",
+upload_url: "https://app.truefluence.io/users/lovepopcards/lists/1761.json"
+},
+approved: true,
+token: "9FCzXHzdfhwBWpTi2xiv2KZQ",
+count: 49,
+refreshed_at: "2018-01-23T14:14:23.531-08:00",
+message: "",
+name: "Lovepop Line Campaign (Larger Influencers)",
+notes: "wedding line. higher followers",
+indexed_at: "2018-01-22T18:14:58.129-08:00",
+began_indexing_at: null,
+can_download: true,
+can_import: null,
+can_delete_shown: null,
+can_request_campaign: true,
+refreshing: false
+},
 }
+
 */
 app.post('/gather', (req, res) => {
   console.log('gather request');
-  console.log(req.body);
+  analyzed_username = req.body.reference_brands[0] ? req.body.reference_brands[0] : req.body.username;
   const newJob = {
     upload_url: req.body.upload_url,
     primary_username: req.body.username,
-    analyzed_username: req.body.reference_brands[0], // work on saving reference brands.
+    analyzed_username: req.body.reference_brands[0] ? req.body.reference_brands[0] : req.body.username,
     stage: 'Initialized',
     queued: false
   };
+  // console.log(newJob);
   jobManager.createJob(newJob)
     .then(jobId => {
-      tfBridge.createProspectList('truefluence9', 'token')
+      tfBridge.createProspectList(newJob.primary_username + ':' + newJob.analyzed_username, 'LXJrk8BevkpMvGoNUA4SR3L1-u')
         .then(newList => {
           newList.id = jobId;
           newList.queued = true;
           database.updateJob(newList)
             .then(updated => {
+              console.log(newList);
               res.send('list and job created successfully');
               // should result in job queued 
             })
@@ -197,12 +282,19 @@ getValue = (url, value, terminus = '/') => {
 
 getDownloadURL = listDetails => {
   // var downloadURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
-  var downloadURL = 'https://search.truefluence.io/users/';
+  var downloadURL = 'https://app.truefluence.io/users/';
   downloadURL = downloadURL + listDetails.username + '/prospects/' + listDetails.listId + '.json?token=';
   downloadURL = downloadURL + listDetails.token;
   return downloadURL;
 }
 
+/*
+return:
+{
+prospect_list_id: 1637,
+token: "xWNVzMMFcbA5YyVSQiWyMpt5"
+}
+*/
 app.get('/test-create-prospect-list/:username', (req, res) => {
   tfBridge.createProspectList(req.params.username, 'LXJrk8BevkpMvGoNUA4SR3L1-u') // save to env var
     .then(result => {
@@ -264,17 +356,18 @@ const parseListDetails = job => {
   }
 }
 
+// when pushign verythign to production, make sure you change this.
 const getVerifyURL = listDetails => {
-  var verifyURL = 'https://search.truefluence.io/users/';
-  verifyURL = verifyURL + listDetails.username + '/lists/' + listDetails.listId + '.json?token=';
+  var verifyURL = 'https://app.truefluence.io/users/truefluence9/';
+  verifyURL = verifyURL + 'lists/' + listDetails.listId + '.json?token=';
   verifyURL = verifyURL + listDetails.token;
   return verifyURL;
 }
 
 const getSubmitURL = listDetails => {
   // var submitURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
-  var submitURL = 'https://search.truefluence.io/users/';
-  submitURL = submitURL + listDetails.username + '/prospects/' + listDetails.listId + '.csv?token=';
+  var submitURL = 'https://app.truefluence.io/users/truefluence9';
+  submitURL = submitURL + '/prospects/' + listDetails.listId + '.csv?token=';
   submitURL = submitURL + listDetails.token;
   return submitURL;
 }
@@ -339,6 +432,120 @@ app.post('/create-job', (req, res) => {
 })
 
 const startProspectJob = jobId => {
+  database.getJobByJobId(jobId)
+  .then(job => {
+    const listDetails = parseListDetails(job);
+    var prospectCount = 0;
+    if (listDetails.loaded) {
+      if (job.list_sent) {
+        if (job.ready_to_download) {
+          console.log('ready to download!');
+        } else {
+          console.log('prospect list previously submitted for enrichment, please wait');
+        }
+      } else {
+        console.log('this job be ready to rock and roll!');
+        prospect.batchLikers(job.analyzed_username, listDetails.prospect_job_id, MAXPOSTCOUNT)
+          .then(likers => {
+            console.log('likers found:', likers.length);
+            console.log(job.id);
+            const submitURL = getSubmitURL(listDetails);
+            const downloadURL = getDownloadURL(listDetails);
+            console.log(submitURL);
+            renderFormattedProspects(listDetails.prospect_job_id)
+              .then(prospects => {
+                prospectCount = prospects.length;
+                batchProspects(prospects).map(batch => {
+                  setTimeout(() => {
+                    tfBridge.submitProspects(submitURL, batch);
+                  }, 500);
+                })
+                messaging.send('gathering finished for:' + listDetails.username);
+                const jobUpdate = {
+                  id: jobId,
+                  in_progress: false,
+                  stage: 'Awaiting Refresh'
+                };
+                jobManager.updateJob(jobUpdate)
+                  .then(result => {
+                    console.log(jobId + ' - in_progress set to false');
+                  })
+                return('baddd');
+              })
+              .then(result => {
+                const updateJob = {
+                  id: listDetails.prospect_job_id,
+                  list_sent: true,
+                  prospect_count: prospectCount
+                }
+                console.log('update job:', updateJob);
+                database.updateJob(updateJob)
+                  .then(done => {
+                    return('holla!');
+                    // res.end();
+                    // confirmed that update occurs
+                    // start checking every minute to see if list is finished
+                    // var checkJob = setInterval(checkIfRefreshed, 60000);
+                    // function checkIfRefreshed() {
+                    //   tfBridge.verifyList(downloadURL)
+                    //     .then(verified => {
+                    //       if (verified) {
+                    //         console.log('refresh complete, killing recurring job and initializing download');
+                    //         clearInterval(checkJob);
+                    //         res.send('downloading in progress');
+                    //         tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
+                    //           .then(returnObj => {
+                    //             messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
+                    //           });
+                    //       } else {
+                    //         console.log('refresh not complete, retrying in 60 seconds');
+                    //       }
+                    //     })
+                    // }
+                  })
+              })
+          })
+          .then(thing => {
+            if (thing = 'holla!') {
+              const verifyURL = getVerifyURL(listDetails);
+              const downloadURL = getDownloadURL(listDetails);
+              console.log('starting checking routing');
+              setTimeout(() => {
+                var checkJob = setInterval(checkIfRefreshed, 60000);
+                function checkIfRefreshed() {
+                  tfBridge.verifyList(verifyURL)
+                    .then(refreshing => {
+                      if (!refreshing) {
+                        console.log('refresh complete, killing recurring job and initializing download');
+                        clearInterval(checkJob);
+                        console.log('downloading in progress');
+                        tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
+                          .then(returnObj => {
+                            messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
+                          });
+                      } else {
+                        console.log('refresh not complete, retrying in 60 seconds');
+                      }
+                    })
+                }
+              }, 60000);
+            } else {
+              console.log('no holla');
+            }
+          })
+          .catch(err => {
+            console.log('batchLikers failure');
+            console.error(err);
+  
+          })
+      }
+    } else {
+      console.log('prospect job with id:' + jobId + ' does not exist');
+    }
+  })
+}
+
+const startProspectJob2 = jobId => {
   database.getJobByJobId(req.params.jobId)
     .then(job => {
       const listDetails = parseListDetails(job);
@@ -399,6 +606,8 @@ app.get('/initiate-prospect-job/:jobId', (req, res) => {
   database.getJobByJobId(req.params.jobId)
     .then(job => {
       const listDetails = parseListDetails(job);
+      console.log(job);
+      // console.log(listDetails);
       var prospectCount = 0;
       if (listDetails.loaded) {
         if (job.list_sent) {

@@ -6,7 +6,7 @@ class InfluencerFilter { // comments, please.
 
     const { follower_count, follower_following_ratio,
             terms, recent_average_comment_rate,
-            recent_average_like_rate } = settings;
+            recent_average_like_rate, recent_engagement_rate } = settings;
     const days_since_last_post = { max: 30, ideal: 1 };
 
     if (days_since_last_post) {
@@ -24,6 +24,13 @@ class InfluencerFilter { // comments, please.
       this.follower_count = follower_count;
       this.follower_count.filter = function(user) {
         return evaluate(user.follower_count, this);
+      }
+    }
+
+    if (recent_engagement_rate) {
+      this.recent_engagement_rate = recent_engagement_rate;
+      this.recent_engagement_rate.filter = function (user) {
+        return evaluate(user.recent_engagement_rate, this);
       }
     }
 
