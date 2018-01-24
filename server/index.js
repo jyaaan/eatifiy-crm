@@ -62,104 +62,104 @@ const resetJob = job => {
 
 }
 // SELECT id, primary_username, analyzed_username, stage, queued, in_progress, prospect_count as count from prospect_jobs order by id desc limit 20;
-setTimeout(() => {
-  // delayed jobs
-  refreshJobs = Object.assign(refreshJobs, jobManager.getRefreshJobs());
+// setTimeout(() => {
+//   // delayed jobs
+//   refreshJobs = Object.assign(refreshJobs, jobManager.getRefreshJobs());
 
-  // Every 5 minutes
-  recurringJob5 = schedule.scheduleJob('*/5 * * * *', () => {
-  });
+//   // Every 5 minutes
+//   recurringJob5 = schedule.scheduleJob('*/5 * * * *', () => {
+//   });
   
-  // Every 1 minute
-  recurringJob1 = schedule.scheduleJob('*/1 * * * *', () => {
-    jobManager.getQueuedJobs()
-      .then(jobs => {
-        console.log('new refresh jobs: ' + jobs.map(job => { return job.id }));
-        if (jobs[0] && !activeJob.active) {
-          activeJob.jobId = jobs[0].id;
-          activeJob.job = jobs[0]
-          activeJob.active = true;
-          const jobUpdate = {
-            id: activeJob.jobId,
-            in_progress: true
-          };
-          jobManager.updateJob(jobUpdate)
-            .then(result => {
-              console.log('current job:', activeJob);
-            })
-        } else {
-          // check if active job is in progress.
-          if (activeJob.jobId) {
-            jobManager.checkIfActive(activeJob.jobId)
-            // jobManager.checkIfActive(126)
-              .then(isActive => {
-                if (isActive) {
-                  console.log('jobs full');
-                } else {
-                  activeJob.active = false;
-                  activeJob.in_progress = false;
-                  activeJob.jobId = null;
-                  console.log('job is no longer in progress, loading next');
-                }
-              })
-          } else {
-            // no active job, check should not run.
-          }
-          // console.log(activeJob);
-        }
-      })
+//   // Every 1 minute
+//   recurringJob1 = schedule.scheduleJob('*/1 * * * *', () => {
+//     jobManager.getQueuedJobs()
+//       .then(jobs => {
+//         console.log('new refresh jobs: ' + jobs.map(job => { return job.id }));
+//         if (jobs[0] && !activeJob.active) {
+//           activeJob.jobId = jobs[0].id;
+//           activeJob.job = jobs[0]
+//           activeJob.active = true;
+//           const jobUpdate = {
+//             id: activeJob.jobId,
+//             in_progress: true
+//           };
+//           jobManager.updateJob(jobUpdate)
+//             .then(result => {
+//               console.log('current job:', activeJob);
+//             })
+//         } else {
+//           // check if active job is in progress.
+//           if (activeJob.jobId) {
+//             jobManager.checkIfActive(activeJob.jobId)
+//             // jobManager.checkIfActive(126)
+//               .then(isActive => {
+//                 if (isActive) {
+//                   console.log('jobs full');
+//                 } else {
+//                   activeJob.active = false;
+//                   activeJob.in_progress = false;
+//                   activeJob.jobId = null;
+//                   console.log('job is no longer in progress, loading next');
+//                 }
+//               })
+//           } else {
+//             // no active job, check should not run.
+//           }
+//           // console.log(activeJob);
+//         }
+//       })
     
-    // parseListDetails(job);
-    // const verifyURL = getDownloadURL(listDetails);
-    // var checkJob = setInterval(checkIfRefreshed, 60000);
-    // function checkIfRefreshed() {
-      //   tfBridge.verifyList(verifyURL)
-      //     .then(verified => {
-        //       if (verified) {
-    //         console.log('refresh complete, killing recurring job and initializing download');
-    //         clearInterval(checkJob);
-    //         console.log('downloading in progress');
-    //         tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
-    //           .then(returnObj => {
-      //             messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
-    //           });
-    //       } else {
-      //         console.log('refresh not complete, retrying in 60 seconds');
-    //       }
-    //     })
-    // }
-  });
+//     // parseListDetails(job);
+//     // const verifyURL = getDownloadURL(listDetails);
+//     // var checkJob = setInterval(checkIfRefreshed, 60000);
+//     // function checkIfRefreshed() {
+//       //   tfBridge.verifyList(verifyURL)
+//       //     .then(verified => {
+//         //       if (verified) {
+//     //         console.log('refresh complete, killing recurring job and initializing download');
+//     //         clearInterval(checkJob);
+//     //         console.log('downloading in progress');
+//     //         tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
+//     //           .then(returnObj => {
+//       //             messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
+//     //           });
+//     //       } else {
+//       //         console.log('refresh not complete, retrying in 60 seconds');
+//     //       }
+//     //     })
+//     // }
+//   });
   
-  // Every 1 minute stagger 30 test
-  recurringJob1Staggered = schedule.scheduleJob('30 * * * * *', () => {
-    // assume we have urls
-    // async.mapSeries(refreshJobURLs, (refreshURL, next) => {
-    //   tfBridge.verifyList(refreshURL)
-    //     .then(verified => {
-    //       if (verified) {
-    //         // update job and remove this from job.
-    //       }
-    //     })
-    // })
-    if (activeJob.active && !activeJob.in_progress) {
-      console.log('we gotta start the job!');
-      activeJob.in_progress = true;
-      // set job to in progress, unqueue
-      const jobUpdate = {
-        id: activeJob.jobId,
-        in_progress: true,
-        queued: false,
-        stage: 'Gathering'
-      };
-      jobManager.updateJob(jobUpdate)
-        .then(result => {
-          startProspectJob(activeJob.jobId);
-        })
-    } else {
-      console.log('no action will be taken:');
-    }
-  })
-}, 30000);
+//   // Every 1 minute stagger 30 test
+//   recurringJob1Staggered = schedule.scheduleJob('30 * * * * *', () => {
+//     // assume we have urls
+//     // async.mapSeries(refreshJobURLs, (refreshURL, next) => {
+//     //   tfBridge.verifyList(refreshURL)
+//     //     .then(verified => {
+//     //       if (verified) {
+//     //         // update job and remove this from job.
+//     //       }
+//     //     })
+//     // })
+//     if (activeJob.active && !activeJob.in_progress) {
+//       console.log('we gotta start the job!');
+//       activeJob.in_progress = true;
+//       // set job to in progress, unqueue
+//       const jobUpdate = {
+//         id: activeJob.jobId,
+//         in_progress: true,
+//         queued: false,
+//         stage: 'Gathering'
+//       };
+//       jobManager.updateJob(jobUpdate)
+//         .then(result => {
+//           startProspectJob(activeJob.jobId);
+//         })
+//     } else {
+//       console.log('no action will be taken:');
+//     }
+//   })
+// }, 30000);
 
 const BatchDB = require('./batch_db');
 const batchDB = new BatchDB();
@@ -234,12 +234,14 @@ refreshing: false
 */
 app.post('/gather', (req, res) => {
   console.log('gather request');
-  analyzed_username = req.body.reference_brands[0] ? req.body.reference_brands[0] : req.body.username;
+  const gatherObj = req.body.prospect_list;
+
   const newJob = {
-    upload_url: req.body.upload_url,
-    primary_username: req.body.username,
-    analyzed_username: req.body.reference_brands[0] ? req.body.reference_brands[0] : req.body.username,
+    upload_url: gatherObj.upload_url,
+    primary_username: gatherObj.instagram_username,
+    analyzed_username: gatherObj.reference_brands[0] ? gatherObj.reference_brands[0] : gatherObj.instagram_username,
     stage: 'Initialized',
+    target_list_id: gatherObj.id,
     queued: false
   };
   // console.log(newJob);
@@ -260,6 +262,10 @@ app.post('/gather', (req, res) => {
           console.error(err);
           res.send(err);
         })
+    })
+    .catch(err => {
+      console.error(err);
+      res.send(err);
     })
 })
 

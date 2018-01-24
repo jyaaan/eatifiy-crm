@@ -1,23 +1,23 @@
-const knex = require('knex')({
-  client: 'postgresql',
-  connection: {
-    user: 'postgres',
-    password: 'peanut',
-    database: 'eatify-crm',
-    host: 'localhost',
-    port: '5432'
-  }
-});
 // const knex = require('knex')({
 //   client: 'postgresql',
 //   connection: {
-//     user: process.env.RDS_USERNAME,
-//     password: process.env.RDS_PASSWORD,
-//     database: process.env.RDS_DB_NAME,
-//     port: process.env.RDS_PORT,
-//     host: process.env.RDS_HOSTNAME
+//     user: 'postgres',
+//     password: 'peanut',
+//     database: 'eatify-crm',
+//     host: 'localhost',
+//     port: '5432'
 //   }
 // });
+const knex = require('knex')({
+  client: 'postgresql',
+  connection: {
+    user: process.env.RDS_USERNAME,
+    password: process.env.RDS_PASSWORD,
+    database: process.env.RDS_DB_NAME,
+    port: process.env.RDS_PORT,
+    host: process.env.RDS_HOSTNAME
+  }
+});
 
 const scoreEvaluator = {
   1: {
@@ -230,6 +230,22 @@ Database.prototype.raw = function (query) {
       .then(result => {
         console.log(result);
         resolve(result);
+      })
+      .catch(err => {
+        reject(err);
+      })
+  })
+}
+
+Database.prototype.checkIfDuplicateJob = function(jobObj) {
+  return new Promise((resolve, reject) => {
+    knex('prospect_jobs')
+      .count('*')
+      .where('analyzed_username', jobObj.analyzed_username)
+      .andWhere('target_list_id', jobObj.target_list_id)
+      .andWhere('primary_username', jobObj.primary_username)
+      .then(result => {
+        resolve(result[0].count > 0);
       })
       .catch(err => {
         reject(err);
