@@ -235,13 +235,14 @@ refreshing: false
 app.post('/gather', (req, res) => {
   console.log('gather request');
   const gatherObj = req.body.prospect_list;
-  console.log(req.body);
+  // console.log(req.body);
   const newJob = {
     upload_url: gatherObj.upload_url,
     primary_username: gatherObj.instagram_username,
-    analyzed_username: gatherObj.reference_brands[0] ? gatherObj.reference_brands[0] : gatherObj.instagram_username,
+    analyzed_username: gatherObj.settings.reference_brands[0] ? gatherObj.settings.reference_brands[0] : gatherObj.instagram_username,
     stage: 'Initialized',
     target_list_id: gatherObj.id,
+    terms: gatherObj.settings.terms,
     queued: false
   };
   // console.log(newJob);
