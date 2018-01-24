@@ -87,7 +87,7 @@ TFBridge.prototype.getProspectList = function (listURL, token, batchID) {
 TFBridge.prototype.createProspectList = function (username, token) {
   console.log('attempting to create list for:', username);
   return new Promise((resolve, reject) => {
-    var url = 'https://search.truefluence.io/users/truefluence9/lists.json?api_token=' + token;
+    var url = 'https://app.truefluence.io/users/truefluence9/lists.json?api_token=' + token;
     var options = {
       url: url,
       method: 'POST',
@@ -441,7 +441,15 @@ const signal = (csvFile, url) => {
     ],
     body: csvFile
   };
-  request(options);
+  request(options, (err, res, bod) => {
+    if (err) {
+      console.error(err);
+    } else {
+      // console.log(res);
+      // console.log(bod);
+    }
+
+  });
   console.log('submission complete');
 }
 

@@ -34,14 +34,14 @@ const http = require('http').createServer(app);
 app.use(staticMiddleware);
 app.use(bodyParser.json());
 
-
+// select id, username, 
 
 const JobManager = require('./job-manager');
 const jobManager = new JobManager(database);
 
 // Initialization routines and parameters
 jobManager.resetInProgress();
-const MAXPOSTCOUNT = 1000;
+const MAXPOSTCOUNT = 1200;
 var refreshJobs = [];
 var refreshJobURLs = [];
 
@@ -58,6 +58,10 @@ const activeJob = {
   job: {}
 }
 
+const resetJob = job => {
+
+}
+// SELECT id, primary_username, analyzed_username, stage, queued, in_progress, prospect_count as count from prospect_jobs order by id desc limit 20;
 setTimeout(() => {
   // delayed jobs
   refreshJobs = Object.assign(refreshJobs, jobManager.getRefreshJobs());
@@ -84,7 +88,23 @@ setTimeout(() => {
               console.log('current job:', activeJob);
             })
         } else {
-          console.log('jobs full');
+          // check if active job is in progress.
+          if (activeJob.jobId) {
+            jobManager.checkIfActive(activeJob.jobId)
+            // jobManager.checkIfActive(126)
+              .then(isActive => {
+                if (isActive) {
+                  console.log('jobs full');
+                } else {
+                  activeJob.active = false;
+                  activeJob.in_progress = false;
+                  activeJob.jobId = null;
+                  console.log('job is no longer in progress, loading next');
+                }
+              })
+          } else {
+            // no active job, check should not run.
+          }
           // console.log(activeJob);
         }
       })
@@ -124,7 +144,17 @@ setTimeout(() => {
     if (activeJob.active && !activeJob.in_progress) {
       console.log('we gotta start the job!');
       activeJob.in_progress = true;
-      startProspectJob(activeJob.jobId);
+      // set job to in progress, unqueue
+      const jobUpdate = {
+        id: activeJob.jobId,
+        in_progress: true,
+        queued: false,
+        stage: 'Gathering'
+      };
+      jobManager.updateJob(jobUpdate)
+        .then(result => {
+          startProspectJob(activeJob.jobId);
+        })
     } else {
       console.log('no action will be taken:');
     }
@@ -170,14 +200,36 @@ app.get('/test-method/:argument', (req, res) => {
 
 })
 /*
-{ terms: {},
-  region: '',
-  dream_partners: [],
-  prospect_count: '300',
-  candidate_count: '1000',
-  reference_brands: [],
-  username: 'eatifyjohn',
-  upload_url: 'https://app.truefluence.io/users/eatifyjohn/prospects/2446.csv?token=wUrPUFYdJLLbT3qAZ3LVeRfb' }
+{
+prospect_list: {
+id: 1761,
+created_at: "2017-12-09T17:20:09.494-08:00",
+updated_at: "2018-01-22T18:14:58.175-08:00",
+user_id: 189,
+settings: {
+terms: { },
+prospect_count: "300",
+candidate_count: "1000",
+reference_brands: [ ],
+instagram_username: "eatifyjohn",
+upload_url: "https://app.truefluence.io/users/lovepopcards/lists/1761.json"
+},
+approved: true,
+token: "9FCzXHzdfhwBWpTi2xiv2KZQ",
+count: 49,
+refreshed_at: "2018-01-23T14:14:23.531-08:00",
+message: "",
+name: "Lovepop Line Campaign (Larger Influencers)",
+notes: "wedding line. higher followers",
+indexed_at: "2018-01-22T18:14:58.129-08:00",
+began_indexing_at: null,
+can_download: true,
+can_import: null,
+can_delete_shown: null,
+can_request_campaign: true,
+refreshing: false
+},
+}
 
 */
 app.post('/gather', (req, res) => {
@@ -230,7 +282,7 @@ getValue = (url, value, terminus = '/') => {
 
 getDownloadURL = listDetails => {
   // var downloadURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
-  var downloadURL = 'https://search.truefluence.io/users/';
+  var downloadURL = 'https://app.truefluence.io/users/';
   downloadURL = downloadURL + listDetails.username + '/prospects/' + listDetails.listId + '.json?token=';
   downloadURL = downloadURL + listDetails.token;
   return downloadURL;
@@ -306,7 +358,7 @@ const parseListDetails = job => {
 
 // when pushign verythign to production, make sure you change this.
 const getVerifyURL = listDetails => {
-  var verifyURL = 'https://search.truefluence.io/users/truefluence9/';
+  var verifyURL = 'https://app.truefluence.io/users/truefluence9/';
   verifyURL = verifyURL + 'lists/' + listDetails.listId + '.json?token=';
   verifyURL = verifyURL + listDetails.token;
   return verifyURL;
@@ -314,8 +366,8 @@ const getVerifyURL = listDetails => {
 
 const getSubmitURL = listDetails => {
   // var submitURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
-  var submitURL = 'https://search.truefluence.io/users/';
-  submitURL = submitURL + listDetails.username + '/prospects/' + listDetails.listId + '.csv?token=';
+  var submitURL = 'https://app.truefluence.io/users/truefluence9';
+  submitURL = submitURL + '/prospects/' + listDetails.listId + '.csv?token=';
   submitURL = submitURL + listDetails.token;
   return submitURL;
 }
@@ -408,6 +460,16 @@ const startProspectJob = jobId => {
                     tfBridge.submitProspects(submitURL, batch);
                   }, 500);
                 })
+                messaging.send('gathering finished for:' + listDetails.username);
+                const jobUpdate = {
+                  id: jobId,
+                  in_progress: false,
+                  stage: 'Awaiting Refresh'
+                };
+                jobManager.updateJob(jobUpdate)
+                  .then(result => {
+                    console.log(jobId + ' - in_progress set to false');
+                  })
                 return('baddd');
               })
               .then(result => {

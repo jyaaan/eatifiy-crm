@@ -113,7 +113,7 @@ Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart, jo
                         console.log('errors encountered:', errorCounter);
                         setTimeout(() => {
                           next();
-                        }, 1000)
+                        }, 2000)
                       })
                       .catch(err => {
                         console.error(err);
@@ -134,7 +134,7 @@ Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart, jo
 
                   setTimeout(() => {
                     retrieve();
-                  }, 5000);
+                  }, 3000);
 
                 } else if (errorCounter >= errorThreshold) {
                   console.log('too many errors encountered');

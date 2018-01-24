@@ -136,6 +136,19 @@ class JobManager {
     })
   }
 
+  checkIfActive(jobId) {
+    return new Promise((resolve, reject) => {
+      this.database.getJobByJobId(jobId)
+        .then(job => {
+          console.log(job);
+          resolve(job.in_progress)
+        })
+        .catch(err => {
+          reject(err);
+        })
+    })
+  }
+
   queueJob(jobId) {
     return new Promise((resolve, reject) => {
       this.database.addJobToQueue(jobId)
