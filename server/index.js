@@ -235,7 +235,7 @@ refreshing: false
 app.post('/gather', (req, res) => {
   console.log('gather request');
   const gatherObj = req.body.prospect_list;
-
+  console.log(req.body);
   const newJob = {
     upload_url: gatherObj.upload_url,
     primary_username: gatherObj.instagram_username,
