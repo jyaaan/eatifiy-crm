@@ -239,7 +239,8 @@ app.post('/gather', (req, res) => {
 
   const getAnalyzedUsername = reqBody => {
     if (reqBody.settings.reference_brands) {
-      return reqBody.settings.reference_brands[0] ? reqBody.settings.reference_brands[0] : reqBody.instagram_username;
+      return (reqBody.settings.reference_brands[0] ? reqBody.settings.reference_brands[0] : reqBody.instagram_username).replace('@', '');
+
     } else {
       return reqBody.instagram_username;
     }
