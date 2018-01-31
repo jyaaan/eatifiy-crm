@@ -1,6 +1,6 @@
 const async = require('async');
-const Ig = require('./ig');
-const ig = new Ig();
+// const Ig = require('./ig');
+// const ig = new Ig();
 const Database = require('./database').Database;
 const database = new Database();
 const Scraper = require('./scraper');
@@ -15,13 +15,42 @@ const tfScore = require('./tf-score');
 const InfluencerFilter = require('./influencer-filter');
 const request = require('request');
 
+const ProxyManager = require('./proxy_manager');
+const proxyManager = new ProxyManager();
+setTimeout(() => {
+  // console.log('proxy manager:', proxyManager.proxies[0]);
+  // console.log('session:', proxyManager.proxies[0].session);
+  // console.log('performance history:', proxyManager.proxies[0].performanceHistory);
+}, 10000);
+
+var activeIG = {};
+const loadActiveIG = () => {
+  const nextProxy = proxyManager.getNextProxy();
+  console.log('nextProxy:', nextProxy.username);
+  nextProxy.performanceHistory.usageCount++;
+  activeIG = nextProxy.ig;
+}
+
+// const reqProxy = {
+//   proxyAddress: '146.71.87.105',
+//   port: '65233',
+//   username: 'johnyamashiro',
+//   password: 'B4h2KrO',
+//   getProxy: function (mode = 'http') {
+//     let addressBuilder = (mode == 'https' ? 'https://' : 'http://');
+//     addressBuilder += this.username + ':' + this.password + '@';
+//     addressBuilder += this.proxyAddress + ':' + this.port;
+//     return addressBuilder;
+//   }
+// }
+
 // look to change this so that we can re-use the same cookie until expiration
-ig.initialize()
-  .then(result => {
-    console.log('initializing session');
-    // console.log('session:', result);
-    currentSession.session = result;
-  });
+// ig.initialize('JakeDMachina', 'occsbootcamp', reqProxy.getProxy('http'))
+//   .then(result => {
+//     console.log('initializing session');
+//     // console.log('session:', result);
+//     currentSession.session = result;
+//   });
 
 function spliceDuplicates(users) {
   return users.filter((user, index, collection) => {
@@ -45,7 +74,6 @@ Prospect.prototype.batchLikers = function (username, jobId, maxPostCount = 2000)
             console.log('time taken (sec):', (timeComplete - timeStart) / 1000);
             resolve(likers);
           })
-        // resolve(user);
       })
   })
 }
@@ -84,33 +112,35 @@ Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart, jo
   var mediaCounter = 0;
   var errorCounter = 0;
   totalLikersProcessed = 0;
+
+  // load active ig here
+  loadActiveIG();
   return new Promise((resolve, reject) => {
-    ig.initializeMediaFeed(externalId, currentSession.session, reqProxy.getProxy('http'))
+    activeIG.initializeMediaFeed(externalId)
       .then(feed => {
         function retrieve() {
           feed.get()
             .then(medias => {
               mediaCounter++;
               async.mapSeries(medias, (media, next) => {
-                getMediaLikers(media, likers, reqProxy.getProxy('http'))
+                getMediaLikers(media, likers)
                   .then(newLikers => {
                     saveLikersToProspects(newLikers, jobId)
                       .then(saveResult => {
-                        console.log('return from saving prospects:', saveResult);
                         counter++;
                         totalLikersProcessed += newLikers.length
                         likers = likers.concat(...newLikers);
                         var timeNow = Date.now();
                         var timeElapsed = (timeNow - timeStart) / 1000;
                         var predictedTotal = (timeElapsed * postCount) / counter;
-                        console.log('\033c');
-                        console.log('got new likers, unique total (processed): ' + likers.length + ' (' + totalLikersProcessed + ')');
-                        console.log(counter + ' out of ' + postCount + ' posts analyzed. ' + 
+                        // console.log('\033c');
+                        // console.log('got new likers, unique total (processed): ' + likers.length + ' (' + totalLikersProcessed + ')');
+                        console.log('job ' + jobId + ':' + counter + ' out of ' + postCount + ' posts analyzed. ' + 
                           ((counter / postCount) * 100).toFixed(2) + '%');
-                        console.log('time elapsed (sec):', timeElapsed.toFixed(2));
-                        console.log('predicted total job duration (sec):', predictedTotal.toFixed(0));
-                        console.log('predicted time remaining (sec):', (predictedTotal - timeElapsed).toFixed(0));
-                        console.log('errors encountered:', errorCounter);
+                        // console.log('time elapsed (sec):', timeElapsed.toFixed(2));
+                        // console.log('predicted total job duration (sec):', predictedTotal.toFixed(0));
+                        // console.log('predicted time remaining (sec):', (predictedTotal - timeElapsed).toFixed(0));
+                        // console.log('errors encountered:', errorCounter);
                         setTimeout(() => {
                           next();
                         }, 2000)
@@ -179,7 +209,7 @@ Prospect.prototype.analyzeEngagement = function (externalId, postCount, timeStar
   var errorCounter = 0;
   totalLikersProcessed = 0;
   return new Promise((resolve, reject) => {
-    ig.initializeMediaFeed(externalId, currentSession.session, reqProxy.getProxy('http'))
+    activeIG.initializeMediaFeed(externalId, currentSession.session, reqProxy.getProxy('http'))
       .then(feed => {
         function retrieve() {
           feed.get()
@@ -313,7 +343,7 @@ Prospect.prototype.likers = function (username, params, targetCandidateAmount = 
   scrapeSave.scrapeSave(username, true)
     .then(scraped => { // Get data of target account
       console.log('primary user scrape:', scraped);
-      ig.initializeMediaFeed(scraped.external_id, currentSession.session) // opening media feed
+      activeIG.initializeMediaFeed(scraped.external_id, currentSession.session) // opening media feed
         .then(feed => {
           function retrieve() {
             feed.get()
@@ -424,6 +454,7 @@ const saveLikersToProspects = (likers, jobId) => {
           updated_at: timeNow
         }
       })
+      // console.log('formatted likers:', formattedLikers);
       database.raw(batchDB.upsertProspects(formattedLikers))
         .then(result => {
           resolve(result.length);
@@ -484,9 +515,9 @@ const sortByScore = candidates => {
   })
 }
 
-const getMediaLikers = (media, arrLikers, proxyUrl) => {
+const getMediaLikers = (media, arrLikers) => {
   return new Promise((resolve, reject) => {
-    ig.getLikers(media, currentSession.session, proxyUrl)
+    activeIG.getLikers(media)
       .then(likers => {
         totalLikersProcessed += likers.length;
         const likerUsernames = arrLikers.map(liker => { return liker.username });
@@ -594,17 +625,6 @@ const verifyCandidate = (user, filter) => {
   return filter.score(user);
 }
 
-const reqProxy = {
-  proxyAddress: '146.71.87.105',
-  port: '65233',
-  username: 'johnyamashiro',
-  password: 'B4h2KrO',
-  getProxy: function (mode = 'http') {
-    let addressBuilder = (mode == 'https' ? 'https://' : 'http://');
-    addressBuilder += this.username + ':' + this.password + '@';
-    addressBuilder += this.proxyAddress + ':' + this.port;
-    return addressBuilder;
-  }
-}
+
 
 module.exports = Prospect

@@ -17,7 +17,7 @@ const FileHandler = require('./file-controller');
 const fileHandler = new FileHandler();
 const publicPath = path.join(__dirname, '/public');
 const staticMiddleware = express.static(publicPath);
-const ig = new IG();
+// const ig = new IG();
 const app = express();
 const currentSession = { initialized: false, session: {} };
 const Prospect = require('./prospect');
@@ -163,6 +163,8 @@ setTimeout(() => {
 
 const BatchDB = require('./batch_db');
 const batchDB = new BatchDB();
+
+
 
 app.get('/test-refresh-jobs', (req, res) => {
   jobManager.getQueuedRefreshJobs()
@@ -1049,28 +1051,28 @@ app.get('/mentions/:username/:mention', (req, res) => {
   var mentionCount = 0;
   var tagCount = 0;
   res.send('mention analysis for ' + focusUsername);
-  scrapeSave(focusUsername, true)
-    .then(scraped => {
-      ig.getMedias(scraped.external_id, currentSession.session, 3000)
-        .then(rawMedias => {
-          console.log('posts:', rawMedias.length);
-          rawMedias.map(media => {
-            if (typeof media.caption != 'undefined' && media.caption.toLowerCase().includes(lookup)) {
-              mentionCount++;
-            }
-            if (typeof media.usertags != 'undefined') {
-              const tagged = media.usertags.in;
-              tagged.map(tag => {
-                if (tag.user.username.toLowerCase() == lookup) {
-                  tagCount++;
-                }
-              })
-            }
-            return 'ok';
-          });
-          console.log('mentions: ', mentionCount, ' tags: ', tagCount);
-        })
-    })
+  // scrapeSave(focusUsername, true)
+  //   .then(scraped => {
+  //     ig.getMedias(scraped.external_id, currentSession.session, 3000)
+  //       .then(rawMedias => {
+  //         console.log('posts:', rawMedias.length);
+  //         rawMedias.map(media => {
+  //           if (typeof media.caption != 'undefined' && media.caption.toLowerCase().includes(lookup)) {
+  //             mentionCount++;
+  //           }
+  //           if (typeof media.usertags != 'undefined') {
+  //             const tagged = media.usertags.in;
+  //             tagged.map(tag => {
+  //               if (tag.user.username.toLowerCase() == lookup) {
+  //                 tagCount++;
+  //               }
+  //             })
+  //           }
+  //           return 'ok';
+  //         });
+  //         console.log('mentions: ', mentionCount, ' tags: ', tagCount);
+  //       })
+  //   })
 })
 
 app.get('/analyze/:username/:days', (req, res) => {
@@ -1085,23 +1087,23 @@ app.get('/analyze/:username/:days', (req, res) => {
 
 app.post('/get-following', (req, res) => {
   res.send('request received');
-  ig.getFollowing(req.body.external_id, currentSession.session)
-    .then(following => {
-      queueFollowing(following, req.body.id)
-        .then(result => {
-          async.mapSeries(result, (user, next) => {
-            database.userSuggestionsLoaded(user.username)
-              .then(loaded => {
-                next();
-              })
-          }, err => {
-            console.log('complete');
-          })
-        })
-        .catch(err => {
-          console.error(err);
-        })
-    })
+  // ig.getFollowing(req.body.external_id, currentSession.session)
+  //   .then(following => {
+  //     queueFollowing(following, req.body.id)
+  //       .then(result => {
+  //         async.mapSeries(result, (user, next) => {
+  //           database.userSuggestionsLoaded(user.username)
+  //             .then(loaded => {
+  //               next();
+  //             })
+  //         }, err => {
+  //           console.log('complete');
+  //         })
+  //       })
+  //       .catch(err => {
+  //         console.error(err);
+  //       })
+  //   })
 });
 
 // show list of rank 1 suggestions as well as frequency of rank 1

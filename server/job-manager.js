@@ -64,6 +64,9 @@ class JobManager {
             resolve(jobs);
           })
         })
+        .catch(err => {
+          reject(err);
+        })
     })
   }
 
@@ -84,7 +87,6 @@ class JobManager {
 
   createJob(job) {
     return new Promise((resolve, reject) => {
-      console.log(job);
       this.checkIfDuplicateJob(job)
         .then(duplicate => {
           if (!duplicate) {
@@ -126,7 +128,6 @@ class JobManager {
         stage: 'Refresh'
       })
         .then(newRefreshJobs => {
-          // console.log(newRefreshJobs);
           resolve(newRefreshJobs);
         })
     })
@@ -148,7 +149,6 @@ class JobManager {
     return new Promise((resolve, reject) => {
       this.database.getJobByJobId(jobId)
         .then(job => {
-          console.log(job);
           resolve(job.in_progress)
         })
         .catch(err => {
