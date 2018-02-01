@@ -26,7 +26,7 @@ setTimeout(() => {
 var activeIG = {};
 const loadActiveIG = () => {
   const nextProxy = proxyManager.getNextProxy();
-  console.log('nextProxy:', nextProxy.username);
+  console.log('nextProxy:', nextProxy.ig_username);
   nextProxy.performanceHistory.usageCount++;
   activeIG = nextProxy.ig;
 }

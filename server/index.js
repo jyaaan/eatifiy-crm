@@ -51,12 +51,15 @@ var recurringJob5;
 var recurringJob1;
 var recurringJob1Staggered;
 
-const activeJob = {
-  active: false,
-  in_progress: false,
-  jobId: null,
-  job: {}
-}
+// const activeJob = {
+//   active: false,
+//   in_progress: false,
+//   jobId: null,
+//   job: {}
+// }
+
+const Jobs = require('./jobs');
+const tasks = new Jobs(2);
 
 const resetJob = job => {
 
@@ -75,38 +78,60 @@ setTimeout(() => {
     jobManager.getQueuedJobs()
       .then(jobs => {
         console.log('new refresh jobs: ' + jobs.map(job => { return job.id }));
-        if (jobs[0] && !activeJob.active) {
-          activeJob.jobId = jobs[0].id;
-          activeJob.job = jobs[0]
-          activeJob.active = true;
-          const jobUpdate = {
-            id: activeJob.jobId,
-            in_progress: true
-          };
-          jobManager.updateJob(jobUpdate)
-            .then(result => {
-              console.log('current job:', activeJob);
-            })
-        } else {
-          // check if active job is in progress.
-          if (activeJob.jobId) {
-            jobManager.checkIfActive(activeJob.jobId)
+        // if (jobs[0] && !activeJob.active) {
+        // if (jobs[0] && tasks.jobAvailable()) {
+        //   const activeJob = tasks.getAvailableJob();
+        //   activeJob.jobId = jobs[0].id;
+        //   activeJob.job = jobs[0]
+        //   activeJob.active = true;
+        //   const jobUpdate = {
+        //     id: activeJob.jobId,
+        //     in_progress: true
+        //   };
+        //   jobManager.updateJob(jobUpdate)
+        //     .then(result => {
+        //       console.log('current job:', activeJob);
+        //     })
+        // }
+        // check if active job is in progress.
+        if (jobs[0]) {
+          jobs.map(job => {
+            if (tasks.jobAvailable()) {
+
+              const activeJob = tasks.getAvailableJob();
+              activeJob.jobId = job.id;
+              activeJob.job = job
+              activeJob.active = true;
+
+              const jobUpdate = {
+                id: activeJob.jobId,
+                in_progress: true
+              };
+
+              jobManager.updateJob(jobUpdate)
+                .then(result => {
+                  console.log('current job:', activeJob);
+                })
+            }
+          })
+        }
+        tasks.jobs.map(task => {
+          if (task.active && task.in_progress) {
+            jobManager.checkIfActive(task.jobId)
             // jobManager.checkIfActive(126)
               .then(isActive => {
                 if (isActive) {
-                  console.log('jobs full');
+                  console.log('job busy');
                 } else {
-                  activeJob.active = false;
-                  activeJob.in_progress = false;
-                  activeJob.jobId = null;
+                  task.active = false;
+                  task.in_progress = false;
+                  task.jobId = null;
                   console.log('job is no longer in progress, loading next');
                 }
               })
-          } else {
-            // no active job, check should not run.
           }
-          // console.log(activeJob);
-        }
+        })
+
       })
     
     // parseListDetails(job);
@@ -141,20 +166,22 @@ setTimeout(() => {
     //       }
     //     })
     // })
-    if (activeJob.active && !activeJob.in_progress) {
-      console.log('we gotta start the job!');
-      activeJob.in_progress = true;
-      // set job to in progress, unqueue
-      const jobUpdate = {
-        id: activeJob.jobId,
-        in_progress: true,
-        queued: false,
-        stage: 'Gathering'
-      };
-      jobManager.updateJob(jobUpdate)
-        .then(result => {
-          startProspectJob(activeJob.jobId);
-        })
+    if (tasks.pending()) {
+      tasks.getPending().map(task => {
+        console.log('we gotta start the job!');
+        task.in_progress = true;
+        // set job to in progress, unqueue
+        const jobUpdate = {
+          id: task.jobId,
+          in_progress: true,
+          queued: false,
+          stage: 'Gathering'
+        };
+        jobManager.updateJob(jobUpdate)
+          .then(result => {
+            startProspectJob(task.jobId);
+          })
+      })
     } else {
       console.log('no action will be taken:');
     }
