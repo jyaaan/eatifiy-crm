@@ -59,7 +59,7 @@ var recurringJob1Staggered;
 // }
 
 const Jobs = require('./jobs');
-const tasks = new Jobs(4);
+const tasks = new Jobs(1);
 
 const resetJob = job => {
 
