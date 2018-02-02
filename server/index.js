@@ -59,7 +59,7 @@ var recurringJob1Staggered;
 // }
 
 const Jobs = require('./jobs');
-const tasks = new Jobs(2);
+const tasks = new Jobs(4);
 
 const resetJob = job => {
 
@@ -78,22 +78,6 @@ setTimeout(() => {
     jobManager.getQueuedJobs()
       .then(jobs => {
         console.log('new refresh jobs: ' + jobs.map(job => { return job.id }));
-        // if (jobs[0] && !activeJob.active) {
-        // if (jobs[0] && tasks.jobAvailable()) {
-        //   const activeJob = tasks.getAvailableJob();
-        //   activeJob.jobId = jobs[0].id;
-        //   activeJob.job = jobs[0]
-        //   activeJob.active = true;
-        //   const jobUpdate = {
-        //     id: activeJob.jobId,
-        //     in_progress: true
-        //   };
-        //   jobManager.updateJob(jobUpdate)
-        //     .then(result => {
-        //       console.log('current job:', activeJob);
-        //     })
-        // }
-        // check if active job is in progress.
         if (jobs[0]) {
           jobs.map(job => {
             if (tasks.jobAvailable()) {
