@@ -1,5 +1,6 @@
 const proxies = require('../proxy_config');
 const Proxy = require('./proxy');
+const async = require('async');
 /*
   const performance = {
     usageCount: 0,
@@ -13,9 +14,15 @@ const Proxy = require('./proxy');
 class ProxyManager {
   constructor() {
     this.proxies = [];
-    proxies.map(proxy => {
+    async.mapSeries(proxies, (proxy, next) => {
       this.proxies.push(new Proxy(proxy));
+      setTimeout(() => {
+
+      }, 5000);
     })
+    // proxies.map(proxy => {
+    //   this.proxies.push(new Proxy(proxy));
+    // })
   }
 
   getNextProxy() { // janky approach, make this better.
