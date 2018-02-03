@@ -489,7 +489,7 @@ const startProspectJob = jobId => {
                     tfBridge.submitProspects(submitURL, batch);
                   }, 500);
                 })
-                messaging.send('gathering finished for:' + listDetails.username);
+                //  messaging.send('gathering finished for:' + listDetails.username);
                 const jobUpdate = {
                   id: jobId,
                   in_progress: false,
