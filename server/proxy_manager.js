@@ -17,7 +17,7 @@ class ProxyManager {
     async.mapSeries(proxies, (proxy, next) => {
       this.proxies.push(new Proxy(proxy));
       setTimeout(() => {
-
+        next();
       }, 5000);
     })
     // proxies.map(proxy => {
