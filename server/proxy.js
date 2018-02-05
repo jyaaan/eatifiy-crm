@@ -20,12 +20,14 @@ class Proxy {
     Object.assign(this, proxyObj);
     this.ig = new IG(this.ig_username, this.ig_password, this.getProxyURL());
     this.performanceHistory = initializePerformance();
+    this.connError = false;
     this.ig.initialize()
       .then(session => {
         this.session = session;
       })
       .catch(err => {
         console.error(err);
+        this.connError = true;
       })
   }
   

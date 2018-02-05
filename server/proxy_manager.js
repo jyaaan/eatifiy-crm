@@ -26,7 +26,10 @@ class ProxyManager {
   }
 
   getNextProxy() { // janky approach, make this better.
-    return this.proxies.reduce((prev, curr) => {
+    return this.proxies.filter(proxy => {
+      return !proxy.connError;
+    })
+    .reduce((prev, curr) => {
       return prev.performanceHistory.usageCount < curr.performanceHistory.usageCount ? prev : curr;
     })
   }
