@@ -27,7 +27,7 @@ class Proxy {
       })
       .catch(err => {
         this.connError = true;
-        console.log('error, removing prosy: ' + this.ig_username);
+        console.log('error, removing proxy: ' + this.ig_username);
         console.error(err);
       })
   }

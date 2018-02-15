@@ -84,10 +84,10 @@ TFBridge.prototype.getProspectList = function (listURL, token, batchID) {
   }
 }
 */
-TFBridge.prototype.createProspectList = function (username, token) {
-  console.log('attempting to create list for:', username);
+TFBridge.prototype.createProspectList = function (username, listName, token) {
+  // console.log('attempting to create list for:', username);
   return new Promise((resolve, reject) => {
-    var url = 'https://app.truefluence.io/users/truefluence9/lists.json?api_token=' + token;
+    var url = 'https://app.truefluence.io/users/' + username + '/lists.json?api_token=' + token;
     var options = {
       url: url,
       method: 'POST',
@@ -98,8 +98,8 @@ TFBridge.prototype.createProspectList = function (username, token) {
         }
       ],
       body: {
-        name: username,
-        type: 'List::Prospect'
+        name: listName,
+        type: 'List::Gather'
       },
       json: true
     };
@@ -108,7 +108,7 @@ TFBridge.prototype.createProspectList = function (username, token) {
         console.error(err);
         reject(err);
       } else {
-        console.log(res);
+        // console.log(res);
         resolve({ prospect_list_id: res.body.list.id, token: res.body.list.token });
       }
     })
@@ -118,8 +118,6 @@ TFBridge.prototype.createProspectList = function (username, token) {
 TFBridge.prototype.submitProspects = function (url, users) {
   convertAndSend(users, ['username', 'external_id'], url);
 }
-// first get meta data. 
-// 
 
 TFBridge.prototype.verifyList = (url) => {
   console.log('verifying', url);
@@ -401,8 +399,9 @@ const getRequest = (options) => {
           resolve(parsed);
         }
         catch (error) {
-          const parsed = JSON.parse(bod);
-          resolve(parsed);
+          // const parsed = JSON.parse(bod);
+          // resolve(parsed);
+          reject(error);
         }
       }
     })

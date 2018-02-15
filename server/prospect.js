@@ -107,7 +107,7 @@ var totalLikersProcessed = 0;
 Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart, jobId, maxPostCount = 2000) {
   const errorThreshold = 10;
   var likers = [];
-  console.log('Getting all likers for', externalId);
+  // console.log('Getting all likers for', externalId);
   var counter = 0;
   var mediaCounter = 0;
   var errorCounter = 0;
@@ -130,13 +130,13 @@ Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart, jo
                         counter++;
                         totalLikersProcessed += newLikers.length
                         likers = likers.concat(...newLikers);
-                        var timeNow = Date.now();
-                        var timeElapsed = (timeNow - timeStart) / 1000;
-                        var predictedTotal = (timeElapsed * postCount) / counter;
+                        // var timeNow = Date.now();
+                        // var timeElapsed = (timeNow - timeStart) / 1000;
+                        // var predictedTotal = (timeElapsed * postCount) / counter;
                         // console.log('\033c');
                         // console.log('got new likers, unique total (processed): ' + likers.length + ' (' + totalLikersProcessed + ')');
-                        console.log('job ' + jobId + ':' + counter + ' out of ' + postCount + ' posts analyzed. ' + 
-                          ((counter / postCount) * 100).toFixed(2) + '%');
+                        // console.log('job ' + jobId + ':' + counter + ' out of ' + postCount + ' posts analyzed. ' + 
+                        //   ((counter / postCount) * 100).toFixed(2) + '%');
                         // console.log('time elapsed (sec):', timeElapsed.toFixed(2));
                         // console.log('predicted total job duration (sec):', predictedTotal.toFixed(0));
                         // console.log('predicted time remaining (sec):', (predictedTotal - timeElapsed).toFixed(0));
@@ -160,7 +160,7 @@ Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart, jo
                   })
               }, err => { // when medias are done, check to see if more medias exist
                 if (feed.moreAvailable && errorCounter < errorThreshold && counter < maxPostCount) {
-                  console.log('More medias available');
+                  // console.log('More medias available');
 
                   setTimeout(() => {
                     retrieve();
@@ -300,7 +300,7 @@ Prospect.prototype.getProspects = function (jobId, params, returnAmount = 250) {
   return new Promise((resolve, reject) => {
     database.getUsersByJobId(jobId, params.follower_count.min)
       .then(users => {
-        console.log(users.length);
+        // console.log(users.length);
         // resolve(users.length);
         filterCandidates(users, currentFilter)
           .then(candidates => {
@@ -342,7 +342,7 @@ Prospect.prototype.likers = function (username, params, targetCandidateAmount = 
   var counter = 0;
   scrapeSave.scrapeSave(username, true)
     .then(scraped => { // Get data of target account
-      console.log('primary user scrape:', scraped);
+      // console.log('primary user scrape:', scraped);
       activeIG.initializeMediaFeed(scraped.external_id, currentSession.session) // opening media feed
         .then(feed => {
           function retrieve() {
@@ -363,7 +363,7 @@ Prospect.prototype.likers = function (username, params, targetCandidateAmount = 
                     }, 1200);
                   } else {
                     console.log('finished');
-                    console.log(arrCandidates);
+                    // console.log(arrCandidates);
                     // narrow down to 300, send off to TF
                     // create two lists by matchcount (treat as binary)
                     var prospects = [];
@@ -438,7 +438,7 @@ const BatchDB = require('./batch_db');
 const batchDB = new BatchDB();
 
 const saveLikersToProspects = (likers, jobId) => {
-  console.log('attempgint save:', likers.length);
+  // console.log('attempgint save:', likers.length);
   const timeNow = new Date(Date.now()).toISOString();
   // const splicedLikers = spliceDuplicates(likers);
   // console.log('after dupe splice:', splicedLikers.length);

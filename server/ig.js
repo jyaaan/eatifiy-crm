@@ -52,7 +52,7 @@ class IG {
     return new Promise((resolve, reject) => {
       let feed = new Client.Feed.AccountFollowers(session, userId);
       function retrieve() {
-        console.log('getting followers');
+        // console.log('getting followers');
         feed.get()
           .then(result => {
             result.map(user => { followers.push(user._params); });
@@ -104,17 +104,17 @@ class IG {
     var errorDate = new Date(2010, 1, 1);
     var validDate = true;
     dateRange.setDate(dateRange.getDate() - days);
-    console.log('date ' + days + ' ago:', dateRange.formatMMDDYYYY());
+    // console.log('date ' + days + ' ago:', dateRange.formatMMDDYYYY());
     return new Promise((resolve, reject) => {
       let feed = new Client.Feed.UserMedia(session, userId);
       function retrieve() {
         feed.get()
           .then(result => {
             result.map(media => { 
-              console.log('deviceTimestamp:', media._params.deviceTimestamp);
+              // console.log('deviceTimestamp:', media._params.deviceTimestamp);
               const timeStamp = media._params.deviceTimestamp;
               var postDate = timeStamp > 1500000000 ? new Date(timeStamp) : new Date(timeStamp * 1000);
-              console.log('converted date:', postDate.formatMMDDYYYY());
+              // console.log('converted date:', postDate.formatMMDDYYYY());
               if (postDate > dateRange || postDate < errorDate) {
                 medias.push(media._params);
               } else {
@@ -141,10 +141,10 @@ class IG {
   getLikers(media) {
     // console.log('getLikers');
     return new Promise((resolve, reject) => {
-      console.log('getlikers active');
+      // console.log('getlikers active');
       Client.Media.likers(this.session, media.id)
         .then(likers => {
-          console.log('likers found:', likers.length);
+          // console.log('likers found:', likers.length);
           const concise = likers.map(liker => { return liker._params; });
           resolve(concise);
         })

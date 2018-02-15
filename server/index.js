@@ -59,7 +59,7 @@ var recurringJob1Staggered;
 // }
 
 const Jobs = require('./jobs');
-const tasks = new Jobs(2);
+const tasks = new Jobs(1);
 
 const resetJob = job => {
 
@@ -77,7 +77,7 @@ setTimeout(() => {
   recurringJob1 = schedule.scheduleJob('*/1 * * * *', () => {
     jobManager.getQueuedJobs()
       .then(jobs => {
-        console.log('new refresh jobs: ' + jobs.map(job => { return job.id }));
+        // console.log('new refresh jobs: ' + jobs.map(job => { return job.id }));
         if (jobs[0]) {
           jobs.map(job => {
             if (tasks.jobAvailable()) {
@@ -94,7 +94,7 @@ setTimeout(() => {
 
               jobManager.updateJob(jobUpdate)
                 .then(result => {
-                  console.log('current job:', activeJob);
+                  // console.log('current job:', activeJob);
                 })
             }
           })
@@ -105,7 +105,7 @@ setTimeout(() => {
             // jobManager.checkIfActive(126)
               .then(isActive => {
                 if (isActive) {
-                  console.log('job busy');
+                  // console.log('job busy');
                 } else {
                   task.active = false;
                   task.in_progress = false;
@@ -167,7 +167,7 @@ setTimeout(() => {
           })
       })
     } else {
-      console.log('no action will be taken:');
+      // console.log('no action will be taken:');
     }
   })
 }, 60000);
@@ -267,7 +267,7 @@ app.post('/gather', (req, res) => {
     terms: gatherObj.settings.terms ? gatherObj.settings.terms : {},
     queued: false
   };
-  console.log(newJob);
+  // console.log(newJob);
   jobManager.createJob(newJob)
     .then(jobId => {
       tfBridge.createProspectList(newJob.primary_username + ':' + newJob.analyzed_username, 'LXJrk8BevkpMvGoNUA4SR3L1-u')
@@ -276,7 +276,7 @@ app.post('/gather', (req, res) => {
           newList.queued = true;
           database.updateJob(newList)
             .then(updated => {
-              console.log(newList);
+              // console.log(newList);
               res.send('list and job created successfully');
               // should result in job queued 
             })
@@ -309,8 +309,21 @@ getValue = (url, value, terminus = '/') => {
   }
 }
 
+const getVerifyURL = listDetails => {
+  var verifyURL = 'https://app.truefluence.io/users/' + listDetails.username;
+  verifyURL = verifyURL + '/lists/' + listDetails.listId + '.json?token=';
+  verifyURL = verifyURL + listDetails.token;
+  return verifyURL;
+}
+
+const getSubmitURL = listDetails => {
+  var submitURL = 'https://app.truefluence.io/users/' + listDetails.username;
+  submitURL = submitURL + '/prospects/' + listDetails.listId + '.csv?token=';
+  submitURL = submitURL + listDetails.token;
+  return submitURL;
+}
+
 getDownloadURL = listDetails => {
-  // var downloadURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
   var downloadURL = 'https://app.truefluence.io/users/';
   downloadURL = downloadURL + listDetails.username + '/prospects/' + listDetails.listId + '.json?token=';
   downloadURL = downloadURL + listDetails.token;
@@ -386,20 +399,7 @@ const parseListDetails = job => {
 }
 
 // when pushign verythign to production, make sure you change this.
-const getVerifyURL = listDetails => {
-  var verifyURL = 'https://app.truefluence.io/users/truefluence9/';
-  verifyURL = verifyURL + 'lists/' + listDetails.listId + '.json?token=';
-  verifyURL = verifyURL + listDetails.token;
-  return verifyURL;
-}
 
-const getSubmitURL = listDetails => {
-  // var submitURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
-  var submitURL = 'https://app.truefluence.io/users/truefluence9';
-  submitURL = submitURL + '/prospects/' + listDetails.listId + '.csv?token=';
-  submitURL = submitURL + listDetails.token;
-  return submitURL;
-}
 
 app.post('/test-filter-parameters', (req, res) => {
   res.send('ok');
@@ -476,11 +476,11 @@ const startProspectJob = jobId => {
         console.log('this job be ready to rock and roll!');
         prospect.batchLikers(job.analyzed_username, listDetails.prospect_job_id, MAXPOSTCOUNT)
           .then(likers => {
-            console.log('likers found:', likers.length);
-            console.log(job.id);
+            // console.log('likers found:', likers.length);
+            // console.log(job.id);
             const submitURL = getSubmitURL(listDetails);
             const downloadURL = getDownloadURL(listDetails);
-            console.log(submitURL);
+            // console.log(submitURL);
             renderFormattedProspects(listDetails.prospect_job_id)
               .then(prospects => {
                 prospectCount = prospects.length;
@@ -553,7 +553,7 @@ const startProspectJob = jobId => {
                             messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
                           });
                       } else {
-                        console.log('refresh not complete, retrying in 60 seconds');
+                        // console.log('refresh not complete, retrying in 60 seconds');
                       }
                     })
                 }
@@ -590,10 +590,10 @@ const startProspectJob2 = jobId => {
           res.send('this job be ready to rock and roll!');
           prospect.batchLikers(job.analyzed_username, listDetails.prospect_job_id, MAXPOSTCOUNT)
             .then(likers => {
-              console.log('likers found:', likers.length);
-              messaging.send(likers.length + ' likers saved to prospects, sending to Truefluence');
+              // console.log('likers found:', likers.length);
+              // messaging.send(likers.length + ' likers saved to prospects, sending to Truefluence');
               const submitURL = getSubmitURL(listDetails);
-              console.log(submitURL);
+              // console.log(submitURL);
               renderFormattedProspects(listDetails.prospect_job_id)
                 .then(prospects => {
                   prospectCount = prospects.length;
