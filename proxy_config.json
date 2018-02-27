@@ -1,95 +1,92 @@
 [
   {
-    "proxyAddress": "146.71.87.105",
+    "proxyAddress": "191.96.50.50",
     "port": "65233",
-    "username": "johnyamashiro",
-    "password": "B4h2KrO",
+    "username": "john",
+    "password": "M7g7RqY",
     "ig_username": "JakeDMachina",
     "ig_password": "occsbootcamp",
-    "expiration_date": "2/25/2018"
+    "expiration_date": "4/21/2018"
   },
   {
-    "proxyAddress": "181.214.203.166",
+    "proxyAddress": "146.71.87.153",
     "port": "65233",
-    "username": "johnyamashiro",
-    "password": "B4h2KrO",
+    "username": "john",
+    "password": "M7g7RqY",
     "ig_username": "molagbal3477",
     "ig_password": "skyrim1",
-    "expiration_date": "2/25/2018"
+    "expiration_date": "4/21/2018"
   },
   {
-    "proxyAddress": "162.218.237.166",
+    "proxyAddress": "208.123.119.237",
     "port": "65233",
-    "username": "johnyamashiro",
-    "password": "B4h2KrO",
-    "ig_username": "iheartjy1234",
-    "ig_password": "iheartjy",
-    "expiration_date": "2/25/2018"
-  },
-  {
-    "proxyAddress": "208.123.119.194",
-    "port": "65233",
-    "username": "johnyamashiro",
-    "password": "B4h2KrO",
+    "username": "john",
+    "password": "M7g7RqY",
     "ig_username": "iheartjy12345",
     "ig_password": "iheartjy",
-    "expiration_date": "2/25/2018"
+    "expiration_date": "4/21/2018"
   },
   {
-    "proxyAddress": "144.208.126.92",
+    "proxyAddress": "181.215.83.176",
     "port": "65233",
-    "username": "johnyamashiro",
-    "password": "B4h2KrO",
+    "username": "john",
+    "password": "M7g7RqY",
     "ig_username": "james.stuttgarten",
     "ig_password": "occsbootcamp",
-    "expiration_date": "2/25/2018"
+    "expiration_date": "4/21/2018"
   },
   {
-    "proxyAddress": "191.96.50.234",
+    "proxyAddress": "144.208.126.93",
     "port": "65233",
-    "username": "johnyamashiro",
-    "password": "B4h2KrO",
+    "username": "john",
+    "password": "M7g7RqY",
     "ig_username": "Sheogorath9836",
     "ig_password": "skyrim1",
-    "expiration_date": "2/25/2018"
+    "expiration_date": "4/21/2018"
   },
   {
-    "proxyAddress": "192.252.210.98",
+    "proxyAddress": "216.21.9.81",
     "port": "65233",
-    "username": "johnyamashiro",
-    "password": "B4h2KrO",
+    "username": "john",
+    "password": "M7g7RqY",
     "ig_username": "guysensai777",
     "ig_password": "Goonigoogoo!777",
-    "expiration_date": "2/25/2018"
+    "expiration_date": "4/21/2018"
   },
   {
-    "proxyAddress": "23.88.238.18",
+    "proxyAddress": "154.16.126.180",
     "port": "65233",
-    "username": "johnyamashiro",
-    "password": "B4h2KrO",
+    "username": "john",
+    "password": "M7g7RqY",
     "ig_username": "rockleesensai777",
     "ig_password": "goonigoogoo",
-    "expiration_date": "2/25/2018"
+    "expiration_date": "4/21/2018"
   },
   {
-    "proxyAddress": "154.16.126.205",
+    "proxyAddress": "192.252.209.48",
     "port": "65233",
-    "username": "johnyamashiro",
-    "password": "B4h2KrO",
+    "username": "john",
+    "password": "M7g7RqY",
     "ig_username": "oceanview4days",
     "ig_password": "truefluence",
-    "expiration_date": "2/25/2018"
+    "expiration_date": "4/21/2018"
   },
   {
-    "proxyAddress": "198.8.91.42",
+    "proxyAddress": "107.181.175.45",
     "port": "65233",
-    "username": "johnyamashiro",
-    "password": "B4h2KrO",
+    "username": "john",
+    "password": "M7g7RqY",
     "ig_username": "supdoglevi",
     "ig_password": "truefluence",
-    "expiration_date": "2/25/2018"
+    "expiration_date": "4/21/2018"
+  },
+  {
+    "proxyAddress": "198.8.86.75",
+    "port": "65233",
+    "username": "john",
+    "password": "M7g7RqY",
+    "ig_username": "clavicusvile4911",
+    "ig_password": "skyrim1",
+    "expiration_date": "4/21/2018"
   }
- ]
- 
- 
- 
+]
