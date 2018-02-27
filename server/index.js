@@ -291,10 +291,65 @@ app.post('/gather', (req, res) => {
       res.send(err);
     })
 })
-
+/*
+{ prospect_list:
+   { id: 5539,
+     created_at: '2018-02-20T10:42:02.799-08:00',
+     updated_at: '2018-02-26T19:46:31.582-08:00',
+     user_id: 970,
+     settings:
+      { terms: [Object],
+        region: 'eua',
+        dream_partners: [],
+        reference_brands: [Object],
+        special_requests: '' },
+     approved: false,
+     token: 'rBn4c8nES7hBCm7Qrtc4EhzK',
+     count: 0,
+     refreshed_at: '2018-02-26T19:50:04.011-08:00',
+     message: '',
+     name: 'Prospects',
+     notes: '',
+     indexed_at: '2018-02-26T19:46:30.685-08:00',
+     began_indexing_at: '2018-02-21T18:51:05.969-08:00',
+     upload_url: 'https://app.truefluence.io/users/dgentrena/prospects/5539.csv?token=rBn4c8nES7hBCm7Qrtc4EhzK',
+     candidate_count: 1000,
+     prospect_count: 300,
+     region: 'eua',
+     special_requests: '',
+     positive_keywords: 'cycling',
+     reference_brands: '@rapha',
+     dream_partners: '',
+     follower_count_min: null,
+     follower_count_ideal: null,
+     follower_count_max: null,
+     follower_following_ratio_min: null,
+     follower_following_ratio_ideal: null,
+     follower_following_ratio_max: null,
+     recent_average_like_rate_min: null,
+     recent_average_like_rate_ideal: null,
+     recent_average_like_rate_max: null,
+     recent_average_comment_rate_min: null,
+     recent_average_comment_rate_ideal: null,
+     recent_average_comment_rate_max: null,
+     recent_average_engagement_rate_min: null,
+     recent_average_engagement_rate_ideal: null,
+     recent_average_engagement_rate_max: null,
+     recent_average_post_rate_min: null,
+     recent_average_post_rate_ideal: null,
+     recent_average_post_rate_max: null,
+     instagram_username: 'dgentrena',
+     instgram_user_external_id: '1568926667',
+     can_download: true,
+     can_import: null,
+     can_delete_shown: null,
+     can_request_campaign: true } }
+*/
 app.post('/distill', (req, res) => {
   console.log('distill request');
-  console.log(req.body);
+  // console.log(req.body);
+  const distillRequest = JSON.parse(req.body);
+  console.log(distillRequest.prospect_list);
   res.send('received');
 });
 
