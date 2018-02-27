@@ -85,16 +85,9 @@ TFBridge.prototype.getProspectList = function (listURL, token, batchID) {
 }
 */
 TFBridge.prototype.createProspectList = function (username, listName, token) {
-<<<<<<< HEAD
-  console.log('attempting to create list for:', username);
-  return new Promise((resolve, reject) => {
-    var url = 'https://app.truefluence.io/users/' + username + '/lists.json?api_token=' + token;
-    console.log(url);
-=======
   // console.log('attempting to create list for:', username);
   return new Promise((resolve, reject) => {
     var url = 'https://app.truefluence.io/users/' + username + '/lists.json?api_token=' + token;
->>>>>>> e20f9e8f9322fa2483d3016a82d831652838e9e6
     var options = {
       url: url,
       method: 'POST',
@@ -115,11 +108,7 @@ TFBridge.prototype.createProspectList = function (username, listName, token) {
         console.error(err);
         reject(err);
       } else {
-<<<<<<< HEAD
-        console.log(res.body);
-=======
         // console.log(res);
->>>>>>> e20f9e8f9322fa2483d3016a82d831652838e9e6
         resolve({ prospect_list_id: res.body.list.id, token: res.body.list.token });
       }
     })
@@ -265,7 +254,7 @@ TFBridge.prototype.downloadProspectsLEGACY = function (url, jobId) {
         const bodyObj = JSON.parse(bod);
         var pageTracker = new Array(bodyObj.meta.total_pages);
         var scrollId = bodyObj.meta.scroll_id;
-
+  
         for (let i = 0; i < pageTracker - 1; i++) {
           pageTracker[i] = i + 2;
         }
@@ -357,7 +346,7 @@ TFBridge.prototype.downloadProspectsLEGACY = function (url, jobId) {
                 const timeComplete = Date.now();
                 const duration = (timeComplete - timeStart) / 1000;
                 console.log('time taken (sec):', duration);
-                resolve({ count: processUserCount, duration: duration });
+                resolve({count: processUserCount, duration: duration});
                 // done:
                 // convertAndSend(userDebug, ['username', 'user_id'])
               })
