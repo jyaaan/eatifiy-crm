@@ -348,8 +348,9 @@ app.post('/gather', (req, res) => {
 app.post('/distill', (req, res) => {
   console.log('distill request');
   // console.log(req.body);
-  const distillRequest = JSON.parse(req.body);
+  const distillRequest = req.body;
   console.log(distillRequest.prospect_list);
+  console.log(JSON.stringify(distillRequest));
   res.send('received');
 });
 
