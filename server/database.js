@@ -170,7 +170,6 @@ function calculateZ(value, avg, std) {
 function standardDeviation(values){
   return new Promise((resolve, reject) => {
     const avg = average(values);
-    console.log(avg);
     const squareDiffs = values.map(function(value){
       var diff = value - avg;
       var sqrDiff = diff * diff;
@@ -225,10 +224,10 @@ function GetZPercent(z) {
 // test functions
 
 Database.prototype.raw = function (query) {
+  // console.log('raw query:', query);
   return new Promise((resolve, reject) => {
     knex.raw(query)
       .then(result => {
-        console.log(result);
         resolve(result);
       })
       .catch(err => {
@@ -286,7 +285,6 @@ Database.prototype.analyzeLikes = function (min, max) {
       const formattedLikes = likes.map(like => {
         return Number(like.recent_average_likes);
       })
-      // console.log(formattedLikes);
       standardDeviation(formattedLikes)
         .then(stats => {
           resolve(stats);
@@ -376,7 +374,6 @@ Database.prototype.getFirst = function (userEId, maxRank) {
       .where('user_id', userEId)
       .andWhere('last_rank', '<=', maxRank)
       .then(results => {
-        // console.log('results:', results);
         var trimmed = results.map(result => {
           return result.suggested_id;
         })
@@ -617,7 +614,7 @@ Database.prototype.upsertUser = function (user) {
               resolve(updated[0]);
             })
             .catch(err => {
-              console.log('error updating user');
+              console.error('error updating user');
               reject(err);
             });
         } else {
@@ -626,7 +623,7 @@ Database.prototype.upsertUser = function (user) {
               resolve(created[0]);
             })
             .catch(err => {
-              console.log('error creating user');
+              console.error('error creating user');
               reject(err);
             })
         }
@@ -683,7 +680,7 @@ Database.prototype.upsertRelationship = function (userEId, followingEId, followi
                 resolve(update);
               })
               .catch(err => {
-                console.log('error in upserting>updating relationship');
+                console.error('error in upserting>updating relationship');
                 reject(err);
               })
           } else {
@@ -692,7 +689,7 @@ Database.prototype.upsertRelationship = function (userEId, followingEId, followi
                 resolve(create);
               })
               .catch(err => {
-                console.log('error in upserting>creating relationship');
+                console.error('error in upserting>creating relationship');
                 reject(err);
               })
           }
@@ -764,7 +761,6 @@ Database.prototype.createJob = function (job) {
   const timeNow = new Date(Date.now()).toISOString();
   job.created_at = timeNow;
   job.updated_at = timeNow;
-  console.log('creating', job);
   return knex('prospect_jobs')
     .returning('id')
     .insert(job);
@@ -862,7 +858,7 @@ Database.prototype.upsertSuggestion = function (userEId, suggestedEId, rank) {
                   resolve(update);
                 })
                 .catch(err => {
-                  console.log('error upserting>updating suggestion');
+                  console.error('error upserting>updating suggestion');
                   reject(err);
                 })
             })
@@ -872,7 +868,7 @@ Database.prototype.upsertSuggestion = function (userEId, suggestedEId, rank) {
               resolve(create);
             })
             .catch(err => {
-              console.log('error upserting>creating suggestion');
+              console.error('error upserting>creating suggestion');
               reject(err);
             })
         }
@@ -914,7 +910,7 @@ Database.prototype.insertObjects = function (tableName, arrObjData) {
       return 'transaction successful';
     })
     .catch(() => {
-      console.log('transaction failed');
+      console.error('transaction failed');
       return 'transaction failed';
     });
 }

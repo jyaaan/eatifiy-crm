@@ -17,7 +17,7 @@ const FileHandler = require('./file-controller');
 const fileHandler = new FileHandler();
 const publicPath = path.join(__dirname, '/public');
 const staticMiddleware = express.static(publicPath);
-const ig = new IG();
+// const ig = new IG();
 const app = express();
 const currentSession = { initialized: false, session: {} };
 const Prospect = require('./prospect');
@@ -41,7 +41,7 @@ const jobManager = new JobManager(database);
 
 // Initialization routines and parameters
 jobManager.resetInProgress();
-const MAXPOSTCOUNT = 1200;
+const MAXPOSTCOUNT = 800;
 var refreshJobs = [];
 var refreshJobURLs = [];
 
@@ -51,118 +51,131 @@ var recurringJob5;
 var recurringJob1;
 var recurringJob1Staggered;
 
-const activeJob = {
-  active: false,
-  in_progress: false,
-  jobId: null,
-  job: {}
-}
+// const activeJob = {
+//   active: false,
+//   in_progress: false,
+//   jobId: null,
+//   job: {}
+// }
+
+const Jobs = require('./jobs');
+const tasks = new Jobs(1);
 
 const resetJob = job => {
 
 }
 // SELECT id, primary_username, analyzed_username, stage, queued, in_progress, prospect_count as count from prospect_jobs order by id desc limit 20;
-// setTimeout(() => {
-//   // delayed jobs
-//   refreshJobs = Object.assign(refreshJobs, jobManager.getRefreshJobs());
+setTimeout(() => {
+  // delayed jobs
+  refreshJobs = Object.assign(refreshJobs, jobManager.getRefreshJobs());
 
-//   // Every 5 minutes
-//   recurringJob5 = schedule.scheduleJob('*/5 * * * *', () => {
-//   });
+  // Every 5 minutes
+  recurringJob5 = schedule.scheduleJob('*/5 * * * *', () => {
+  });
   
-//   // Every 1 minute
-//   recurringJob1 = schedule.scheduleJob('*/1 * * * *', () => {
-//     jobManager.getQueuedJobs()
-//       .then(jobs => {
-//         console.log('new refresh jobs: ' + jobs.map(job => { return job.id }));
-//         if (jobs[0] && !activeJob.active) {
-//           activeJob.jobId = jobs[0].id;
-//           activeJob.job = jobs[0]
-//           activeJob.active = true;
-//           const jobUpdate = {
-//             id: activeJob.jobId,
-//             in_progress: true
-//           };
-//           jobManager.updateJob(jobUpdate)
-//             .then(result => {
-//               console.log('current job:', activeJob);
-//             })
-//         } else {
-//           // check if active job is in progress.
-//           if (activeJob.jobId) {
-//             jobManager.checkIfActive(activeJob.jobId)
-//             // jobManager.checkIfActive(126)
-//               .then(isActive => {
-//                 if (isActive) {
-//                   console.log('jobs full');
-//                 } else {
-//                   activeJob.active = false;
-//                   activeJob.in_progress = false;
-//                   activeJob.jobId = null;
-//                   console.log('job is no longer in progress, loading next');
-//                 }
-//               })
-//           } else {
-//             // no active job, check should not run.
-//           }
-//           // console.log(activeJob);
-//         }
-//       })
+  // Every 1 minute
+  recurringJob1 = schedule.scheduleJob('*/1 * * * *', () => {
+    jobManager.getQueuedJobs()
+      .then(jobs => {
+        // console.log('new refresh jobs: ' + jobs.map(job => { return job.id }));
+        if (jobs[0]) {
+          jobs.map(job => {
+            if (tasks.jobAvailable()) {
+
+              const activeJob = tasks.getAvailableJob();
+              activeJob.jobId = job.id;
+              activeJob.job = job
+              activeJob.active = true;
+
+              const jobUpdate = {
+                id: activeJob.jobId,
+                in_progress: true
+              };
+
+              jobManager.updateJob(jobUpdate)
+                .then(result => {
+                  // console.log('current job:', activeJob);
+                })
+            }
+          })
+        }
+        tasks.jobs.map(task => {
+          if (task.active && task.in_progress) {
+            jobManager.checkIfActive(task.jobId)
+            // jobManager.checkIfActive(126)
+              .then(isActive => {
+                if (isActive) {
+                  // console.log('job busy');
+                } else {
+                  task.active = false;
+                  task.in_progress = false;
+                  task.jobId = null;
+                  console.log('job is no longer in progress, loading next');
+                }
+              })
+          }
+        })
+
+      })
     
-//     // parseListDetails(job);
-//     // const verifyURL = getDownloadURL(listDetails);
-//     // var checkJob = setInterval(checkIfRefreshed, 60000);
-//     // function checkIfRefreshed() {
-//       //   tfBridge.verifyList(verifyURL)
-//       //     .then(verified => {
-//         //       if (verified) {
-//     //         console.log('refresh complete, killing recurring job and initializing download');
-//     //         clearInterval(checkJob);
-//     //         console.log('downloading in progress');
-//     //         tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
-//     //           .then(returnObj => {
-//       //             messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
-//     //           });
-//     //       } else {
-//       //         console.log('refresh not complete, retrying in 60 seconds');
-//     //       }
-//     //     })
-//     // }
-//   });
+    // parseListDetails(job);
+    // const verifyURL = getDownloadURL(listDetails);
+    // var checkJob = setInterval(checkIfRefreshed, 60000);
+    // function checkIfRefreshed() {
+      //   tfBridge.verifyList(verifyURL)
+      //     .then(verified => {
+        //       if (verified) {
+    //         console.log('refresh complete, killing recurring job and initializing download');
+    //         clearInterval(checkJob);
+    //         console.log('downloading in progress');
+    //         tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
+    //           .then(returnObj => {
+      //             messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
+    //           });
+    //       } else {
+      //         console.log('refresh not complete, retrying in 60 seconds');
+    //       }
+    //     })
+    // }
+  });
   
-//   // Every 1 minute stagger 30 test
-//   recurringJob1Staggered = schedule.scheduleJob('30 * * * * *', () => {
-//     // assume we have urls
-//     // async.mapSeries(refreshJobURLs, (refreshURL, next) => {
-//     //   tfBridge.verifyList(refreshURL)
-//     //     .then(verified => {
-//     //       if (verified) {
-//     //         // update job and remove this from job.
-//     //       }
-//     //     })
-//     // })
-//     if (activeJob.active && !activeJob.in_progress) {
-//       console.log('we gotta start the job!');
-//       activeJob.in_progress = true;
-//       // set job to in progress, unqueue
-//       const jobUpdate = {
-//         id: activeJob.jobId,
-//         in_progress: true,
-//         queued: false,
-//         stage: 'Gathering'
-//       };
-//       jobManager.updateJob(jobUpdate)
-//         .then(result => {
-//           startProspectJob(activeJob.jobId);
-//         })
-//     } else {
-//       console.log('no action will be taken:');
-//     }
-//   })
-// }, 30000);
+  // Every 1 minute stagger 30 test
+  recurringJob1Staggered = schedule.scheduleJob('30 * * * * *', () => {
+    // assume we have urls
+    // async.mapSeries(refreshJobURLs, (refreshURL, next) => {
+    //   tfBridge.verifyList(refreshURL)
+    //     .then(verified => {
+    //       if (verified) {
+    //         // update job and remove this from job.
+    //       }
+    //     })
+    // })
+    if (tasks.pending()) {
+      tasks.getPending().map(task => {
+        console.log('we gotta start the job!');
+        task.in_progress = true;
+        // set job to in progress, unqueue
+        const jobUpdate = {
+          id: task.jobId,
+          in_progress: true,
+          queued: false,
+          stage: 'Gathering'
+        };
+        jobManager.updateJob(jobUpdate)
+          .then(result => {
+            startProspectJob(task.jobId);
+          })
+      })
+    } else {
+      // console.log('no action will be taken:');
+    }
+  })
+}, 60000);
 
 const BatchDB = require('./batch_db');
 const batchDB = new BatchDB();
+
+
 
 app.get('/test-refresh-jobs', (req, res) => {
   jobManager.getQueuedRefreshJobs()
@@ -235,13 +248,23 @@ refreshing: false
 app.post('/gather', (req, res) => {
   console.log('gather request');
   const gatherObj = req.body.prospect_list;
+  // console.log(req.body);
 
+  const getAnalyzedUsername = reqBody => {
+    if (reqBody.settings.reference_brands) {
+      return (reqBody.settings.reference_brands[0] ? reqBody.settings.reference_brands[0] : reqBody.settings.instagram_username).replace('@', '');
+
+    } else {
+      return reqBody.settings.instagram_username;
+    }
+  }
   const newJob = {
     upload_url: gatherObj.upload_url,
-    primary_username: gatherObj.instagram_username,
-    analyzed_username: gatherObj.reference_brands[0] ? gatherObj.reference_brands[0] : gatherObj.instagram_username,
+    primary_username: gatherObj.settings.instagram_username,
+    analyzed_username: getAnalyzedUsername(gatherObj),
     stage: 'Initialized',
     target_list_id: gatherObj.id,
+    terms: gatherObj.settings.terms ? gatherObj.settings.terms : {},
     queued: false
   };
   // console.log(newJob);
@@ -253,7 +276,7 @@ app.post('/gather', (req, res) => {
           newList.queued = true;
           database.updateJob(newList)
             .then(updated => {
-              console.log(newList);
+              // console.log(newList);
               res.send('list and job created successfully');
               // should result in job queued 
             })
@@ -286,8 +309,21 @@ getValue = (url, value, terminus = '/') => {
   }
 }
 
+const getVerifyURL = listDetails => {
+  var verifyURL = 'https://app.truefluence.io/users/' + listDetails.username;
+  verifyURL = verifyURL + '/lists/' + listDetails.listId + '.json?token=';
+  verifyURL = verifyURL + listDetails.token;
+  return verifyURL;
+}
+
+const getSubmitURL = listDetails => {
+  var submitURL = 'https://app.truefluence.io/users/' + listDetails.username;
+  submitURL = submitURL + '/prospects/' + listDetails.listId + '.csv?token=';
+  submitURL = submitURL + listDetails.token;
+  return submitURL;
+}
+
 getDownloadURL = listDetails => {
-  // var downloadURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
   var downloadURL = 'https://app.truefluence.io/users/';
   downloadURL = downloadURL + listDetails.username + '/prospects/' + listDetails.listId + '.json?token=';
   downloadURL = downloadURL + listDetails.token;
@@ -363,20 +399,7 @@ const parseListDetails = job => {
 }
 
 // when pushign verythign to production, make sure you change this.
-const getVerifyURL = listDetails => {
-  var verifyURL = 'https://app.truefluence.io/users/truefluence9/';
-  verifyURL = verifyURL + 'lists/' + listDetails.listId + '.json?token=';
-  verifyURL = verifyURL + listDetails.token;
-  return verifyURL;
-}
 
-const getSubmitURL = listDetails => {
-  // var submitURL = 'https://' + (listDetails.staging ? 'staging.' : 'app.') + 'truefluence.io/users/';
-  var submitURL = 'https://app.truefluence.io/users/truefluence9';
-  submitURL = submitURL + '/prospects/' + listDetails.listId + '.csv?token=';
-  submitURL = submitURL + listDetails.token;
-  return submitURL;
-}
 
 app.post('/test-filter-parameters', (req, res) => {
   res.send('ok');
@@ -453,11 +476,11 @@ const startProspectJob = jobId => {
         console.log('this job be ready to rock and roll!');
         prospect.batchLikers(job.analyzed_username, listDetails.prospect_job_id, MAXPOSTCOUNT)
           .then(likers => {
-            console.log('likers found:', likers.length);
-            console.log(job.id);
+            // console.log('likers found:', likers.length);
+            // console.log(job.id);
             const submitURL = getSubmitURL(listDetails);
             const downloadURL = getDownloadURL(listDetails);
-            console.log(submitURL);
+            // console.log(submitURL);
             renderFormattedProspects(listDetails.prospect_job_id)
               .then(prospects => {
                 prospectCount = prospects.length;
@@ -466,7 +489,7 @@ const startProspectJob = jobId => {
                     tfBridge.submitProspects(submitURL, batch);
                   }, 500);
                 })
-                messaging.send('gathering finished for:' + listDetails.username);
+                //  messaging.send('gathering finished for:' + listDetails.username);
                 const jobUpdate = {
                   id: jobId,
                   in_progress: false,
@@ -530,7 +553,7 @@ const startProspectJob = jobId => {
                             messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
                           });
                       } else {
-                        console.log('refresh not complete, retrying in 60 seconds');
+                        // console.log('refresh not complete, retrying in 60 seconds');
                       }
                     })
                 }
@@ -567,10 +590,10 @@ const startProspectJob2 = jobId => {
           res.send('this job be ready to rock and roll!');
           prospect.batchLikers(job.analyzed_username, listDetails.prospect_job_id, MAXPOSTCOUNT)
             .then(likers => {
-              console.log('likers found:', likers.length);
-              messaging.send(likers.length + ' likers saved to prospects, sending to Truefluence');
+              // console.log('likers found:', likers.length);
+              // messaging.send(likers.length + ' likers saved to prospects, sending to Truefluence');
               const submitURL = getSubmitURL(listDetails);
-              console.log(submitURL);
+              // console.log(submitURL);
               renderFormattedProspects(listDetails.prospect_job_id)
                 .then(prospects => {
                   prospectCount = prospects.length;
@@ -1039,28 +1062,28 @@ app.get('/mentions/:username/:mention', (req, res) => {
   var mentionCount = 0;
   var tagCount = 0;
   res.send('mention analysis for ' + focusUsername);
-  scrapeSave(focusUsername, true)
-    .then(scraped => {
-      ig.getMedias(scraped.external_id, currentSession.session, 3000)
-        .then(rawMedias => {
-          console.log('posts:', rawMedias.length);
-          rawMedias.map(media => {
-            if (typeof media.caption != 'undefined' && media.caption.toLowerCase().includes(lookup)) {
-              mentionCount++;
-            }
-            if (typeof media.usertags != 'undefined') {
-              const tagged = media.usertags.in;
-              tagged.map(tag => {
-                if (tag.user.username.toLowerCase() == lookup) {
-                  tagCount++;
-                }
-              })
-            }
-            return 'ok';
-          });
-          console.log('mentions: ', mentionCount, ' tags: ', tagCount);
-        })
-    })
+  // scrapeSave(focusUsername, true)
+  //   .then(scraped => {
+  //     ig.getMedias(scraped.external_id, currentSession.session, 3000)
+  //       .then(rawMedias => {
+  //         console.log('posts:', rawMedias.length);
+  //         rawMedias.map(media => {
+  //           if (typeof media.caption != 'undefined' && media.caption.toLowerCase().includes(lookup)) {
+  //             mentionCount++;
+  //           }
+  //           if (typeof media.usertags != 'undefined') {
+  //             const tagged = media.usertags.in;
+  //             tagged.map(tag => {
+  //               if (tag.user.username.toLowerCase() == lookup) {
+  //                 tagCount++;
+  //               }
+  //             })
+  //           }
+  //           return 'ok';
+  //         });
+  //         console.log('mentions: ', mentionCount, ' tags: ', tagCount);
+  //       })
+  //   })
 })
 
 app.get('/analyze/:username/:days', (req, res) => {
@@ -1075,23 +1098,23 @@ app.get('/analyze/:username/:days', (req, res) => {
 
 app.post('/get-following', (req, res) => {
   res.send('request received');
-  ig.getFollowing(req.body.external_id, currentSession.session)
-    .then(following => {
-      queueFollowing(following, req.body.id)
-        .then(result => {
-          async.mapSeries(result, (user, next) => {
-            database.userSuggestionsLoaded(user.username)
-              .then(loaded => {
-                next();
-              })
-          }, err => {
-            console.log('complete');
-          })
-        })
-        .catch(err => {
-          console.error(err);
-        })
-    })
+  // ig.getFollowing(req.body.external_id, currentSession.session)
+  //   .then(following => {
+  //     queueFollowing(following, req.body.id)
+  //       .then(result => {
+  //         async.mapSeries(result, (user, next) => {
+  //           database.userSuggestionsLoaded(user.username)
+  //             .then(loaded => {
+  //               next();
+  //             })
+  //         }, err => {
+  //           console.log('complete');
+  //         })
+  //       })
+  //       .catch(err => {
+  //         console.error(err);
+  //       })
+  //   })
 });
 
 // show list of rank 1 suggestions as well as frequency of rank 1
