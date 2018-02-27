@@ -15,8 +15,8 @@ const tfScore = require('./tf-score');
 const InfluencerFilter = require('./influencer-filter');
 const request = require('request');
 
-const ProxyManager = require('./proxy_manager');
-const proxyManager = new ProxyManager();
+// const ProxyManager = require('./proxy_manager');
+// const proxyManager = new ProxyManager();
 setTimeout(() => {
   // console.log('proxy manager:', proxyManager.proxies[0]);
   // console.log('session:', proxyManager.proxies[0].session);

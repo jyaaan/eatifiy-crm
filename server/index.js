@@ -292,7 +292,7 @@ app.post('/gather', (req, res) => {
     })
 })
 
-app.put('/distill', (req, res) => {
+app.post('/distill', (req, res) => {
   console.log('distill request');
   console.log(req.body);
   res.send('received');
