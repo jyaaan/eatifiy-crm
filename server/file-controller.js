@@ -1,7 +1,17 @@
 const fs = require('fs');
-
+const request = require('request');
 function fileHandler() {
 
+}
+
+fileHandler.prototype.downloadFile = (url, filename) => {
+  return new Promise((resolve, reject) => {
+    request.head(url, (err, res, bod) => {
+      request(url).pipe(fs.createWriteStream('./tmp/images/' + filename)).on('close', () => {
+        resolve('../tmp/images/' + filename);
+      })
+    })
+  })
 }
 
 fileHandler.prototype.writeToCSV = (data, filename, headers = []) => {
