@@ -15,8 +15,8 @@ const tfScore = require('./tf-score');
 const InfluencerFilter = require('./influencer-filter');
 const request = require('request');
 
-// const ProxyManager = require('./proxy_manager');
-// const proxyManager = new ProxyManager();
+const ProxyManager = require('./proxy_manager');
+const proxyManager = new ProxyManager();
 setTimeout(() => {
   // console.log('proxy manager:', proxyManager.proxies[0]);
   // console.log('session:', proxyManager.proxies[0].session);
@@ -134,9 +134,9 @@ Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart, jo
                         // var timeElapsed = (timeNow - timeStart) / 1000;
                         // var predictedTotal = (timeElapsed * postCount) / counter;
                         // console.log('\033c');
-                        // console.log('got new likers, unique total (processed): ' + likers.length + ' (' + totalLikersProcessed + ')');
-                        // console.log('job ' + jobId + ':' + counter + ' out of ' + postCount + ' posts analyzed. ' + 
-                        //   ((counter / postCount) * 100).toFixed(2) + '%');
+                        console.log('got new likers, unique total (processed): ' + likers.length + ' (' + totalLikersProcessed + ')');
+                        console.log('job ' + jobId + ':' + counter + ' out of ' + postCount + ' posts analyzed. ' + 
+                          ((counter / postCount) * 100).toFixed(2) + '%');
                         // console.log('time elapsed (sec):', timeElapsed.toFixed(2));
                         // console.log('predicted total job duration (sec):', predictedTotal.toFixed(0));
                         // console.log('predicted time remaining (sec):', (predictedTotal - timeElapsed).toFixed(0));

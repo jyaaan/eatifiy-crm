@@ -88,6 +88,7 @@ TFBridge.prototype.createProspectList = function (username, listName, token) {
   // console.log('attempting to create list for:', username);
   return new Promise((resolve, reject) => {
     var url = 'https://app.truefluence.io/users/' + username + '/lists.json?api_token=' + token;
+    console.log(url);
     var options = {
       url: url,
       method: 'POST',
@@ -108,7 +109,7 @@ TFBridge.prototype.createProspectList = function (username, listName, token) {
         console.error(err);
         reject(err);
       } else {
-        // console.log(res);
+        console.log(res.body);
         resolve({ prospect_list_id: res.body.list.id, token: res.body.list.token });
       }
     })
