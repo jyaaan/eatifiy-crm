@@ -8,7 +8,7 @@ fileHandler.prototype.downloadFile = (url, filename) => {
   return new Promise((resolve, reject) => {
     request.head(url, (err, res, bod) => {
       request(url).pipe(fs.createWriteStream('./tmp/images/' + filename)).on('close', () => {
-        resolve('../tmp/images/' + filename);
+        resolve('./tmp/images/' + filename);
       })
     })
   })

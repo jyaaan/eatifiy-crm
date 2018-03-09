@@ -155,6 +155,18 @@ class IG {
     })
   }
 
+  createPost(mediaPath, caption) {
+    return new Promise((resolve, reject) => {
+      Client.Upload.photo(this.session, mediaPath)
+        .then(upload => {
+          return Client.Media.configurePhoto(this.session, upload.params.uploadId, caption);
+        })
+        .then(medium => {
+          resolve(medium.params);
+        })
+    })
+  }
+
   initialize() {
     return new Promise((resolve, reject) => {
       new Client.Session.create(this.device, this.storage, this.username, this.password, this.proxyURL)

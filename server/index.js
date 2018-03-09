@@ -65,124 +65,173 @@ const resetJob = job => {
 
 }
 // SELECT id, primary_username, analyzed_username, stage, queued, in_progress, prospect_count as count from prospect_jobs order by id desc limit 20;
-// setTimeout(() => {
-//   // delayed jobs
-//   refreshJobs = Object.assign(refreshJobs, jobManager.getRefreshJobs());
+setTimeout(() => {
+  // delayed jobs
+  refreshJobs = Object.assign(refreshJobs, jobManager.getRefreshJobs());
 
-//   // Every 5 minutes
-//   recurringJob5 = schedule.scheduleJob('*/5 * * * *', () => {
-//   });
+  // Every 5 minutes
+  recurringJob5 = schedule.scheduleJob('*/5 * * * *', () => {
+  });
   
-//   // Every 1 minute
-//   recurringJob1 = schedule.scheduleJob('*/1 * * * *', () => {
-//     jobManager.getQueuedJobs()
-//       .then(jobs => {
-//         // console.log('new refresh jobs: ' + jobs.map(job => { return job.id }));
-//         if (jobs[0]) {
-//           jobs.map(job => {
-//             if (tasks.jobAvailable()) {
+  // Every 1 minute
+  recurringJob1 = schedule.scheduleJob('*/1 * * * *', () => {
+    jobManager.getQueuedJobs()
+      .then(jobs => {
+        // console.log('new refresh jobs: ' + jobs.map(job => { return job.id }));
+        if (jobs[0]) {
+          jobs.map(job => {
+            if (tasks.jobAvailable()) {
 
-//               const activeJob = tasks.getAvailableJob();
-//               activeJob.jobId = job.id;
-//               activeJob.job = job
-//               activeJob.active = true;
+              const activeJob = tasks.getAvailableJob();
+              activeJob.jobId = job.id;
+              activeJob.job = job
+              activeJob.active = true;
 
-//               const jobUpdate = {
-//                 id: activeJob.jobId,
-//                 in_progress: true
-//               };
+              const jobUpdate = {
+                id: activeJob.jobId,
+                in_progress: true
+              };
 
-//               jobManager.updateJob(jobUpdate)
-//                 .then(result => {
-//                   // console.log('current job:', activeJob);
-//                 })
-//             }
-//           })
-//         }
-//         tasks.jobs.map(task => {
-//           if (task.active && task.in_progress) {
-//             jobManager.checkIfActive(task.jobId)
-//             // jobManager.checkIfActive(126)
-//               .then(isActive => {
-//                 if (isActive) {
-//                   // console.log('job busy');
-//                 } else {
-//                   task.active = false;
-//                   task.in_progress = false;
-//                   task.jobId = null;
-//                   console.log('job is no longer in progress, loading next');
-//                 }
-//               })
-//           }
-//         })
+              jobManager.updateJob(jobUpdate)
+                .then(result => {
+                  // console.log('current job:', activeJob);
+                })
+            }
+          })
+        }
+        tasks.jobs.map(task => {
+          if (task.active && task.in_progress) {
+            jobManager.checkIfActive(task.jobId)
+            // jobManager.checkIfActive(126)
+              .then(isActive => {
+                if (isActive) {
+                  // console.log('job busy');
+                } else {
+                  task.active = false;
+                  task.in_progress = false;
+                  task.jobId = null;
+                  console.log('job is no longer in progress, loading next');
+                }
+              })
+          }
+        })
 
-//       })
+      })
     
-//     // parseListDetails(job);
-//     // const verifyURL = getDownloadURL(listDetails);
-//     // var checkJob = setInterval(checkIfRefreshed, 60000);
-//     // function checkIfRefreshed() {
-//       //   tfBridge.verifyList(verifyURL)
-//       //     .then(verified => {
-//         //       if (verified) {
-//     //         console.log('refresh complete, killing recurring job and initializing download');
-//     //         clearInterval(checkJob);
-//     //         console.log('downloading in progress');
-//     //         tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
-//     //           .then(returnObj => {
-//       //             messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
-//     //           });
-//     //       } else {
-//       //         console.log('refresh not complete, retrying in 60 seconds');
-//     //       }
-//     //     })
-//     // }
-//   });
+    // parseListDetails(job);
+    // const verifyURL = getDownloadURL(listDetails);
+    // var checkJob = setInterval(checkIfRefreshed, 60000);
+    // function checkIfRefreshed() {
+      //   tfBridge.verifyList(verifyURL)
+      //     .then(verified => {
+        //       if (verified) {
+    //         console.log('refresh complete, killing recurring job and initializing download');
+    //         clearInterval(checkJob);
+    //         console.log('downloading in progress');
+    //         tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
+    //           .then(returnObj => {
+      //             messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
+    //           });
+    //       } else {
+      //         console.log('refresh not complete, retrying in 60 seconds');
+    //       }
+    //     })
+    // }
+  });
   
-//   // Every 1 minute stagger 30 test
-//   recurringJob1Staggered = schedule.scheduleJob('30 * * * * *', () => {
-//     // assume we have urls
-//     // async.mapSeries(refreshJobURLs, (refreshURL, next) => {
-//     //   tfBridge.verifyList(refreshURL)
-//     //     .then(verified => {
-//     //       if (verified) {
-//     //         // update job and remove this from job.
-//     //       }
-//     //     })
-//     // })
-//     if (tasks.pending()) {
-//       tasks.getPending().map(task => {
-//         console.log('we gotta start the job!');
-//         task.in_progress = true;
-//         // set job to in progress, unqueue
-//         const jobUpdate = {
-//           id: task.jobId,
-//           in_progress: true,
-//           queued: false,
-//           stage: 'Gathering'
-//         };
-//         jobManager.updateJob(jobUpdate)
-//           .then(result => {
-//             startProspectJob(task.jobId);
-//           })
-//       })
-//     } else {
-//       // console.log('no action will be taken:');
-//     }
-//   })
-// }, 60000);
+  // Every 1 minute stagger 30 test
+  recurringJob1Staggered = schedule.scheduleJob('30 * * * * *', () => {
+    // assume we have urls
+    // async.mapSeries(refreshJobURLs, (refreshURL, next) => {
+    //   tfBridge.verifyList(refreshURL)
+    //     .then(verified => {
+    //       if (verified) {
+    //         // update job and remove this from job.
+    //       }
+    //     })
+    // })
+    if (tasks.pending()) {
+      tasks.getPending().map(task => {
+        console.log('we gotta start the job!');
+        task.in_progress = true;
+        // set job to in progress, unqueue
+        const jobUpdate = {
+          id: task.jobId,
+          in_progress: true,
+          queued: false,
+          stage: 'Gathering'
+        };
+        jobManager.updateJob(jobUpdate)
+          .then(result => {
+            startProspectJob(task.jobId);
+          })
+      })
+    } else {
+      // console.log('no action will be taken:');
+    }
+  })
+}, 60000);
 
 const BatchDB = require('./batch_db');
 const batchDB = new BatchDB();
 
+/*
+{
+  "brand_name" => "atever',
+  "brand_username" => 'whatever',
+  "instagram_media" => {
+    "id"=>18,
+    "instagram_user_id"=>2001,
+    "external_id"=>"1564008820233265731_5759148120",
+    "link"=>"https://www.instagram.com/p/BW0ebxLlOJD/",
+    "image_low"=>"https://scontent.cdninstagram.com/vp/a48d1d7a69553ac6dc2b2f685b4a0eeb/5B1744B7/t51.2885-15/s320x320/e35/20180917_572370079819430_2476356784277684224_n.jpg",
+    "image_standard"=>"https://scontent.cdninstagram.com/vp/e97a799d719c6e55101681f942c00b7d/5B0495F4/t51.2885-15/s640x640/sh0.08/e35/20180917_572370079819430_2476356784277684224_n.jpg",
+    "image_thumbnail"=>"https://scontent.cdninstagram.com/vp/d4f9d234ab08b9b78f406e877406a811/5B2311F0/t51.2885-15/s150x150/e35/20180917_572370079819430_2476356784277684224_n.jpg",
+    "like_count"=>0,
+    "comment_count"=>0,
+    "type"=>"image",
+    "caption"=>"Meter.",
+    "posted_at"=>Fri, 21 Jul 2017 19:13:22 UTC +00:00,
+    "tags"=>[],
+    "caption_usernames"=>[],
+    "photo_usernames"=>["tfdemoj"],
+    "latitude"=>nil,
+    "longitude"=>nil,
+    "created_at"=>Tue, 05 Dec 2017 04:12:01 UTC +00:00,
+    "updated_at"=>Tue, 20 Feb 2018 19:14:17 UTC +00:00,
+    "deleted"=>false,
+    "shortcode"=>"BW0ebxLlOJD",
+    "instagram_username"=>"tfdemofavorite",
+    "usernames"=>["tfdemoj"]
+  }
+}
+*/
+
 app.post('/test-download-image', (req, res) => {
-  const url = req.body.url;
-  const filename = url.substring(url.lastIndexOf('/') + 1);
-  fileHandler.downloadFile(url, filename)
+  const parameters = processCreatePostJSON(req.body);
+  const filename = parameters.url.substring(parameters.url.lastIndexOf('/') + 1);
+  fileHandler.downloadFile(parameters.url, filename)
     .then(result => {
-      res.send(result);
+      prospect.createPost(result, parameters.caption)
+      res.send('tim curry');
     })
 })
+
+// returns {caption: "", url: ""}
+const processCreatePostJSON = json => {
+  var caption = '.\n' + json.brand_name + '\n' +
+  '📸Partner: @' + json.instagram_media.instagram_username + '\n' +
+  'Visit @truefluence to discover who talks to your target market\n' +
+  '.\n' +
+  '.\n' +
+  '.\n' +
+  json.instagram_media.caption + '\n' +
+  'SC:' + json.instagram_media.shortcode;
+  return {
+    url: json.instagram_media.image_standard,
+    caption: caption
+  }
+}
 
 app.get('/test-refresh-jobs', (req, res) => {
   jobManager.getQueuedRefreshJobs()

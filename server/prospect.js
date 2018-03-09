@@ -31,6 +31,7 @@ const loadActiveIG = () => {
   activeIG = nextProxy.ig;
 }
 
+
 // const reqProxy = {
 //   proxyAddress: '146.71.87.105',
 //   port: '65233',
@@ -100,6 +101,13 @@ Prospect.prototype.deepLookup = function (username) {
         resolve(result);
       })
   })
+}
+
+Prospect.prototype.createPost = function (filePath, caption) {
+  proxyManager.tfProxy.ig.createPost(filePath, caption)
+    .then(medium => {
+      console.log(medium);
+    })
 }
 
 var totalLikersProcessed = 0;
