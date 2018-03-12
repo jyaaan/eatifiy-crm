@@ -216,6 +216,17 @@ app.post('/test-download-image', (req, res) => {
       res.send('tim curry');
     })
 })
+/*
+Below SC: should be “postinfo.co/tfdemofavorite"
+
+For security and re-runnability how about his for the flow:
+Truefluence pings the pusher that a new collaborations is available.
+The pusher:
+load recent posts from the TF IG account
+load recent collaborations from truefluence.io/collaborations.json
+push new collaboration posts to the TF IG account
+And since there is no state then no db is needed. It could run on AWS lambda.
+*/
 
 // returns {caption: "", url: ""}
 const processCreatePostJSON = json => {
@@ -226,7 +237,9 @@ const processCreatePostJSON = json => {
   '.\n' +
   '.\n' +
   json.instagram_media.caption + '\n' +
-  'SC:' + json.instagram_media.shortcode;
+  'SC:' + json.instagram_media.shortcode + '\n' +
+  'postinfo.co/' + json.instagram_media.instagram_username;
+  
   return {
     url: json.instagram_media.image_standard,
     caption: caption

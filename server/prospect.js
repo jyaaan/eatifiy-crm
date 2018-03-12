@@ -207,6 +207,50 @@ Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart, jo
   })
 }
 
+Prospect.prototype.getRecentSCPost(externalId) {
+  loadActiveIG();
+  return new Promise((resolve, reject) => {
+    activeIG.initializeMediaFeed(externalId)
+      .then(feed => {
+        function retrieve() {
+          feed.get()
+            .then(medias => {
+              if (medias.length > 0) {
+                var validPosts = medias.filter(media => {
+                  return media.bio.indexOf('SC:') > 0;
+                })
+                if (validPosts.length > 0) {
+                  const recentPost = validPosts.sort(post => {
+                    return; // sort by post date descending
+                  })[0];
+                  resolve(extractSCFromCaption(recentPost.caption))
+                } else {
+                  setTimeout(() => {
+                    retrieve();
+                  }, 10000);
+                }
+              } else {
+                resolve(null);
+              }
+            })
+            .catch(err => {
+              console.error('error on getting new medias for pusher:', err);
+              reject(err);
+            })
+        }
+        retrieve();
+      })
+      .catch(err => {
+        console.log('feed error');
+        // console.error(err);
+        reject(err);
+      })
+  })
+}
+
+const extractSCFromCaption = caption => {
+  
+}
 // should return a list as well as a 
 Prospect.prototype.analyzeEngagement = function (externalId, postCount, timeStart, jobId, targetLikers = 10000) {
   const errorThreshold = 10;
