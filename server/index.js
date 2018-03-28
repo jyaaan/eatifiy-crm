@@ -39,6 +39,9 @@ app.use(bodyParser.json());
 const JobManager = require('./job-manager');
 const jobManager = new JobManager(database);
 
+const Pusher = require('./pusher');
+const pusher = new Pusher();
+
 // Initialization routines and parameters
 jobManager.resetInProgress();
 const MAXPOSTCOUNT = 800;
@@ -73,7 +76,7 @@ setTimeout(() => {
   recurringJob5 = schedule.scheduleJob('*/5 * * * *', () => {
   });
   
-  // Every 1 minute
+  // Every 1 minuteSELECT id, primary_username, analyzed_username, stage, queued, in_progress, prospect_count as count from prospect_jobs order by id desc limit 20;
   recurringJob1 = schedule.scheduleJob('*/1 * * * *', () => {
     jobManager.getQueuedJobs()
       .then(jobs => {
@@ -216,6 +219,12 @@ app.post('/test-download-image', (req, res) => {
       res.send('tim curry');
     })
 })
+
+app.post('/pusher', (req, res) => {
+  pusher.ping();
+  res.send('ok');
+})
+
 /*
 Below SC: should be “postinfo.co/tfdemofavorite"
 
@@ -239,7 +248,7 @@ const processCreatePostJSON = json => {
   json.instagram_media.caption + '\n' +
   'SC:' + json.instagram_media.shortcode + '\n' +
   'postinfo.co/' + json.instagram_media.instagram_username;
-  
+
   return {
     url: json.instagram_media.image_standard,
     caption: caption
@@ -257,6 +266,49 @@ app.get('/test-add-job-to-queue/:jobId', (req, res) => {
   jobManager.queueJob(req.params.jobId)
     .then(result => {
       res.send(result);
+    })
+})
+
+app.get('/get-user/:username', (req, res) => {
+  prospect.getUser(req.params.username)
+    .then(user => {
+      console.log(user);
+    })
+})
+
+app.get('/get-ad-brands/:username', (req, res) => {
+  var brands = [];
+  prospect.getUser(req.params.username)
+    .then(user => {
+      // console.log(user);
+      res.send('ok');
+      prospect.getReviewPosts(user.id)
+        .then(posts => {
+          console.log('posts received: ', posts.length);
+          const adPosts = posts.filter(post => {
+            return post._params.caption;
+          })
+          .filter(post => {
+            return /#ad(\b|\W)/gi.test(post._params.caption) || /#sponsored(\b|\W)/gi.test(post._params.caption);
+          })
+          adPosts.forEach(post => {
+            brands = brands.concat(post._params.caption.match(/\B\@\w\w+\b/g));
+          })
+          // splice duplicates
+          spliceDuplicates(brands).forEach(brand => {
+            if (brand !== null) {
+              console.log(brand.replace('@', ''));
+            }
+          })
+          // console.log(brands);
+        })
+    })
+})
+
+app.get('/test-message/:username', (req, res) => {
+  prospect.getUser(req.params.username)
+    .then(user => {
+      prospect.sendMessage(user.id, 'testing!')
     })
 })
 

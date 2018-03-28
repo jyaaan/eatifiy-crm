@@ -70,10 +70,21 @@ class IG {
     })
   }
 
+  sendMessage(externalId, message) {
+    return new Promise((resolve, request) => {
+      new Client.Thread.configureText(this.session, externalId, message)
+        .then(result => {
+          resolve(result);
+        })
+        .catch(err => {
+          reject(err);
+        })
+    })
+  }
 
-  getUser(username, session) {
+  getUser(username) {
     return new Promise((resolve, reject) => {
-      new Client.Account.search(session, username)
+      new Client.Account.search(this.session, username)
         .then((result) => {
           resolve(result);
         });
@@ -84,11 +95,6 @@ class IG {
   initializeMediaFeed(userId) {
     return new Promise((resolve, reject) => {
       try {
-        // if (this.proxyURL) {
-        //   console.log('proxy:', this.proxyURL);
-        //   // Client.Request.setProxy(proxyUrl);
-        //   session.proxyUrl = proxyUrl;
-        // }
         var feed = new Client.Feed.UserMedia(this.session, userId);
         resolve(feed);
       }
@@ -163,6 +169,9 @@ class IG {
         })
         .then(medium => {
           resolve(medium.params);
+        })
+        .catch(err => {
+          reject(err);
         })
     })
   }

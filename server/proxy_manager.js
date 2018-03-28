@@ -21,9 +21,6 @@ class ProxyManager {
       }, 5000);
     })
     this.tfProxy = new Proxy(require('../tf_proxy_config'));
-    // proxies.map(proxy => {
-    //   this.proxies.push(new Proxy(proxy));
-    // })
   }
 
   getNextProxy() { // janky approach, make this better.

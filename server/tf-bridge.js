@@ -117,10 +117,10 @@ TFBridge.prototype.createProspectList = function (username, listName, token) {
 }
 
 TFBridge.prototype.getCollaborations = function (page) {
-  console.log('getting collaboration page:' + page ? page : 1);
+  console.log('getting collaboration page:' + page);
   return new Promise((resolve, reject) => {
     const options = {
-      url: 'https://app.truefluence.io/collaborations.json?page=' + page ? page : 1,
+      url: 'https://app.truefluence.io/collaborations.json?page=' + page,
       method: 'GET'
     }
     request (options, (err, res, bod) => {
@@ -128,15 +128,15 @@ TFBridge.prototype.getCollaborations = function (page) {
         console.error(err); // confirm downstream logging and remove.
         reject(err);
       } else {
-        resolve(JSON.parse(bod))
+        resolve(JSON.parse(bod).collaborations)
       }
     })
   })
 }
 
-TFBridge.prototype.getOldestUnpostedCollab = function () {
+TFBridge.prototype.getOldestUnpostedCollab = function (shortcode) {
   return new Promise((resolve, reject) => {
-    
+
   })
 }
 
@@ -156,7 +156,7 @@ TFBridge.prototype.verifyList = (url) => {
         console.error(err);
         reject(err);
       } else {
-        const bodyObj = JSON.parse(bod);
+        const bodyObj = JSON.parse(bod); // this fucks things up
         resolve(bodyObj.list.refreshing);
       }
     })
