@@ -1,159 +1,23 @@
-// const knex = require('knex')({
-//   client: 'postgresql',
-//   connection: {
-//     user: 'postgres',
-//     password: 'peanut',
-//     database: 'eatify-crm',
-//     host: 'localhost',
-//     port: '5432'
-//   }
-// });
 const knex = require('knex')({
   client: 'postgresql',
   connection: {
-    user: process.env.RDS_USERNAME,
-    password: process.env.RDS_PASSWORD,
-    database: process.env.RDS_DB_NAME,
-    port: process.env.RDS_PORT,
-    host: process.env.RDS_HOSTNAME
+    user: 'postgres',
+    password: 'peanut',
+    database: 'eatify-crm',
+    host: 'localhost',
+    port: '5432'
   }
 });
-
-const scoreEvaluator = {
-  1: {
-    min: 0,
-    max: 1000,
-    avg: 0,
-    std: 0
-  },
-  2: {
-    min: 1000,
-    max: 2000,
-    avg: 0,
-    std: 0
-  },
-  3: {
-    min: 2000,
-    max: 3000,
-    avg: 0,
-    std: 0
-  },
-  4: {
-    min: 3000,
-    max: 4000,
-    avg: 0,
-    std: 0
-  },
-  5: {
-    min: 4000,
-    max: 5000,
-    avg: 0,
-    std: 0
-  },
-  6: {
-    min: 5000,
-    max: 10000,
-    avg: 0,
-    std: 0
-  },
-  7: {
-    min: 10000,
-    max: 20000,
-    avg: 0,
-    std: 0
-  },
-  8: {
-    min: 20000,
-    max: 30000,
-    avg: 0,
-    std: 0
-  },
-  9: {
-    min: 30000,
-    max: 40000,
-    avg: 0,
-    std: 0
-  },
-  10: {
-    min: 40000,
-    max: 50000,
-    avg: 0,
-    std: 0
-  },
-  11: {
-    min: 50000,
-    max: 60000,
-    avg: 0,
-    std: 0
-  },
-  12: {
-    min: 60000,
-    max: 70000,
-    avg: 0,
-    std: 0
-  },
-  13: {
-    min: 70000,
-    max: 80000,
-    avg: 0,
-    std: 0
-  },
-  14: {
-    min: 80000,
-    max: 90000,
-    avg: 0,
-    std: 0
-  },
-  15: {
-    min: 90000,
-    max: 100000,
-    avg: 0,
-    std: 0
-  },
-  16: {
-    min: 100000,
-    max: 150000,
-    avg: 0,
-    std: 0
-  },
-  17: {
-    min: 150000,
-    max: 200000,
-    avg: 0,
-    std: 0
-  },
-  18: {
-    min: 200000,
-    max: 300000,
-    avg: 0,
-    std: 0
-  },
-  18: {
-    min: 200000,
-    max: 300000,
-    avg: 0,
-    std: 0
-  },
-  19: {
-    min: 300000,
-    max: 500000,
-    avg: 0,
-    std: 0
-  },
-  20: {
-    min: 500000,
-    max: 1000000,
-    avg: 0,
-    std: 0
-  },
-  21: {
-    min: 1000000,
-    max: 5000000,
-    avg: 0,
-    std: 0
-  }
-}
-
+// const knex = require('knex')({
+//   client: 'postgresql',
+//   connection: {
+//     user: process.env.RDS_USERNAME,
+//     password: process.env.RDS_PASSWORD,
+//     database: process.env.RDS_DB_NAME,
+//     port: process.env.RDS_PORT,
+//     host: process.env.RDS_HOSTNAME
+//   }
+// });
 
 
 const async = require('async');
@@ -731,6 +595,15 @@ Database.prototype.getJobByListId = function (listId) {
     .then(job => {
       return job[0];
     });
+}
+
+Database.prototype.checkJobByListId = function (listId) {
+  return knex('prospect_jobs')
+    .select('*')
+    .where('target_list_id', listId)
+    .then(result => {
+      return result;
+    })
 }
 
 Database.prototype.getJobs = function (searchValues) {

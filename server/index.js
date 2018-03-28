@@ -39,6 +39,9 @@ app.use(bodyParser.json());
 const JobManager = require('./job-manager');
 const jobManager = new JobManager(database);
 
+const Pusher = require('./pusher');
+const pusher = new Pusher();
+
 // Initialization routines and parameters
 jobManager.resetInProgress();
 const MAXPOSTCOUNT = 800;
@@ -59,7 +62,7 @@ var recurringJob1Staggered;
 // }
 
 const Jobs = require('./jobs');
-const tasks = new Jobs(1);
+const tasks = new Jobs(3);
 
 const resetJob = job => {
 
@@ -73,7 +76,7 @@ setTimeout(() => {
   recurringJob5 = schedule.scheduleJob('*/5 * * * *', () => {
   });
   
-  // Every 1 minute
+  // Every 1 minuteSELECT id, primary_username, analyzed_username, stage, queued, in_progress, prospect_count as count from prospect_jobs order by id desc limit 20;
   recurringJob1 = schedule.scheduleJob('*/1 * * * *', () => {
     jobManager.getQueuedJobs()
       .then(jobs => {
@@ -175,7 +178,82 @@ setTimeout(() => {
 const BatchDB = require('./batch_db');
 const batchDB = new BatchDB();
 
+/*
+{
+  "brand_name" => "atever',
+  "brand_username" => 'whatever',
+  "instagram_media" => {
+    "id"=>18,
+    "instagram_user_id"=>2001,
+    "external_id"=>"1564008820233265731_5759148120",
+    "link"=>"https://www.instagram.com/p/BW0ebxLlOJD/",
+    "image_low"=>"https://scontent.cdninstagram.com/vp/a48d1d7a69553ac6dc2b2f685b4a0eeb/5B1744B7/t51.2885-15/s320x320/e35/20180917_572370079819430_2476356784277684224_n.jpg",
+    "image_standard"=>"https://scontent.cdninstagram.com/vp/e97a799d719c6e55101681f942c00b7d/5B0495F4/t51.2885-15/s640x640/sh0.08/e35/20180917_572370079819430_2476356784277684224_n.jpg",
+    "image_thumbnail"=>"https://scontent.cdninstagram.com/vp/d4f9d234ab08b9b78f406e877406a811/5B2311F0/t51.2885-15/s150x150/e35/20180917_572370079819430_2476356784277684224_n.jpg",
+    "like_count"=>0,
+    "comment_count"=>0,
+    "type"=>"image",
+    "caption"=>"Meter.",
+    "posted_at"=>Fri, 21 Jul 2017 19:13:22 UTC +00:00,
+    "tags"=>[],
+    "caption_usernames"=>[],
+    "photo_usernames"=>["tfdemoj"],
+    "latitude"=>nil,
+    "longitude"=>nil,
+    "created_at"=>Tue, 05 Dec 2017 04:12:01 UTC +00:00,
+    "updated_at"=>Tue, 20 Feb 2018 19:14:17 UTC +00:00,
+    "deleted"=>false,
+    "shortcode"=>"BW0ebxLlOJD",
+    "instagram_username"=>"tfdemofavorite",
+    "usernames"=>["tfdemoj"]
+  }
+}
+*/
 
+app.post('/test-download-image', (req, res) => {
+  const parameters = processCreatePostJSON(req.body);
+  const filename = parameters.url.substring(parameters.url.lastIndexOf('/') + 1);
+  fileHandler.downloadFile(parameters.url, filename)
+    .then(result => {
+      prospect.createPost(result, parameters.caption)
+      res.send('tim curry');
+    })
+})
+
+app.post('/pusher', (req, res) => {
+  pusher.ping();
+  res.send('ok');
+})
+
+/*
+Below SC: should be “postinfo.co/tfdemofavorite"
+
+For security and re-runnability how about his for the flow:
+Truefluence pings the pusher that a new collaborations is available.
+The pusher:
+load recent posts from the TF IG account
+load recent collaborations from truefluence.io/collaborations.json
+push new collaboration posts to the TF IG account
+And since there is no state then no db is needed. It could run on AWS lambda.
+*/
+
+// returns {caption: "", url: ""}
+const processCreatePostJSON = json => {
+  var caption = '.\n' + json.brand_name + '\n' +
+  '📸Partner: @' + json.instagram_media.instagram_username + '\n' +
+  'Visit @truefluence to discover who talks to your target market\n' +
+  '.\n' +
+  '.\n' +
+  '.\n' +
+  json.instagram_media.caption + '\n' +
+  'SC:' + json.instagram_media.shortcode + '\n' +
+  'postinfo.co/' + json.instagram_media.instagram_username;
+
+  return {
+    url: json.instagram_media.image_standard,
+    caption: caption
+  }
+}
 
 app.get('/test-refresh-jobs', (req, res) => {
   jobManager.getQueuedRefreshJobs()
@@ -188,6 +266,49 @@ app.get('/test-add-job-to-queue/:jobId', (req, res) => {
   jobManager.queueJob(req.params.jobId)
     .then(result => {
       res.send(result);
+    })
+})
+
+app.get('/get-user/:username', (req, res) => {
+  prospect.getUser(req.params.username)
+    .then(user => {
+      console.log(user);
+    })
+})
+
+app.get('/get-ad-brands/:username', (req, res) => {
+  var brands = [];
+  prospect.getUser(req.params.username)
+    .then(user => {
+      // console.log(user);
+      res.send('ok');
+      prospect.getReviewPosts(user.id)
+        .then(posts => {
+          console.log('posts received: ', posts.length);
+          const adPosts = posts.filter(post => {
+            return post._params.caption;
+          })
+          .filter(post => {
+            return /#ad(\b|\W)/gi.test(post._params.caption) || /#sponsored(\b|\W)/gi.test(post._params.caption);
+          })
+          adPosts.forEach(post => {
+            brands = brands.concat(post._params.caption.match(/\B\@\w\w+\b/g));
+          })
+          // splice duplicates
+          spliceDuplicates(brands).forEach(brand => {
+            if (brand !== null) {
+              console.log(brand.replace('@', ''));
+            }
+          })
+          // console.log(brands);
+        })
+    })
+})
+
+app.get('/test-message/:username', (req, res) => {
+  prospect.getUser(req.params.username)
+    .then(user => {
+      prospect.sendMessage(user.id, 'testing!')
     })
 })
 
@@ -270,7 +391,7 @@ app.post('/gather', (req, res) => {
   // console.log(newJob);
   jobManager.createJob(newJob)
     .then(jobId => {
-      tfBridge.createProspectList(newJob.primary_username + ':' + newJob.analyzed_username, 'LXJrk8BevkpMvGoNUA4SR3L1-u')
+      tfBridge.createProspectList(newJob.primary_username, newJob.primary_username + ':' + newJob.analyzed_username, 'TRgvU9VaFD7X99ZA9LqYSUDk-u')
         .then(newList => {
           newList.id = jobId;
           newList.queued = true;
@@ -291,12 +412,118 @@ app.post('/gather', (req, res) => {
       res.send(err);
     })
 })
-
-app.put('/distill', (req, res) => {
+/*
+{ prospect_list:
+   { id: 5539,
+     created_at: '2018-02-20T10:42:02.799-08:00',
+     updated_at: '2018-02-26T19:46:31.582-08:00',
+     user_id: 970,
+     settings:
+      { terms: [Object],
+        region: 'eua',
+        dream_partners: [],
+        reference_brands: [Object],
+        special_requests: '' },
+     approved: false,
+     token: 'rBn4c8nES7hBCm7Qrtc4EhzK',
+     count: 0,
+     refreshed_at: '2018-02-26T19:50:04.011-08:00',
+     message: '',
+     name: 'Prospects',
+     notes: '',
+     indexed_at: '2018-02-26T19:46:30.685-08:00',
+     began_indexing_at: '2018-02-21T18:51:05.969-08:00',
+     upload_url: 'https://app.truefluence.io/users/dgentrena/prospects/5539.csv?token=rBn4c8nES7hBCm7Qrtc4EhzK',
+     candidate_count: 1000,
+     prospect_count: 300,
+     region: 'eua',
+     special_requests: '',
+     positive_keywords: 'cycling',
+     reference_brands: '@rapha',
+     dream_partners: '',
+     follower_count_min: null,
+     follower_count_ideal: null,
+     follower_count_max: null,
+     follower_following_ratio_min: null,
+     follower_following_ratio_ideal: null,
+     follower_following_ratio_max: null,
+     recent_average_like_rate_min: null,
+     recent_average_like_rate_ideal: null,
+     recent_average_like_rate_max: null,
+     recent_average_comment_rate_min: null,
+     recent_average_comment_rate_ideal: null,
+     recent_average_comment_rate_max: null,
+     recent_average_engagement_rate_min: null,
+     recent_average_engagement_rate_ideal: null,
+     recent_average_engagement_rate_max: null,
+     recent_average_post_rate_min: null,
+     recent_average_post_rate_ideal: null,
+     recent_average_post_rate_max: null,
+     instagram_username: 'dgentrena',
+     instgram_user_external_id: '1568926667',
+     can_download: true,
+     can_import: null,
+     can_delete_shown: null,
+     can_request_campaign: true } }
+*/
+app.post('/distill', (req, res) => {
   console.log('distill request');
-  console.log(req.body);
+  // console.log(req.body);
+  const distillRequest = req.body;
+  console.log(distillRequest.prospect_list.id);
+  getKeywords(distillRequest);
+  jobManager.getJobByListId(distillRequest.prospect_list.id)
+    .then(result => {
+      if (result.length > 0) {
+        // console.log(result);
+        console.log('job exists');
+        if (result.some(job => { return job.stage != 'Downloaded'; })) {
+          console.log('some jobs incomplete');
+        } else {
+          console.log('all jobs complete');
+          
+        }
+        result.forEach(job => {
+          const lDetail = parseListDetails(job);
+          console.log(job);
+          console.log(job.queued_at ? 'yes' : 'no');
+          console.log(lDetail)
+          console.log(getDownloadURL(lDetail));
+        })
+      } else {
+        console.log('job doesn\'t exist');
+      }
+    })
+  // console.log(JSON.stringify(distillRequest));
   res.send('received');
 });
+
+// const getFilters = distillRequest => {
+//   searchTerms = getKeywords(distillRequest);
+//   return {
+//     keywords: searchTerms.terms,
+//     keywords_count: searchTerms.count,
+//     min_followers: ,
+//     max_followers: ,
+//     min_following: ,
+//     max_following: ,
+//     min_posts: ,
+//     max_posts: ,
+//     min_recent_posts: ,
+//     max_recent_posts: ,
+//     min_
+//   }
+// }
+
+const getKeywords = distillRequest => {
+  const terms = Object.keys(distillRequest.prospect_list.settings.terms);
+  const slug = {
+    terms: terms.join('+'),
+    count: terms.length
+  } 
+  console.log(slug);
+}
+
 
 
 getValue = (url, value, terminus = '/') => {

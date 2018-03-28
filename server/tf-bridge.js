@@ -88,6 +88,7 @@ TFBridge.prototype.createProspectList = function (username, listName, token) {
   // console.log('attempting to create list for:', username);
   return new Promise((resolve, reject) => {
     var url = 'https://app.truefluence.io/users/' + username + '/lists.json?api_token=' + token;
+    console.log(url);
     var options = {
       url: url,
       method: 'POST',
@@ -108,10 +109,34 @@ TFBridge.prototype.createProspectList = function (username, listName, token) {
         console.error(err);
         reject(err);
       } else {
-        // console.log(res);
+        console.log(res.body);
         resolve({ prospect_list_id: res.body.list.id, token: res.body.list.token });
       }
     })
+  })
+}
+
+TFBridge.prototype.getCollaborations = function (page) {
+  console.log('getting collaboration page:' + page);
+  return new Promise((resolve, reject) => {
+    const options = {
+      url: 'https://app.truefluence.io/collaborations.json?page=' + page,
+      method: 'GET'
+    }
+    request (options, (err, res, bod) => {
+      if (err) {
+        console.error(err); // confirm downstream logging and remove.
+        reject(err);
+      } else {
+        resolve(JSON.parse(bod).collaborations)
+      }
+    })
+  })
+}
+
+TFBridge.prototype.getOldestUnpostedCollab = function (shortcode) {
+  return new Promise((resolve, reject) => {
+
   })
 }
 
@@ -131,7 +156,7 @@ TFBridge.prototype.verifyList = (url) => {
         console.error(err);
         reject(err);
       } else {
-        const bodyObj = JSON.parse(bod);
+        const bodyObj = JSON.parse(bod); // this fucks things up
         resolve(bodyObj.list.refreshing);
       }
     })
@@ -227,137 +252,6 @@ TFBridge.prototype.downloadProspects = function (url, jobId) {
       }
     });
   })
-}
-
-
-// allow this to be resumed on fail
-TFBridge.prototype.downloadProspectsLEGACY = function (url, jobId) {
-  console.log('starting download of prospects');
-  const perPage = 1000;
-  var processUserCount = 0;
-  var downloadErrorCount = 0;
-  const timeStart = Date.now();
-  var userDebug = [];
-  //skip_medias=true&skip_counts=true&filters[unrefreshed]=true&per_page=1
-  var options = {
-    url: url + '&skip_medias=true&per_page=' + perPage + '&page=1',
-    method: 'GET'
-  };
-  // console.log(options.url);
-  var counter = 1;
-  var processedCount = 0;
-  return new Promise((resolve, reject) => {
-    request(options, (err, res, bod) => {
-      if (err) {
-        console.error(err);
-      } else {
-        const bodyObj = JSON.parse(bod);
-        var pageTracker = new Array(bodyObj.meta.total_pages);
-        var scrollId = bodyObj.meta.scroll_id;
-  
-        for (let i = 0; i < pageTracker - 1; i++) {
-          pageTracker[i] = i + 2;
-        }
-
-        processedCount += bodyObj.instagram_users.length;
-
-        console.log('creatd page tracker of length:', pageTracker.length);
-        async.mapSeries(pageTracker, (page, next) => {
-          //load, confirm,
-          var currOption = {
-            url: url + '&skip_medias=true&per_page=' + perPage + '&scroll_id=' + scrollId,
-            method: 'GET'
-          }
-          console.log('trying:', currOption.url);
-          getRequest(currOption)
-            .then(result => {
-              counter++;
-              console.log('current page:', counter);
-              // console.log(result.meta);
-              scrollId = result.meta.scroll_id;
-              processedCount += result.instagram_users.length;
-              console.log('number of results received:', result.instagram_users.length);
-              console.log('total processed:', processedCount);
-              // next();
-              async.mapSeries(result.instagram_users, (user, cb) => {
-                const parsedUser = parseUserData(user);
-
-                database.upsertUser(parsedUser)
-                  .then(result => {
-                    userDebug.push([parsedUser.username, result]);
-                    // fill user_id column in prospects table for corresponding thingof thing
-                    // need job id, 
-                    const updateProspect = {
-                      user_id: result,
-                      prospect_job_id: jobId,
-                      username: parsedUser.username
-                    };
-                    database.updateProspect(updateProspect)
-                      .then(finisher => {
-                        processUserCount++;
-                        cb();
-                      })
-                      .catch(err => {
-                        console.error('update prospect error', err);
-                      })
-                  })
-                  .catch(err => {
-                    console.error('update user error:', err);
-                    cb();
-                  })
-              }, err => {
-                console.log('finished page:', page);
-                next();
-              });
-              console.log(result.instagram_users[0]);
-            })
-            .catch(err => {
-              console.error(err);
-              if (downloadErrorCount < 5) {
-                console.log('error encountered on download attempt, resuming after 120 seconds');
-                downloadErrorCount++;
-                setTimeout(() => {
-                  console.log('attempting to resume');
-                  next();
-                }, 120000);
-              } else {
-                // mark job as error and continue.
-                const jobError = {
-                  id: jobId,
-                  in_progress: false,
-                  stage: 'DOWNLOAD ERROR'
-                }
-                database.updateJob(jobError)
-                  .then(result => {
-                    next();
-                  })
-              }
-            })
-        }, err => {
-          if (downloadErrorCount < 5) {
-            const jobUpdate = {
-              id: jobId,
-              stage: 'Downloaded'
-            }
-            database.updateJob(jobUpdate)
-              .then(result => {
-                console.log('list downloaded, job updated');
-                console.log('total users processed:', processUserCount);
-                const timeComplete = Date.now();
-                const duration = (timeComplete - timeStart) / 1000;
-                console.log('time taken (sec):', duration);
-                resolve({count: processUserCount, duration: duration});
-                // done:
-                // convertAndSend(userDebug, ['username', 'user_id'])
-              })
-          } else {
-            reject('DOWNLOAD ERROR');
-          }
-        })
-      }
-    });
-  })
-
 }
 
 const parseUserData = rawData => {

@@ -31,6 +31,7 @@ const loadActiveIG = () => {
   activeIG = nextProxy.ig;
 }
 
+
 // const reqProxy = {
 //   proxyAddress: '146.71.87.105',
 //   port: '65233',
@@ -65,10 +66,11 @@ function Prospect() {
 Prospect.prototype.batchLikers = function (username, jobId, maxPostCount = 2000) {
   const timeStart = Date.now();
   console.log('Getting all likers for', username);
+  loadActiveIG();
   return new Promise((resolve, reject) => {
-    scrapeSave.scrapeSave(username, true)
+    this.getUser(username)
       .then(user => {
-        this.getAllLikers(user.external_id, user.post_count, timeStart, jobId, maxPostCount)
+        this.getAllLikers(user.id, timeStart, jobId, maxPostCount, activeIG)
           .then(likers => {
             const timeComplete = Date.now();
             console.log('time taken (sec):', (timeComplete - timeStart) / 1000);
@@ -102,9 +104,45 @@ Prospect.prototype.deepLookup = function (username) {
   })
 }
 
+Prospect.prototype.createPost = function (filePath, caption) {
+  return proxyManager.tfProxy.ig.createPost(filePath, caption)
+}
+
+Prospect.prototype.sendMessage = function (externalId, message) {
+  proxyManager.tfProxy.ig.sendMessage(externalId, message)
+    .then(result => {
+      console.log(result);
+    })
+}
+/*
+{ username: 'truefluence',
+  picture: 'https://scontent-atl3-1.cdninstagram.com/vp/7fc91e4e095b7764b5f8a3bb30cb066a/5B3F4CBF/t51.2885-19/s150x150/18299931_1176211512508631_1514144553601335296_a.jpg',
+  fullName: '',
+  id: 5436898817,
+  isPrivate: false,
+  hasAnonymousProfilePicture: false,
+  isBusiness: false,
+  profilePicId: '1510539073855659110_5436898817',
+  byLine: '65 followers',
+  followerCount: 65,
+  mutualFollowersCount: 0 }
+*/
+Prospect.prototype.getUser = function(username) {
+  loadActiveIG();
+  return new Promise((resolve, reject) => {
+    activeIG.getUser(username)
+      .then(user => {
+        resolve(user[0]._params);
+      })
+      .catch(err => {
+        reject(err);
+      })
+  })
+}
+
 var totalLikersProcessed = 0;
 // will result in array of [username, external_id]
-Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart, jobId, maxPostCount = 2000) {
+Prospect.prototype.getAllLikers = function (externalId, timeStart, jobId, maxPostCount = 2000, igSession) {
   const errorThreshold = 10;
   var likers = [];
   // console.log('Getting all likers for', externalId);
@@ -116,27 +154,26 @@ Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart, jo
   // load active ig here
   loadActiveIG();
   return new Promise((resolve, reject) => {
-    activeIG.initializeMediaFeed(externalId)
+    igSession.initializeMediaFeed(externalId)
       .then(feed => {
         function retrieve() {
           feed.get()
             .then(medias => {
               mediaCounter++;
               async.mapSeries(medias, (media, next) => {
-                getMediaLikers(media, likers)
+                getMediaLikers(media, likers, igSession)
                   .then(newLikers => {
                     saveLikersToProspects(newLikers, jobId)
                       .then(saveResult => {
-                        counter++;
-                        totalLikersProcessed += newLikers.length
-                        likers = likers.concat(...newLikers);
+                        // counter++;
+                        // totalLikersProcessed += newLikers.length
+                        // likers = likers.concat(...newLikers);
                         // var timeNow = Date.now();
                         // var timeElapsed = (timeNow - timeStart) / 1000;
                         // var predictedTotal = (timeElapsed * postCount) / counter;
                         // console.log('\033c');
                         // console.log('got new likers, unique total (processed): ' + likers.length + ' (' + totalLikersProcessed + ')');
-                        // console.log('job ' + jobId + ':' + counter + ' out of ' + postCount + ' posts analyzed. ' + 
-                        //   ((counter / postCount) * 100).toFixed(2) + '%');
+                        // console.log('job ' + jobId + ':' + counter);
                         // console.log('time elapsed (sec):', timeElapsed.toFixed(2));
                         // console.log('predicted total job duration (sec):', predictedTotal.toFixed(0));
                         // console.log('predicted time remaining (sec):', (predictedTotal - timeElapsed).toFixed(0));
@@ -197,6 +234,103 @@ Prospect.prototype.getAllLikers = function (externalId, postCount, timeStart, jo
         console.error(err);
       })
   })
+}
+
+Prospect.prototype.getReviewPosts = function (externalId, maxIteration = 20) {
+  loadActiveIG();
+  var posts = [];
+  var counter = 1;
+  return new Promise((resolve, reject) => {
+    activeIG.initializeMediaFeed(externalId)
+      .then(feed => {
+        function retrieve() {
+          feed.get()
+            .then(medias => {
+              if (medias.length > 0) {
+                posts = posts.concat(medias);
+                if (feed.moreAvailable && counter < maxIteration) {
+                  counter++;
+                  setTimeout(() => {
+                    retrieve();
+                  }, 5000);
+                } else {
+                  resolve(posts);
+                }
+              }
+            })
+            .catch(err => {
+              reject(err);
+            })
+        }
+        retrieve();
+      })
+      .catch(err => {
+        reject(err);
+      })
+  })
+}
+
+Prospect.prototype.getRecentSCPost = function (externalId) {
+  loadActiveIG();
+  return new Promise((resolve, reject) => {
+    activeIG.initializeMediaFeed(externalId)
+      .then(feed => {
+        function retrieve() {
+          feed.get()
+            .then(medias => {
+              if (medias.length > 0) {
+                const captionedPosts = medias.filter(media => {
+                  return media._params.caption;
+                })
+                if (captionedPosts.length > 0) {
+                  var validPosts = captionedPosts.filter(media => {
+                    return media._params.caption.indexOf('SC:') > 0;
+                  })
+                  if (validPosts.length > 0) {
+                    const recentPost = validPosts.sort((a, b) => {
+                      return b._params.takenAt - a._params.takenAt;
+                    })[0];
+                    resolve(extractSCFromCaption(recentPost._params.caption))
+                  } else {
+                    if (feed.moreAvailable){
+                      setTimeout(() => {
+                        retrieve();
+                      }, 5000);
+                    } else {
+                      resolve(null);
+                    }
+                  }
+                } else {
+                  if (feed.moreAvailable) {
+                    setTimeout(() => {
+                      retrieve();
+                    }, 5000);
+                  } else {
+                    resolve(null);
+                  }
+                }
+              } else {
+                resolve(null);
+              }
+            })
+            .catch(err => {
+              console.error('error on getting new medias for pusher:', err);
+              reject(err);
+            })
+        }
+        retrieve();
+      })
+      .catch(err => {
+        console.log('feed error');
+        // console.error(err);
+        reject(err);
+      })
+  })
+}
+
+const extractSCFromCaption = caption => {
+  const extract = caption.match(new RegExp("SC:(.*)\\n")); // update to go from bottom up
+  return extract ? extract[1] : null;
 }
 
 // should return a list as well as a 
@@ -515,9 +649,9 @@ const sortByScore = candidates => {
   })
 }
 
-const getMediaLikers = (media, arrLikers) => {
+const getMediaLikers = (media, arrLikers, igSession) => {
   return new Promise((resolve, reject) => {
-    activeIG.getLikers(media)
+    igSession.getLikers(media)
       .then(likers => {
         totalLikersProcessed += likers.length;
         const likerUsernames = arrLikers.map(liker => { return liker.username });

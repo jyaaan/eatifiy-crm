@@ -20,9 +20,7 @@ class ProxyManager {
         next();
       }, 5000);
     })
-    // proxies.map(proxy => {
-    //   this.proxies.push(new Proxy(proxy));
-    // })
+    this.tfProxy = new Proxy(require('../tf_proxy_config'));
   }
 
   getNextProxy() { // janky approach, make this better.

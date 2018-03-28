@@ -182,6 +182,16 @@ class JobManager {
         })
     })
   }
+
+  // checks if target list id exists
+  getJobByListId(listId) {
+    return new Promise((resolve, reject) => {
+      this.database.checkJobByListId(listId)
+        .then(exists => {
+          resolve(exists);
+        })
+    })
+  }
 }
 
 module.exports = JobManager;
