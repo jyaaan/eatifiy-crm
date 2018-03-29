@@ -225,6 +225,12 @@ app.post('/pusher', (req, res) => {
   res.send('ok');
 })
 
+setTimeout(() => {
+  setInterval(() => {
+    pusher.ping();
+  }, 2100000);
+}, 60000)
+
 /*
 Below SC: should be “postinfo.co/tfdemofavorite"
 
@@ -276,13 +282,84 @@ app.get('/get-user/:username', (req, res) => {
     })
 })
 
+app.get('/get-profile-stats/:username', (req, res) => {
+  res.send('ok');
+  const timeStart = new Date();
+  prospect.getUser(req.params.username, 3000)
+    .then(user => {
+      // console.log(user);
+      // hopefully get detailed user params
+      // get follower count
+      var followerCount = user.followerCount;
+      prospect.getPosts(user.id, 2000)
+        .then(posts => {
+          // console.log(posts[0]);
+          // sort posts by date ascending.
+          var dateSorted = posts.sort((a, b) => {
+            return a._params.takenAt - b._params.takenAt;
+          })
+          // get date of first post
+          const firstPostDate = new Date(dateSorted[0]._params.takenAt);
+          console.log('first post: ', dateSorted[0]._params)
+          console.log('first post date: ' + firstPostDate);
+          var timeNow = new Date();
+          var timeDifference = timeNow - firstPostDate;
+          var recentPosts = posts.filter(post => {
+            return post._params.takenAt > addDays(timeNow, -30);
+          })
+
+          var adPosts = posts.filter(post => {
+            return post._params.caption;
+          })
+            .filter(post => {
+              return /#ad(\b|\W)/gi.test(post._params.caption) || /#sponsored(\b|\W)/gi.test(post._params.caption);
+            });
+          
+          const accountAge = timeDifference / 1000 / 60 / 60 / 24 / 7;
+          const postCount = posts.length;
+          console.log(accountAge);
+          console.log(followerCount / accountAge + ' av followers gain (followers/week)');
+          console.log(postCount / accountAge + ' average post frequency (posts/week)');
+          console.log(adPosts.length + ' ad posts out of ' + postCount);
+          console.log(recentPosts.length + ' posts in last 30 days');
+          console.log('time elapsed(sec): ' + (timeNow - timeStart) / 1000);
+          // get follower increase per week.
+
+        })
+        .catch(err => {
+          console.error(err);
+        })
+    })
+})
+
+const addDays = (begin, numberOfDays) => {
+  var tempDate = new Date();
+  tempDate.setDate(begin.getDate() + numberOfDays);
+  return tempDate;
+}
+
+const addMonths = (begin, numberOfMonths) => {
+  begin.setMonth(begin.getMonth() + numberOfMonths);
+}
+
+app.get('/get-post-breakdown/:postId', (req, res) => {
+  var media = {id: req.params.postId};
+  prospect.getPostLikers(media)
+    .then(result => {
+      res.send(result);
+    })
+    .catch(err => {
+      console.error(err);
+    })
+})
+
 app.get('/get-ad-brands/:username', (req, res) => {
   var brands = [];
   prospect.getUser(req.params.username)
     .then(user => {
       // console.log(user);
       res.send('ok');
-      prospect.getReviewPosts(user.id)
+      prospect.getPosts(user.id)
         .then(posts => {
           console.log('posts received: ', posts.length);
           const adPosts = posts.filter(post => {

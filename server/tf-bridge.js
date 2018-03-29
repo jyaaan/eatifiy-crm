@@ -277,7 +277,8 @@ const parseUserData = rawData => {
     recent_like_rate: rawData.recent_like_rate,
     recent_comment_rate: rawData.recent_comment_rate,
     created_at: timeNow,
-    updated_at: timeNow
+    updated_at: timeNow,
+    private: rawData.status == 'private_account'
   }
   return parsedUser;
 }
