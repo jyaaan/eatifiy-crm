@@ -8,58 +8,40 @@
     "ig_password": "skyrim1",
     "expiration_date": "4/21/2018"
   },
-  {
-    "proxyAddress": "208.123.119.237",
-    "port": "65233",
-    "username": "john",
-    "password": "M7g7RqY",
-    "ig_username": "eatifyjohn",
-    "ig_password": "occsbootcamp",
-    "expiration_date": "4/21/2018"
-  },
-  {
-    "proxyAddress": "181.215.83.176",
-    "port": "65233",
-    "username": "john",
-    "password": "M7g7RqY",
-    "ig_username": "james.stuttgarten",
-    "ig_password": "occsbootcamp",
-    "expiration_date": "4/21/2018"
-  },
-  {
-    "proxyAddress": "216.21.9.81",
-    "port": "65233",
-    "username": "john",
-    "password": "M7g7RqY",
-    "ig_username": "guysensai777",
-    "ig_password": "Goonigoogoo!777",
-    "expiration_date": "4/21/2018"
-  },
-  {
-    "proxyAddress": "192.252.209.48",
-    "port": "65233",
-    "username": "john",
-    "password": "M7g7RqY",
-    "ig_username": "oceanview4days",
-    "ig_password": "truefluence",
-    "expiration_date": "4/21/2018"
-  },
-  {
-    "proxyAddress": "107.181.175.45",
-    "port": "65233",
-    "username": "john",
-    "password": "M7g7RqY",
-    "ig_username": "supdoglevi",
-    "ig_password": "truefluence",
-    "expiration_date": "4/21/2018"
-  },
-  {
-    "proxyAddress": "198.8.86.75",
-    "port": "65233",
-    "username": "john",
-    "password": "M7g7RqY",
-    "ig_username": "clavicusvile4911",
-    "ig_password": "skyrim1",
-    "expiration_date": "4/21/2018"
-  }
+    {
+      "proxyAddress": "208.123.119.237",
+      "port": "65233",
+      "username": "john",
+      "password": "M7g7RqY",
+      "ig_username": "eatifyjohn",
+      "ig_password": "occsbootcamp",
+      "expiration_date": "4/21/2018"
+    },
+    {
+      "proxyAddress": "181.215.83.176",
+      "port": "65233",
+      "username": "john",
+      "password": "M7g7RqY",
+      "ig_username": "james.stuttgarten",
+      "ig_password": "occsbootcamp",
+      "expiration_date": "4/21/2018"
+    },
+    {
+      "proxyAddress": "216.21.9.81",
+      "port": "65233",
+      "username": "john",
+      "password": "M7g7RqY",
+      "ig_username": "guysensai777",
+      "ig_password": "Goonigoogoo!777",
+      "expiration_date": "4/21/2018"
+    },
+    {
+      "proxyAddress": "192.252.209.48",
+      "port": "65233",
+      "username": "john",
+      "password": "M7g7RqY",
+      "ig_username": "oceanview4days",
+      "ig_password": "truefluence",
+      "expiration_date": "4/21/2018"
+    }
 ]

@@ -80,6 +80,10 @@ Prospect.prototype.batchLikers = function (username, jobId, maxPostCount = 2000)
   })
 }
 
+Prospect.prototype.getJobMembers = function(jobId) {
+
+}
+
 Prospect.prototype.downloadProspects = function (listUrl, token, batchId) {
   
 }
@@ -132,10 +136,32 @@ Prospect.prototype.getUser = function(username) {
   return new Promise((resolve, reject) => {
     activeIG.getUser(username)
       .then(user => {
+        // console.log(user);
         resolve(user[0]._params);
       })
       .catch(err => {
         reject(err);
+      })
+  })
+}
+
+Prospect.prototype.getPostLikers = function (media) {
+  loadActiveIG();
+  const thisActiveIG = activeIG;
+  return new Promise((resolve, reject) => {
+    thisActiveIG.initializeMediaFeed('5436898817')
+      .then(feed => {
+        getAllMediaLikers(media, thisActiveIG)
+          .then(likers => {
+            // save them likers as prospects
+            // console.log('public count: ', likerObj.public.length);
+            // console.log('private count: ', likerObj.private.length);
+            // console.log(likerObj);
+            resolve(likers);
+          })
+          .catch(err => {
+            reject(err);
+          })
       })
   })
 }
@@ -152,7 +178,7 @@ Prospect.prototype.getAllLikers = function (externalId, timeStart, jobId, maxPos
   totalLikersProcessed = 0;
 
   // load active ig here
-  loadActiveIG();
+  // loadActiveIG();
   return new Promise((resolve, reject) => {
     igSession.initializeMediaFeed(externalId)
       .then(feed => {
@@ -236,7 +262,7 @@ Prospect.prototype.getAllLikers = function (externalId, timeStart, jobId, maxPos
   })
 }
 
-Prospect.prototype.getReviewPosts = function (externalId, maxIteration = 20) {
+Prospect.prototype.getPosts = function (externalId, maxIteration = 20) {
   loadActiveIG();
   var posts = [];
   var counter = 1;
@@ -662,6 +688,24 @@ const getMediaLikers = (media, arrLikers, igSession) => {
       .catch(err => {
         console.log('get media likers error');
         reject('getMediaLikers failure');
+      })
+  })
+}
+
+const getAllMediaLikers = (media, igSession) => {
+  // console.log('igSession: ', igSession.session);
+  return new Promise((resolve, reject) => {
+    igSession.getLikers(media)
+      .then(likers => {
+        // console.log(likers);
+        // const privateLikers = likers.filter(liker => { return liker.isPrivate; });
+        // const publicLikers = likers.filter(liker => { return liker.isPrivate == false; });
+        // resolve({ private: privateLikers, public: publicLikers });
+        resolve(likers);
+      })
+      .catch(err => {
+        console.log('get all medialikers error');
+        reject(err);
       })
   })
 }

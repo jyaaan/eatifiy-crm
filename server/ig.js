@@ -148,6 +148,7 @@ class IG {
     // console.log('getLikers');
     return new Promise((resolve, reject) => {
       // console.log('getlikers active');
+      // console.log('media id: ', media.id);
       Client.Media.likers(this.session, media.id)
         .then(likers => {
           // console.log('likers found:', likers.length);
@@ -156,9 +157,13 @@ class IG {
         })
         .catch(err => {
           console.error('getLikers failure');
-          reject('getLikers');
+          reject(err);
         })
     })
+  }
+
+  getMediaLikers(mediaId) {
+    
   }
 
   createPost(mediaPath, caption) {

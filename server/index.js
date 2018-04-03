@@ -48,6 +48,8 @@ const MAXPOSTCOUNT = 800;
 var refreshJobs = [];
 var refreshJobURLs = [];
 
+const bullshit = require('./bullshit');
+
 // Recurring jobs starting a minute after initialization
 var schedule = require('node-schedule');
 var recurringJob5;
@@ -225,6 +227,12 @@ app.post('/pusher', (req, res) => {
   res.send('ok');
 })
 
+setTimeout(() => {
+  setInterval(() => {
+    pusher.ping();
+  }, 2100000);
+}, 60000)
+
 /*
 Below SC: should be “postinfo.co/tfdemofavorite"
 
@@ -276,13 +284,281 @@ app.get('/get-user/:username', (req, res) => {
     })
 })
 
+app.get('/get-profile-stats/:username', (req, res) => {
+  res.send('ok');
+  const timeStart = new Date();
+  prospect.getUser(req.params.username, 3000)
+    .then(user => {
+      // console.log(user);
+      // hopefully get detailed user params
+      // get follower count
+      var followerCount = user.followerCount;
+      prospect.getPosts(user.id, 2000)
+        .then(posts => {
+          // console.log(posts[0]);
+          // sort posts by date ascending.
+          var dateSorted = posts.sort((a, b) => {
+            return a._params.takenAt - b._params.takenAt;
+          })
+          // get date of first post
+          const firstPostDate = new Date(dateSorted[0]._params.takenAt);
+          console.log('first post: ', dateSorted[0]._params)
+          console.log('first post date: ' + firstPostDate);
+          var timeNow = new Date();
+          var timeDifference = timeNow - firstPostDate;
+          var recentPosts = posts.filter(post => {
+            return post._params.takenAt > addDays(timeNow, -30);
+          })
+
+          var adPosts = posts.filter(post => {
+            return post._params.caption;
+          })
+            .filter(post => {
+              return /#ad(\b|\W)/gi.test(post._params.caption) || /#sponsored(\b|\W)/gi.test(post._params.caption);
+            });
+          
+          const accountAge = timeDifference / 1000 / 60 / 60 / 24 / 7;
+          const postCount = posts.length;
+          console.log(accountAge + ' account age (weeks)');
+          console.log(followerCount / accountAge + ' av followers gain (followers/week)');
+          console.log(postCount / accountAge + ' average post frequency (posts/week)');
+          console.log(adPosts.length + ' ad posts out of ' + postCount);
+          console.log(recentPosts.length + ' posts in last 30 days');
+          console.log('time elapsed(sec): ' + (timeNow - timeStart) / 1000);
+          // get follower increase per week.
+
+        })
+        .catch(err => {
+          console.error(err);
+        })
+    })
+})
+
+const addDays = (begin, numberOfDays) => {
+  var tempDate = new Date();
+  tempDate.setDate(begin.getDate() + numberOfDays);
+  return tempDate;
+}
+
+const addMonths = (begin, numberOfMonths) => {
+  begin.setMonth(begin.getMonth() + numberOfMonths);
+}
+
+/*
+ {
+    id: 876950,
+    username: 'jojoegaray',
+    picture_url: 'https://scontent.cdninstagram.com/vp/afd1d1f5f16290ffb248ef2309280c6c/5B519315/t51.2885-19/s150x150/28154371_979843565499046_3229711515628077056_n.jpg',
+    full_name: 'Carrying your lungs with me.❤',
+    external_id: '480674522',
+    private: false,
+    following_count: 1511,
+    follower_count: 3836,
+    bio: 'MyDonorMyHero♻DonateLife\nDbl.LungTransplant 4•5•15♻\nPF Survivor \nScleroderma CKD Gp Tube fed\nBelieves in miracles🌟\nGrateful💐\nblessed✨\nloved♥️\nTexas📍',
+    post_count: 1487,
+    external_url: 'https://flipagram.com/f/lp2jw5c3Rg',
+    created_at: 2017-11-09T19:53:21.016Z,
+    updated_at: 2018-03-30T01:46:52.133Z,
+    recent_like_count: 1050,
+    recent_comment_count: 81,
+    email: null,
+    recent_post_count: 20,
+    recent_video_count: 1,
+    days_since_last_post: '0.37',
+    recent_average_likes: '192.30',
+    recent_engagement_rate: '0.06',
+    recent_average_comments: '24.10',
+    recent_like_rate: '0.05',
+    recent_comment_rate: '0.01',
+    truefluence_score: null }
+    */
+
+
+app.get('/get-post-breakdown/:jobId', (req, res) => {
+  console.log('job ID: ', req.params.jobId);
+  res.send('ok');
+  database.getUsersByJobId(req.params.jobId)
+    .then(users => {
+      // console.log(users);
+      const totalUsers = users.length;
+      const privateUsers = users.filter(user => {
+        return user.private;
+      })
+      const publicUsers = users.filter(user => {
+        return !(user.private);
+      })
+      publicUsers.forEach(user => {
+        user.bullshit = bullshit(user);
+      })
+      const influencers = publicUsers.filter(user => {
+        return user.follower_count >= 2000;
+      })
+      const consumers = publicUsers.filter(user => {
+        return user.follower_count < 2000;
+      })
+      const consumerCount = publicUsers.length - influencers.length;
+      const influencerCount = influencers.length;
+      const bullshitConsumerCount = consumers.filter(user => {
+        return user.bullshit;
+      }).length;
+      
+      const bullshitInfluencerCount = influencers.filter(user => {
+        return user.bullshit;
+      }).length;
+      
+
+      console.log('total users: ', totalUsers);
+      console.log('private users: ' + privateUsers.length + ' (' + Math.round(privateUsers.length / totalUsers * 100, 2) + '%)');
+      // console.log('public users: ' + publicUsers.length + ' (' + publicUsers.length / totalUsers * 100 + ')');
+      console.log('consumers: ' + (consumerCount - bullshitConsumerCount) + '(' + Math.round((consumerCount - bullshitConsumerCount) / totalUsers * 100, 2) + ')');
+      console.log('bullshit consumers: ' + bullshitConsumerCount + '(' + Math.round(bullshitConsumerCount / totalUsers * 100, 2) + '%)');
+      console.log('influencers: ' + (influencerCount - bullshitInfluencerCount) + '(' + Math.round((influencerCount - bullshitInfluencerCount) / totalUsers * 100, 2) + '%)');
+      console.log('bullshit influencers: ' + bullshitInfluencerCount + '(' + Math.round(bullshitInfluencerCount / totalUsers * 100, 2) + '%)');
+      var realAudience = Math.round(((totalUsers - publicUsers.length) * 0.92) + consumerCount); 
+      console.log('real audience: ' + realAudience + '(' + Math.round(realAudience/totalUsers, 2) + '%)');
+    })
+})
+
+app.get('/prime-post-breakdown/:postId', (req, res) => {
+
+  var media = {id: req.params.postId};
+  console.log('marker');
+  const newJob = {
+    upload_url: 'media analysis',
+    primary_username: 'eatifyjohn',
+    analyzed_username: req.params.postId,
+    stage: 'Initialized',
+    target_list_id: 0000,
+    terms: {},
+    queued: false
+  };
+  // console.log(newJob);
+  jobManager.createJob(newJob)
+  .then(jobId => {
+    tfBridge.createProspectList(newJob.primary_username, newJob.primary_username + ':' + newJob.analyzed_username, 'TRgvU9VaFD7X99ZA9LqYSUDk-u')
+    .then(newList => {
+      newList.id = jobId;
+          // newList.queued = true;
+          database.updateJob(newList)
+          .then(updated => {
+            // console.log(newList);
+            console.log('list and job created successfully');
+            // should result in job queued 
+            prospect.getPostLikers(media)
+            .then(likers => {
+              // res.send(result);
+              // console.log('attempgint save:', likers.length);
+              const timeNow = new Date(Date.now()).toISOString();
+              // const splicedLikers = spliceDuplicates(likers);
+              // console.log('after dupe splice:', splicedLikers.length);
+
+              if (likers.length > 0) {
+                const formattedLikers = likers.map(liker => {
+                  return {
+                    username: liker.username,
+                    external_id: liker.id,
+                    prospect_job_id: jobId,
+                    relationship_type: 'liker',
+                    created_at: timeNow,
+                    updated_at: timeNow
+                  }
+                })
+                // console.log(formattedLikers);
+                // console.log('formatted likers:', formattedLikers);
+                database.raw(batchDB.upsertProspects(formattedLikers))
+                  .then(result => {
+                    database.updateJob({id: jobId, stage: 'Awaiting Refreshing'})
+                    .then(result => {
+                      database.getJobByJobId(jobId)
+                        .then(job => {
+                          const listDetails = parseListDetails(job);
+                          const submitURL = getSubmitURL(listDetails);
+                          const downloadURL = getDownloadURL(listDetails);
+                          // console.log(submitURL);
+                          renderFormattedProspects(listDetails.prospect_job_id)
+                            .then(prospects => {
+                              prospectCount = prospects.length;
+                              batchProspects(prospects).map(batch => {
+                                setTimeout(() => {
+                                  tfBridge.submitProspects(submitURL, batch);
+                                }, 500);
+                              })
+                              //  messaging.send('gathering finished for:' + listDetails.username);
+                              const jobUpdate = {
+                                id: jobId,
+                                in_progress: false,
+                                stage: 'Awaiting Refresh'
+                              };
+                              jobManager.updateJob(jobUpdate)
+                                .then(result => {
+                                  console.log(jobId + ' - in_progress set to false');
+                                  const verifyURL = getVerifyURL(listDetails);
+                                  const downloadURL = getDownloadURL(listDetails);
+                                  console.log('starting checking routing');
+                                  setTimeout(() => {
+                                    var checkJob = setInterval(checkIfRefreshed, 60000);
+                                    res.send('refreshing');
+                                    function checkIfRefreshed() {
+                                      tfBridge.verifyList(verifyURL)
+                                        .then(refreshing => {
+                                          if (!refreshing) {
+                                            console.log('refresh complete, killing recurring job and initializing download');
+                                            clearInterval(checkJob);
+                                            console.log('downloading in progress');
+                                            tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
+                                              .then(returnObj => {
+                                                messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
+                                                // get all external ids of people belonging to this prospect job
+                                                // jobManager.getJobMembers(jobId)
+                                                //   .then(members => {
+                                                //     console.log(members);
+                                                //   })
+                                              });
+                                          } else {
+                                            // console.log('refresh not complete, retrying in 60 seconds');
+                                          }
+                                        })
+                                    }
+                                  }, 60000);
+                                })
+                              return ('baddd');
+                            })
+                        })
+                    })
+                    
+                  })
+                  .catch(err => {
+                    console.error(err);
+
+                  });
+              } else {
+                resolve(0);
+              }
+
+            })
+            .catch(err => {
+              console.error(err);
+            })
+          })
+    })
+    .catch(err => {
+      console.error(err);
+      res.send(err);
+    })
+  })
+  .catch(err => {
+    console.error(err);
+    res.send(err);
+  })
+})
+
 app.get('/get-ad-brands/:username', (req, res) => {
   var brands = [];
   prospect.getUser(req.params.username)
     .then(user => {
       // console.log(user);
       res.send('ok');
-      prospect.getReviewPosts(user.id)
+      prospect.getPosts(user.id)
         .then(posts => {
           console.log('posts received: ', posts.length);
           const adPosts = posts.filter(post => {
