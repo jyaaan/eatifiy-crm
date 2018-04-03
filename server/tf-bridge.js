@@ -256,6 +256,9 @@ TFBridge.prototype.downloadProspects = function (url, jobId) {
 
 const parseUserData = rawData => {
   const timeNow = new Date(Date.now()).toISOString();
+  // console.log(rawData.status)
+  const isPrivate = rawData.status == 'private_account' ? true : false;
+  // console.log(isPrivate);
   var parsedUser = {
     external_id: rawData.external_id,
     username: rawData.username,
@@ -278,7 +281,7 @@ const parseUserData = rawData => {
     recent_comment_rate: rawData.recent_comment_rate,
     created_at: timeNow,
     updated_at: timeNow,
-    private: rawData.status == 'private_account'
+    private: isPrivate
   }
   return parsedUser;
 }

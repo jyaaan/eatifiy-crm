@@ -42,7 +42,8 @@ const userKeys = [
   'recent_engagement_rate',
   'recent_average_comments',
   'recent_like_rate',
-  'recent_comment_rate'
+  'recent_comment_rate',
+  'private'
 ];
 
 const prospectKeys = [

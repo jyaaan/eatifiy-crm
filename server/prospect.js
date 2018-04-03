@@ -80,6 +80,10 @@ Prospect.prototype.batchLikers = function (username, jobId, maxPostCount = 2000)
   })
 }
 
+Prospect.prototype.getJobMembers = function(jobId) {
+
+}
+
 Prospect.prototype.downloadProspects = function (listUrl, token, batchId) {
   
 }
@@ -148,11 +152,12 @@ Prospect.prototype.getPostLikers = function (media) {
     thisActiveIG.initializeMediaFeed('5436898817')
       .then(feed => {
         getAllMediaLikers(media, thisActiveIG)
-          .then(likerObj => {
-            console.log('public count: ', likerObj.public.length);
-            console.log('private count: ', likerObj.private.length);
+          .then(likers => {
+            // save them likers as prospects
+            // console.log('public count: ', likerObj.public.length);
+            // console.log('private count: ', likerObj.private.length);
             // console.log(likerObj);
-            resolve('done');
+            resolve(likers);
           })
           .catch(err => {
             reject(err);
@@ -693,9 +698,10 @@ const getAllMediaLikers = (media, igSession) => {
     igSession.getLikers(media)
       .then(likers => {
         // console.log(likers);
-        const privateLikers = likers.filter(liker => { return liker.isPrivate; });
-        const publicLikers = likers.filter(liker => { return liker.isPrivate == false; });
-        resolve({ private: privateLikers, public: publicLikers });
+        // const privateLikers = likers.filter(liker => { return liker.isPrivate; });
+        // const publicLikers = likers.filter(liker => { return liker.isPrivate == false; });
+        // resolve({ private: privateLikers, public: publicLikers });
+        resolve(likers);
       })
       .catch(err => {
         console.log('get all medialikers error');

@@ -495,12 +495,21 @@ Database.prototype.upsertUser = function (user) {
   })
 }
 
-Database.prototype.getUsersByJobId = function(jobId, minFollowerCount) {
+// Database.prototype.getUsersByJobId = function(jobId, minFollowerCount) {
+//   // const subquery = knex('prospects').select('external_id').where('prospect_job_id', jobId);
+//   return subquery = knex('prospects').select('external_id').where('prospect_job_id', jobId);
+//   // const minCount = minFollowerCount ? minFollowerCount : 0;
+//   // return knex('users')
+//   //   .select('*')
+//   //   .where('external_id', 'in', subquery)
+//   //   .andWhere('follower_count', '>=', minFollowerCount)
+// }
+
+Database.prototype.getUsersByJobId = function(jobId) {
   const subquery = knex('prospects').select('external_id').where('prospect_job_id', jobId);
   return knex('users')
     .select('*')
     .where('external_id', 'in', subquery)
-    .andWhere('follower_count', '>=', minFollowerCount)
 }
 
 // RELATIONSHIPS

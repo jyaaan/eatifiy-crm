@@ -148,7 +148,7 @@ class IG {
     // console.log('getLikers');
     return new Promise((resolve, reject) => {
       // console.log('getlikers active');
-      console.log('media id: ', media.id);
+      // console.log('media id: ', media.id);
       Client.Media.likers(this.session, media.id)
         .then(likers => {
           // console.log('likers found:', likers.length);

@@ -157,6 +157,18 @@ class JobManager {
     })
   }
 
+  getJobMembers(jobId) {
+    return new Promise((resolve, reject) => {
+      this.database.getUsersByJobId(jobId)
+        .then(users => {
+          this.database.getUsers(users)
+            .then(members => {
+              resolve(members);
+            })
+        })
+    })
+  }
+
   // { primary_username, analyzed_username, target_list_id}
   // return boolean
   checkIfDuplicateJob(jobObj) {
