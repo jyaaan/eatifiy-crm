@@ -6,9 +6,17 @@ const FileHandler = require('./file-controller');
 const fileHandler = new FileHandler();
 const BatchDB = require('./batch_db');
 const batchDB = new BatchDB();
+const fs = require('fs');
 
 function TFBridge() {
 
+}
+const writeToFile = data => {
+  fs.writeFile("userJSON" + data.length + ".txt", JSON.stringify(data), function (err) {
+    if (err) {
+      console.log(err);
+    }
+  });
 }
 
 TFBridge.prototype.getProspectList = function (listURL, token, batchID) {
@@ -141,6 +149,37 @@ TFBridge.prototype.getOldestUnpostedCollab = function (shortcode) {
 }
 
 TFBridge.prototype.submitProspects = function (url, users) {
+  console.log('attempting to send ' + users.length + ' user profiles');
+  writeToFile(users);
+  return new Promise((resolve, reject) => {
+    console.log(url);
+    var options = {
+      url: url,
+      method: 'PUT',
+      headers: [
+        {
+          name: 'Content-Type',
+          value: 'application/json'
+        }
+      ],
+      body: {
+        instagram_users: JSON.stringify(users)
+      },
+      json: true
+    };
+    request(options, (err, res, bod) => {
+      if (err) {
+        console.error(err);
+        reject(err);
+      } else {
+        console.log(res.body);
+        resolve({ prospect_list_id: res.body.list.id, token: res.body.list.token });
+      }
+    })
+  })
+}
+
+TFBridge.prototype.submitProspectsLEGACY = function (url, users) {
   convertAndSend(users, ['username', 'external_id'], url);
 }
 

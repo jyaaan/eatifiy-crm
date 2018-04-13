@@ -1,4 +1,5 @@
 /*
+OLD
 Stages:
 Initialized
 Gathering
@@ -8,6 +9,20 @@ Downloading
 Awaiting Distill
 Distilling
 Sending Prospects
+Complete
+*/
+
+/*
+NEW
+Stages:
+Initialized
+Gathering
+Awaiting Scrape
+Scraping
+Awaiting Media Pull
+Pulling Media
+Awaiting Transfer
+Transferring
 Complete
 */
 
@@ -112,7 +127,7 @@ class JobManager {
       console.log('updating job');
       this.database.updateJob(job)
         .then(result => {
-          resolve(result);
+          resolve(result[0]);
         })
         .catch(err => {
           console.error('error when attempting to create new job');

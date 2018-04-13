@@ -145,6 +145,94 @@ Prospect.prototype.getUser = function(username) {
   })
 }
 
+Prospect.prototype.getRecentMedia = function(username) {
+  loadActiveIG();
+  return new Promise((resolve, reject) => {
+    activeIG.getUser(username)
+      .then(user => {
+        activeIG.initializeMediaFeed(user[0]._params.id)
+          .then(feed => {
+            function retrieve() {
+              feed.get()
+                .then(medias => {
+                  resolve(medias.map(media => { return parseMedia(media) }));
+                })
+            }
+            retrieve();
+          })
+      })
+  })
+}
+
+Prospect.prototype.getMedia = function(externalId) {
+  loadActiveIG();
+  console.log('getting media for: ', externalId)
+  return new Promise((resolve, reject) => {
+    activeIG.initializeMediaFeed(externalId)
+      .then(feed => {
+        console.log('initialization successful');
+        function retrieve() {
+          feed.get()
+            .then(medias => {
+              if (medias.length > 0) {
+                console.log('medias found');
+                resolve(medias.map(media => { return parseMedia(media) }));
+              } else {
+                resolve([]);
+              }
+            })
+            .catch(err => {
+              console.log('getMedia feed error');
+              reject(err);
+            });
+        }
+        retrieve();
+        })
+      .catch(err => {
+        console.log('getMedia initialization failure');
+        reject(err);
+      })
+  })
+}
+
+const parseMedia = media => {
+  // console.log(media._params);
+  // console.log(media._params.images);
+  const imageLink = media._params.images[0].url ? media._params.images[0].url : media._params.images[0][0].url
+  var imageURL = imageLink.indexOf('?') > -1 ? imageLink.substr(0, imageLink.indexOf('?')) : imageLink;
+  const thumbLink = media._params.images[1].url ? media._params.images[1].url : media._params.images[0][1].url
+  var thumbURL = thumbLink.indexOf('?') > -1 ? thumbLink.substr(0, thumbLink.indexOf('?')) : thumbLink;
+  var photoUsernames = [];
+  var photoExternalIds = [];
+  if (media._params.usertags) {
+    media._params.usertags.in.forEach(user => { photoUsernames.push(user.user.username) });
+    media._params.usertags.in.forEach(user => { photoExternalIds.push(String(user.user.pk)) });
+    photoUsernames = photoUsernames.toString();
+    photoExternalIds = photoExternalIds.toString();
+  } else {
+    photoUsernames = null;
+    photoExternalIds = null;
+  }
+  return {
+    posted_at: new Date(media._params.takenAt),
+    external_id: String(media._params.id),
+    user_external_id: String(media.account._params.id),
+    image_low: imageURL,
+    image_standard: imageURL,
+    image_thumbnail: thumbURL,
+    caption: media._params.caption ? media._params.caption.replace(/'/g, '') : '',
+    link: media._params.webLink,
+    like_count: media._params.likeCount,
+    comment_count: media._params.commentCount,
+    type: media._params.mediaType,
+    filter_type: media._params.filterType ? media._params.filterType : null,
+    photo_usernames: photoUsernames,
+    photo_external_user_ids: photoExternalIds,
+    latitude: media.location ? media.location._params.lat : null,
+    longitude: media.location ? media.location._params.lng : null,
+  }
+}
+
 Prospect.prototype.getPostLikers = function (media) {
   loadActiveIG();
   const thisActiveIG = activeIG;
@@ -231,14 +319,14 @@ Prospect.prototype.getAllLikers = function (externalId, timeStart, jobId, maxPos
 
                 } else if (errorCounter >= errorThreshold) {
                   console.log('too many errors encountered');
-                  database.updateJobStage(jobId, 'Primed')
+                  database.updateJobStage(jobId, 'Awaiting Scrape')
                     .then(result => {
                       // resolve(result[0]);
                       resolve(likers);
                     })
                 } else {
                   console.log('All likers retrieved');
-                  database.updateJobStage(jobId, 'Primed')
+                  database.updateJobStage(jobId, 'Awaiting Scrape')
                     .then(result => {
                       // resolve(result[0]);
                       resolve(likers);
