@@ -18,6 +18,13 @@ class BatchDB {
 
     return queryText;    
   }
+
+  upsertMedias(arrValues) {
+    var queryText = format('INSERT INTO medias (%I) VALUES %L', mediaKeys, spreadFormattedValues(mediaKeys, arrValues));
+    queryText += ' ON CONFLICT (external_id) ';
+    queryText += 'DO UPDATE SET ' + formatConflictKeys(mediaConflictKeys) + ';';
+    return queryText;
+  }
 }
 
 const timeNow = new Date(Date.now()).toISOString();
@@ -31,7 +38,7 @@ const userKeys = [
   'follower_count',
   'bio',
   'post_count',
-  'external_url',
+  'website',
   'created_at',
   'updated_at',
   'email',
@@ -52,13 +59,55 @@ const prospectKeys = [
   'prospect_job_id',
   'relationship_type',
   'created_at',
+  'updated_at',
+  'private'
+]
+
+const mediaKeys = [
+  'posted_at',
+  'external_id',
+  'image_low',
+  'image_standard',
+  'image_thumbnail',
+  'caption',
+  'link',
+  'like_count',
+  'comment_count',
+  'type',
+  'filter_type',
+  'photo_usernames',
+  'photo_external_user_ids',
+  'latitude',
+  'longitude',
+  'created_at',
+  'updated_at',
+  'user_external_id'
+]
+
+const mediaConflictKeys = [
+  'posted_at',
+  'external_id',
+  'image_low',
+  'image_standard',
+  'image_thumbnail',
+  'caption',
+  'link',
+  'like_count',
+  'comment_count',
+  'type',
+  'filter_type',
+  'photo_usernames',
+  'photo_external_user_ids',
+  'latitude',
+  'longitude',
   'updated_at'
 ]
 
 const prospectConflictKeys = [
   'username',
   'updated_at',
-  'relationship_type'
+  'relationship_type',
+  'private'
 ]
 
 const userConflictKeys = [
@@ -69,7 +118,7 @@ const userConflictKeys = [
   'follower_count',
   'bio',
   'post_count',
-  'external_url',
+  'website',
   'updated_at',
   'email',
   'recent_post_count',
@@ -79,8 +128,10 @@ const userConflictKeys = [
   'recent_engagement_rate',
   'recent_average_comments',
   'recent_like_rate',
-  'recent_comment_rate'
+  'recent_comment_rate',
+  'private'
 ];
+
 
 // add exception handling
 const formatValuesByKeys = (keys, values) => {

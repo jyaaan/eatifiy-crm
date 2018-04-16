@@ -425,9 +425,16 @@ Database.prototype.upsertProspect = function (prospect) {
 }
 
 Database.prototype.getProspectsByJobId = function (jobId) {
+  console.log('trying: ', jobId);
   return knex('prospects')
     .select('*')
     .where('prospect_job_id', jobId)
+}
+
+Database.prototype.getLinktree = function () {
+  return knex('users')
+    .select('*')
+    .where('website', 'ilike', '%linktr.ee%')
 }
 
 Database.prototype.prospectForJobExists = function (jobId, username) {
@@ -510,6 +517,12 @@ Database.prototype.getUsersByJobId = function(jobId) {
   return knex('users')
     .select('*')
     .where('external_id', 'in', subquery)
+}
+
+Database.prototype.getMediasByUserId = function(userExternalId) {
+  return knex('medias')
+    .select('*')
+    .where('user_external_id', userExternalId)
 }
 
 // RELATIONSHIPS
@@ -653,7 +666,7 @@ Database.prototype.updateJob = function (job) {
   job.updated_at = timeNow;
   return knex('prospect_jobs')
     .where('id', job.id)
-    .returning('id')
+    .returning('*')
     .update(job);
 }
 
