@@ -431,6 +431,12 @@ Database.prototype.getProspectsByJobId = function (jobId) {
     .where('prospect_job_id', jobId)
 }
 
+Database.prototype.getLinktree = function () {
+  return knex('users')
+    .select('*')
+    .where('website', 'ilike', '%linktr.ee%')
+}
+
 Database.prototype.prospectForJobExists = function (jobId, username) {
   return knex('prospects')
     .count('*')

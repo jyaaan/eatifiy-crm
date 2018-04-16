@@ -163,7 +163,7 @@ TFBridge.prototype.submitProspects = function (url, users) {
         }
       ],
       body: {
-        instagram_users: JSON.stringify(users)
+        instagram_users: users // formerly used stringify
       },
       json: true
     };
@@ -172,8 +172,8 @@ TFBridge.prototype.submitProspects = function (url, users) {
         console.error(err);
         reject(err);
       } else {
-        console.log(res.body);
-        resolve({ prospect_list_id: res.body.list.id, token: res.body.list.token });
+        // console.log(res.body);
+        resolve('upload complete');
       }
     })
   })
@@ -347,6 +347,7 @@ const getRequest = (options) => {
 
 const convertAndSend = (array, header, url) => {
   console.log('testing csv send');
+  console.log(array[0]);
   var rows = [
     header,
     ...array

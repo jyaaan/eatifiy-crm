@@ -59,7 +59,8 @@ const prospectKeys = [
   'prospect_job_id',
   'relationship_type',
   'created_at',
-  'updated_at'
+  'updated_at',
+  'private'
 ]
 
 const mediaKeys = [
@@ -105,7 +106,8 @@ const mediaConflictKeys = [
 const prospectConflictKeys = [
   'username',
   'updated_at',
-  'relationship_type'
+  'relationship_type',
+  'private'
 ]
 
 const userConflictKeys = [

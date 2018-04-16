@@ -224,7 +224,7 @@ const parseMedia = media => {
     link: media._params.webLink,
     like_count: media._params.likeCount,
     comment_count: media._params.commentCount,
-    type: media._params.mediaType,
+    type: media._params.mediaType = 1 ? 'image' : media._params.mediaType = 2 ? 'video' : 'carousel',
     filter_type: media._params.filterType ? media._params.filterType : null,
     photo_usernames: photoUsernames,
     photo_external_user_ids: photoExternalIds,
@@ -267,6 +267,18 @@ Prospect.prototype.getAllLikers = function (externalId, timeStart, jobId, maxPos
 
   // load active ig here
   // loadActiveIG();
+  /*
+_params:
+   { username: 'deepakyaduvanshi5235',
+     picture: 'https://scontent-lax3-1.cdninstagram.com/vp/f2c2510885b279698dc801c413ae9ab4/5B5D020B/t51.2885-19/s150x150/17818160_230643574079114_2368253569833893888_a.jpg',
+     fullName: 'Deepak Yaduvanshi',
+     id: 4711850234,
+     isPrivate: true,
+     hasAnonymousProfilePicture: undefined,
+     isBusiness: false,
+     profilePicId: '1486874706569056270_4711850234' },
+  id: 4711850234 }
+  */
   return new Promise((resolve, reject) => {
     igSession.initializeMediaFeed(externalId)
       .then(feed => {
@@ -699,7 +711,8 @@ const saveLikersToProspects = (likers, jobId) => {
           prospect_job_id: jobId,
           relationship_type: 'liker',
           created_at: timeNow,
-          updated_at: timeNow
+          updated_at: timeNow,
+          private: liker.isPrivate
         }
       })
       // console.log('formatted likers:', formattedLikers);
@@ -769,9 +782,9 @@ const getMediaLikers = (media, arrLikers, igSession) => {
       .then(likers => {
         totalLikersProcessed += likers.length;
         const likerUsernames = arrLikers.map(liker => { return liker.username });
-        const publicLikers = likers.filter(liker => { return liker.isPrivate == false; });
-        const dedupedPublicLikers = publicLikers.filter(liker => { return likerUsernames.indexOf(liker.username) == -1; });
-        resolve(dedupedPublicLikers);
+        // const publicLikers = likers.filter(liker => { return liker.isPrivate == false; });
+        const dedupedLikers = likers.filter(liker => { return likerUsernames.indexOf(liker.username) == -1; });
+        resolve(dedupedLikers);
       })
       .catch(err => {
         console.log('get media likers error');

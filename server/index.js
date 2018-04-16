@@ -31,6 +31,8 @@ const tfBridge = new TFBridge();
 
 const http = require('http').createServer(app);
 
+const scraperManager = new (require('./scraper-manager'))();
+
 app.use(staticMiddleware);
 app.use(bodyParser.json());
 
@@ -44,7 +46,7 @@ const pusher = new Pusher();
 
 // Initialization routines and parameters
 jobManager.resetInProgress();
-const MAXPOSTCOUNT = 200;
+const MAXPOSTCOUNT = 100;
 var refreshJobs = [];
 var refreshJobURLs = [];
 
@@ -184,7 +186,7 @@ const batchDB = new BatchDB();
 const launchNextJob = job => {
   switch(job.stage) {
     case 'Gathering':
-      startProspectingJob(job);
+      startProspectJob(job);
       break;
     case 'Scraping':
       startScrapingJob(job);
@@ -205,9 +207,9 @@ const getNextJobStage = job => {
     case 'Initialized':
       return 'Gathering';
       break;
-    case 'Gathering':
-      return 'Awaiting Scrape';
-      break;
+    // case 'Gathering':
+    //   return 'Awaiting Scrape';
+    //   break;
     case 'Awaiting Scrape':
       return 'Scraping';
       break;
@@ -263,6 +265,52 @@ const getNextJobStage = job => {
   }
 }
 */
+
+const jsdom = require('jsdom');
+const { JSDOM } = jsdom;
+
+app.get('/scraper/:username', (req, res) => {
+  console.log('scraper');
+  res.send('ok');
+  Scraper(req.params.username)
+  .then(user => {
+    // console.log(user);
+    var $elem = new JSDOM(user);
+    var scripts = $elem.window.document.getElementsByTagName('script')
+    for (script in scripts) {
+      if (scripts[script].textContent && scripts[script].textContent.indexOf('window._sharedData') > -1) {
+        var rawJSON = scripts[script].textContent.replace('window._sharedData =', '');
+        if (rawJSON[rawJSON.length - 1] == ';') {
+          rawJSON = rawJSON.slice(0, -1);
+        }
+        console.log(JSON.parse(rawJSON).entry_data.ProfilePage[0].graphql);
+      }
+    }
+      // $elem.innerHTML = user;
+      // const scripts = $elem.getElementsByTagName('script');
+      // scripts.forEach(script => {
+      //   console.log(script);
+      // })
+      // console.log((new DOMParser()).parseFromString(user, 'text/javascript'));
+    })
+})
+
+app.get('/linktree', (req, res) => {
+  console.log('linktree');
+  res.send('ok')
+  database.getLinktree()
+    .then(users => {
+      var formatted = [];
+      users.forEach(user => {
+        formatted.push([user.username, user.external_id]);
+      })
+      batchProspects(formatted, 1000).forEach(batch => {
+        setTimeout(() => {
+          tfBridge.submitProspectsLEGACY('https://app.truefluence.io/users/eatifyjohn/prospects/9531.csv?token=ME2Lfbezv9buWFTboadMAcd3', batch)
+        }, 500);
+      });
+    })
+})
 
 app.get('/test-proxy-scrape/:username', (req, res) => {
   res.send('ok');
@@ -894,7 +942,7 @@ const getVerifyURL = listDetails => {
 
 const getSubmitURL = listDetails => {
   var submitURL = 'https://app.truefluence.io/users/' + listDetails.username;
-  submitURL = submitURL + '/prospects/' + listDetails.listId + '.csv?token=';
+  submitURL = submitURL + '/prospects/' + listDetails.listId + '?token=';
   submitURL = submitURL + listDetails.token;
   return submitURL;
 }
@@ -1068,7 +1116,11 @@ const startTFTransfer = job => {
       async.mapSeries(users, (user, next) => {
         database.getMediasByUserId(user.external_id)
           .then(medias => {
+            medias.forEach(media => {
+              delete media.id;
+            })
             console.log('received medias for: ', user.username);
+            delete user.id;
             user.medias = medias;
             next();
           })
@@ -1077,7 +1129,7 @@ const startTFTransfer = job => {
         // console.log(users[1]);
         batchProspects(users, 50).forEach(batch => {
           setTimeout(() => {
-            tfBridge.submitProspects(job.upload_url, batch);
+            tfBridge.submitProspects(submitURL, batch);
           }, 500);
         });
         const jobUpdate = {
@@ -1140,7 +1192,7 @@ const startMediaPull = job => {
               // next();
             })
             .catch(err => {
-              console.log(batchDB.upsertMedias([media]));
+              console.log(batchDB.upsertMedias([arrMedias[0]]));
               console.error(err);
             })
         // })
@@ -1149,7 +1201,7 @@ const startMediaPull = job => {
 }
 
 const startScrapingJob = job => {
-  console.log(job.id);
+  console.log('aggregating prospects for job: ', job.id);
   var users = [];
   // const listDetails = parseListDetails(job);
   renderFormattedProspects(job.id)
@@ -1161,57 +1213,79 @@ const startScrapingJob = job => {
       prospects = spliceDuplicates(prospects);
       // console.log('post splice:', prospects.length);
       // console.log(prospects);
-      async.mapSeries(prospects, (prospect, next) => {
-        setTimeout(() => {
-          Scraper(prospect)
-            .then(user => {
-              user.user.created_at = new Date();
-              user.user.updated_at = new Date();
-              users.push(user.user);
-              console.log('scraped: ', user.user.username)
-              // database.upsertUser(user.user)
-              //   .then(result => {
-              //     console.log('successful upsert');
-              //     next();
-              //   })
-              //   .catch(err => {
-              //     console.log('upser error');
-              //     console.error(err);
-              //     next();
-              //   })
-              next();
+
+
+      scraperManager.scrapeUsers(prospects)
+        .then(userData => {
+          console.log('batch upserting');
+          database.raw(batchDB.upsertUsers(userData))
+            .then(result => {
+              const jobUpdate = {
+                id: job.id,
+                in_progress: false,
+                queued: true,
+                stage: 'Awaiting Media Pull'
+              };
+              jobManager.updateJob(jobUpdate)
+                .then(update => {
+                  // launchNextJob(update);
+                  // console.log(job);
+                })
             })
-            .catch(err => {
-              console.log('error detected');
-              setTimeout(() => {
-                  next();
-                }, 120000);
-              })
-        }, 200);
-      }, err => {
-        console.log('batch upserting');
-        database.raw(batchDB.upsertUsers(users))
-          .then(result => {
-            const jobUpdate = {
-              id: job.id,
-              in_progress: false,
-              queued: true,
-              stage: 'Awaiting Media Pull'
-            };
-            jobManager.updateJob(jobUpdate)
-              .then(update => {
-                // launchNextJob(update);
-                // console.log(job);
-              })
-          })
-          // .then(result => {
-          //   console.log('batch upsert count:', users.length);
-          //   console.log(result);
-          // })
-          // .catch(err => {
-          //   console.log('batch upsert failure');
-          // })
-      })
+        })
+
+
+      // async.mapSeries(prospects, (prospect, next) => {
+      //   setTimeout(() => {
+      //     Scraper(prospect)
+      //       .then(user => {
+              // user.user.created_at = new Date();
+              // user.user.updated_at = new Date();
+              // users.push(user.user);
+              // console.log('scraped: ', user.user.username)
+      //         // database.upsertUser(user.user)
+      //         //   .then(result => {
+      //         //     console.log('successful upsert');
+      //         //     next();
+      //         //   })
+      //         //   .catch(err => {
+      //         //     console.log('upser error');
+      //         //     console.error(err);
+      //         //     next();
+      //         //   })
+      //         next();
+      //       })
+      //       .catch(err => {
+      //         console.log('error detected');
+      //         setTimeout(() => {
+      //             next();
+      //           }, 30000);
+      //         })
+      //   }, 300);
+      // }, err => {
+      //   console.log('batch upserting');
+      //   database.raw(batchDB.upsertUsers(users))
+      //     .then(result => {
+      //       const jobUpdate = {
+      //         id: job.id,
+      //         in_progress: false,
+      //         queued: true,
+      //         stage: 'Awaiting Media Pull'
+      //       };
+      //       jobManager.updateJob(jobUpdate)
+      //         .then(update => {
+      //           // launchNextJob(update);
+      //           // console.log(job);
+      //         })
+      //     })
+      //     // .then(result => {
+      //     //   console.log('batch upsert count:', users.length);
+      //     //   console.log(result);
+      //     // })
+      //     // .catch(err => {
+      //     //   console.log('batch upsert failure');
+      //     // })
+      // })
     })
 }
 
@@ -1255,6 +1329,17 @@ const startProspectJob = job => {
         //         return ('holla!');
         //       })
         //   })
+        const jobUpdate = {
+          id: job.id,
+          in_progress: false,
+          queued: true,
+          stage: 'Awaiting Scrape'
+        };
+        jobManager.updateJob(jobUpdate)
+          .then(update => {
+            // launchNextJob(update);
+            // console.log(job);
+          })
       })
       .catch(err => {
         console.log('batchLikers failure');
@@ -1609,9 +1694,12 @@ renderFormattedProspects = jobId => {
   return new Promise((resolve, reject) => {
     database.getProspectsByJobId(jobId)
       .then(prospects => {
-        const formattedProspects = prospects.map(prospect => {
+        const formattedProspects = prospects.filter(prospect => {
+          return prospect.private == false || prospect.private == null;
+        }).map(prospect => {
           return [prospect.username, prospect.external_id];
         })
+        console.log('returning ' + formattedProspects.length + ' public prospects out of ' + prospects.length);
         resolve(formattedProspects);
       })
   })
