@@ -33,6 +33,9 @@ const http = require('http').createServer(app);
 
 const scraperManager = new (require('./scraper-manager'))();
 
+const ProxyManager = require('./proxy_manager');
+const proxyManager = new ProxyManager();
+
 app.use(staticMiddleware);
 app.use(bodyParser.json());
 
@@ -1127,9 +1130,15 @@ const startTFTransfer = job => {
       }, err => {
         // console.log(users[0]);
         // console.log(users[1]);
-        batchProspects(users, 50).forEach(batch => {
+        batchProspects(users, 20).forEach(batch => {
           setTimeout(() => {
-            tfBridge.submitProspects(submitURL, batch);
+            tfBridge.submitProspects(submitURL, batch)
+              .then(result => {
+
+              })
+              .catch(err => {
+                console.error(err);
+              })
           }, 500);
         });
         const jobUpdate = {
@@ -1148,33 +1157,16 @@ const startTFTransfer = job => {
 }
 
 const startMediaPull = job => {
+  console.log('starting media pull');
   var arrMedias = [];
   renderFormattedProspects(job.id)
     .then(candidates => {
       var prospectIds = candidates.map(candidate => { return candidate[1]; });
       prospectIds = spliceDuplicates(prospectIds);
-      async.mapSeries(prospectIds, (prospectId, next) => {
-        prospect.getMedia(prospectId)
-          .then(medias => {
-            if (medias[0]) {
-              medias.forEach(media => {
-                media.user_external_id = prospectId;
-                media.created_at = new Date();
-                media.updated_at = new Date();
-                arrMedias.push(media); 
-              });
-            }
-            next();
-          })
-          .catch(err => {
-            console.error(err);
-            next();
-          })
-      }, err => {
-        console.log('media pull completed, upserting');
-        // console.log(arrMedias);
-        // console.log(batchDB.upsertMedias([arrMedias[0], arrMedias[1]]));
-        // async.mapSeries(arrMedias, (media, next) => {
+
+      proxyManager.getMedias(prospectIds)
+        .then(arrMedias => {
+          console.log('medias gathered');
           database.raw(batchDB.upsertMedias(arrMedias))
             .then(result => {
               console.log()
@@ -1195,8 +1187,52 @@ const startMediaPull = job => {
               console.log(batchDB.upsertMedias([arrMedias[0]]));
               console.error(err);
             })
-        // })
-      })
+        })
+
+      // async.mapSeries(prospectIds, (prospectId, next) => {
+      //   prospect.getMedia(prospectId)
+      //     .then(medias => {
+      //       if (medias[0]) {
+      //         medias.forEach(media => {
+      //           media.user_external_id = prospectId;
+      //           media.created_at = new Date();
+      //           media.updated_at = new Date();
+      //           arrMedias.push(media); 
+      //         });
+      //       }
+      //       next();
+      //     })
+      //     .catch(err => {
+      //       console.error(err);
+      //       next();
+      //     })
+      // }, err => {
+      //   console.log('media pull completed, upserting');
+      //   // console.log(arrMedias);
+      //   // console.log(batchDB.upsertMedias([arrMedias[0], arrMedias[1]]));
+      //   // async.mapSeries(arrMedias, (media, next) => {
+      //     database.raw(batchDB.upsertMedias(arrMedias))
+      //       .then(result => {
+      //         console.log()
+      //         const jobUpdate = {
+      //           id: job.id,
+      //           in_progress: false,
+      //           queued: true,
+      //           stage: 'Awaiting Transfer'
+      //         };
+      //         jobManager.updateJob(jobUpdate)
+      //           .then(update => {
+      //             // launchNextJob(update);
+      //             // console.log(job);
+      //           })
+      //         // next();
+      //       })
+      //       .catch(err => {
+      //         console.log(batchDB.upsertMedias([arrMedias[0]]));
+      //         console.error(err);
+      //       })
+      //   // })
+      // })
     })
 }
 

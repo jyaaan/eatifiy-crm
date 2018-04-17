@@ -15,21 +15,33 @@ const tfScore = require('./tf-score');
 const InfluencerFilter = require('./influencer-filter');
 const request = require('request');
 
-const ProxyManager = require('./proxy_manager');
-const proxyManager = new ProxyManager();
+// const ProxyManager = require('./proxy_manager');
+// const proxyManager = new ProxyManager();
+const thisProxyObj = {
+  proxyAddress: "208.123.119.237",
+  port: "65233",
+  username: "john",
+  password: "M7g7RqY",
+  ig_username: "eatifyjohn",
+  ig_password: "occsbootcamp",
+  expiration_date: "4/21/2018"
+}
+const Proxy = require('./proxy');
+const proxy = new Proxy(thisProxyObj)
+var activeIG = {};
 setTimeout(() => {
   // console.log('proxy manager:', proxyManager.proxies[0]);
   // console.log('session:', proxyManager.proxies[0].session);
   // console.log('performance history:', proxyManager.proxies[0].performanceHistory);
+  activeIG = proxy.ig;
 }, 10000);
 
-var activeIG = {};
-const loadActiveIG = () => {
-  const nextProxy = proxyManager.getNextProxy();
-  console.log('nextProxy:', nextProxy.ig_username);
-  nextProxy.performanceHistory.usageCount++;
-  activeIG = nextProxy.ig;
-}
+// const loadActiveIG = () => {
+//   const nextProxy = proxyManager.getNextProxy();
+//   console.log('nextProxy:', nextProxy.ig_username);
+//   nextProxy.performanceHistory.usageCount++;
+//   activeIG = nextProxy.ig;
+// }
 
 
 // const reqProxy = {
@@ -66,7 +78,7 @@ function Prospect() {
 Prospect.prototype.batchLikers = function (username, jobId, maxPostCount = 2000) {
   const timeStart = Date.now();
   console.log('Getting all likers for', username);
-  loadActiveIG();
+  // loadActiveIG();
   return new Promise((resolve, reject) => {
     this.getUser(username)
       .then(user => {
@@ -132,7 +144,7 @@ Prospect.prototype.sendMessage = function (externalId, message) {
   mutualFollowersCount: 0 }
 */
 Prospect.prototype.getUser = function(username) {
-  loadActiveIG();
+  // loadActiveIG();
   return new Promise((resolve, reject) => {
     activeIG.getUser(username)
       .then(user => {
@@ -146,7 +158,7 @@ Prospect.prototype.getUser = function(username) {
 }
 
 Prospect.prototype.getRecentMedia = function(username) {
-  loadActiveIG();
+  // loadActiveIG();
   return new Promise((resolve, reject) => {
     activeIG.getUser(username)
       .then(user => {
@@ -165,7 +177,7 @@ Prospect.prototype.getRecentMedia = function(username) {
 }
 
 Prospect.prototype.getMedia = function(externalId) {
-  loadActiveIG();
+  // loadActiveIG();
   console.log('getting media for: ', externalId)
   return new Promise((resolve, reject) => {
     activeIG.initializeMediaFeed(externalId)
@@ -234,7 +246,7 @@ const parseMedia = media => {
 }
 
 Prospect.prototype.getPostLikers = function (media) {
-  loadActiveIG();
+  // loadActiveIG();
   const thisActiveIG = activeIG;
   return new Promise((resolve, reject) => {
     thisActiveIG.initializeMediaFeed('5436898817')
@@ -363,7 +375,7 @@ _params:
 }
 
 Prospect.prototype.getPosts = function (externalId, maxIteration = 20) {
-  loadActiveIG();
+  // loadActiveIG();
   var posts = [];
   var counter = 1;
   return new Promise((resolve, reject) => {
@@ -397,7 +409,7 @@ Prospect.prototype.getPosts = function (externalId, maxIteration = 20) {
 }
 
 Prospect.prototype.getRecentSCPost = function (externalId) {
-  loadActiveIG();
+  // loadActiveIG();
   return new Promise((resolve, reject) => {
     activeIG.initializeMediaFeed(externalId)
       .then(feed => {
