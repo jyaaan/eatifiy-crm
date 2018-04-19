@@ -12,7 +12,7 @@ class Pusher {
     // this.ignore = [];
   }
 
-  ping() {
+  ping(proxyManager) {
     // get oldest unposted collab
     prospect.getRecentSCPost(TF_USER_ID)
       .then(shortcode => {
@@ -23,7 +23,7 @@ class Pusher {
               const filename = parameters.url.substring(parameters.url.lastIndexOf('/') + 1);
               fileHandler.downloadFile(parameters.url, filename)
                 .then(result => {
-                  prospect.createPost(result, parameters.caption)
+                  prospect.createPost(result, parameters.caption, proxyManager)
                     .then(result => {
                       console.log('Post created for collaboration: ' + collab.brand_name +
                         ' - ' + collab.media.instagram_username);
