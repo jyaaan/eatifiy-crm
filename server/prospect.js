@@ -18,10 +18,10 @@ const request = require('request');
 // const ProxyManager = require('./proxy_manager');
 // const proxyManager = new ProxyManager();
 const thisProxyObj = {
-  proxyAddress: "208.123.119.237",
+  proxyAddress: "107.181.175.49",
   port: "65233",
-  username: "john",
-  password: "M7g7RqY",
+  username: "johnyamashiro",
+  password: "B4h2KrO",
   ig_username: "eatifyjohn",
   ig_password: "occsbootcamp",
   expiration_date: "4/21/2018"
@@ -75,14 +75,14 @@ function Prospect() {
 
 }
 
-Prospect.prototype.batchLikers = function (username, jobId, maxPostCount = 2000) {
+Prospect.prototype.batchLikers = function (username, jobId, maxPostCount = 2000, maxLikerCount = 30000) {
   const timeStart = Date.now();
   console.log('Getting all likers for', username);
   // loadActiveIG();
   return new Promise((resolve, reject) => {
     this.getUser(username)
       .then(user => {
-        this.getAllLikers(user.id, timeStart, jobId, maxPostCount, activeIG)
+        this.getAllLikers(user.id, timeStart, jobId, maxPostCount, activeIG, maxLikerCount)
           .then(likers => {
             const timeComplete = Date.now();
             console.log('time taken (sec):', (timeComplete - timeStart) / 1000);
@@ -120,7 +120,7 @@ Prospect.prototype.deepLookup = function (username) {
   })
 }
 
-Prospect.prototype.createPost = function (filePath, caption) {
+Prospect.prototype.createPost = function (filePath, caption, proxyManager) {
   return proxyManager.tfProxy.ig.createPost(filePath, caption)
 }
 
@@ -268,7 +268,7 @@ Prospect.prototype.getPostLikers = function (media) {
 
 var totalLikersProcessed = 0;
 // will result in array of [username, external_id]
-Prospect.prototype.getAllLikers = function (externalId, timeStart, jobId, maxPostCount = 2000, igSession) {
+Prospect.prototype.getAllLikers = function (externalId, timeStart, jobId, maxPostCount = 2000, igSession, maxLikerCount) {
   const errorThreshold = 10;
   var likers = [];
   // console.log('Getting all likers for', externalId);
@@ -276,6 +276,7 @@ Prospect.prototype.getAllLikers = function (externalId, timeStart, jobId, maxPos
   var mediaCounter = 0;
   var errorCounter = 0;
   totalLikersProcessed = 0;
+  var publicLikerCount = 0;
 
   // load active ig here
   // loadActiveIG();
@@ -297,44 +298,52 @@ _params:
         function retrieve() {
           feed.get()
             .then(medias => {
-              mediaCounter++;
               async.mapSeries(medias, (media, next) => {
-                getMediaLikers(media, likers, igSession)
+                if (publicLikerCount < maxLikerCount) {
+                  getMediaLikers(media, likers, igSession)
                   .then(newLikers => {
-                    saveLikersToProspects(newLikers, jobId)
-                      .then(saveResult => {
-                        // counter++;
-                        // totalLikersProcessed += newLikers.length
-                        // likers = likers.concat(...newLikers);
-                        // var timeNow = Date.now();
-                        // var timeElapsed = (timeNow - timeStart) / 1000;
-                        // var predictedTotal = (timeElapsed * postCount) / counter;
-                        // console.log('\033c');
-                        // console.log('got new likers, unique total (processed): ' + likers.length + ' (' + totalLikersProcessed + ')');
-                        // console.log('job ' + jobId + ':' + counter);
-                        // console.log('time elapsed (sec):', timeElapsed.toFixed(2));
-                        // console.log('predicted total job duration (sec):', predictedTotal.toFixed(0));
-                        // console.log('predicted time remaining (sec):', (predictedTotal - timeElapsed).toFixed(0));
-                        // console.log('errors encountered:', errorCounter);
-                        setTimeout(() => {
-                          next();
-                        }, 2000)
-                      })
-                      .catch(err => {
-                        console.error(err);
-                        // next();
-                      })
-                  })
-                  .catch(err => {
-                    console.log('error detected, waiting to restart');
-                    setTimeout(() => {
-                      console.log('attempting reset');
-                      errorCounter++;
-                      next();
-                    }, 120000)
-                  })
+                      saveLikersToProspects(newLikers, jobId)
+                        .then(saveResult => {
+                          counter++;
+                          console.log('medias processed: ', counter);
+                          // totalLikersProcessed += newLikers.length
+                          likers = likers.concat(...newLikers);
+                          // dedupe and get public liker count.
+                          publicLikerCount = likers.filter(liker => { return liker.isPrivate == false; }).length;
+                          console.log('public likers: ', publicLikerCount);
+                          // var timeNow = Date.now();
+                          // var timeElapsed = (timeNow - timeStart) / 1000;
+                          // var predictedTotal = (timeElapsed * postCount) / counter;
+                          // console.log('\033c');
+                          // console.log('got new likers, unique total: ' + likers.length);
+                          // console.log('job ' + jobId + ':' + counter);
+                          // console.log('time elapsed (sec):', timeElapsed.toFixed(2));
+                          // console.log('predicted total job duration (sec):', predictedTotal.toFixed(0));
+                          // console.log('predicted time remaining (sec):', (predictedTotal - timeElapsed).toFixed(0));
+                          // console.log('errors encountered:', errorCounter);
+                          setTimeout(() => {
+                            next();
+                          }, 1200)
+                        })
+                        .catch(err => {
+                          console.error(err);
+                          // next();
+                        })
+                    })
+                    .catch(err => {
+                      console.log('error detected, waiting to restart');
+                      setTimeout(() => {
+                        console.log('attempting reset');
+                        errorCounter++;
+                        next();
+                      }, 120000)
+                    })
+                } else {
+                  console.log('max likers reached, skipping media');
+                  next ();
+                }
               }, err => { // when medias are done, check to see if more medias exist
-                if (feed.moreAvailable && errorCounter < errorThreshold && counter < maxPostCount) {
+                if (feed.moreAvailable && errorCounter < errorThreshold && counter < maxPostCount && publicLikerCount < maxLikerCount) {
                   // console.log('More medias available');
 
                   setTimeout(() => {

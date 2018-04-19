@@ -42,36 +42,38 @@ class Proxy {
 
   getMedia(userId, arrMedias) {
     this.available = false;
-    console.log('received: ', userId);
+    console.log(this.ig_username + ' received: ' + userId);
     this.ig.initializeMediaFeed(userId)
       .then(feed => {
-        console.log('initialization successful');
+        // console.log('initialization successful');
         setTimeout(() => {
           feed.get()
             .then(medias => {
               if (medias.length > 0) {
+                // console.log('medias found');
                 medias.forEach(media => {
                   var formattedMedia = parseMedia(media);
                   formattedMedia.user_external_id = userId;
                   formattedMedia.created_at = new Date();
                   formattedMedia.updated_at = new Date();
                   arrMedias.push(formattedMedia);
-                  this.available = true;
                 })
               }
+              this.available = true;
             })
             .catch(err => {
-              console.error('feed error');
+              console.error('feed error: ', this.ig_username);
               setTimeout(() => {
                 this.available = true;
               }, 60000)
             })
-        }, 400);
+        }, 800);
       })
       .catch(err => {
         console.error('initialization error');
         setTimeout(() => {
           this.available = true;
+          console.log('resuming: ', this.ig_username);
         }, 60000)
       })
   }

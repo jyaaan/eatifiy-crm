@@ -27,28 +27,37 @@ class ProxyManager {
   getMedias(userIds) {
     console.log('media pull assignment count: ', userIds.length)
     var nextProxy;
+    var arrMedias = [];
     return new Promise((resolve, reject) => {
-      var arrMedias = [];
       async.mapSeries(userIds, (userId, next) => {
-        nextProxy = nextAvailableProxy(this.proxies);
+        nextProxy = getNextAvailableProxy(this.proxies);
         if (nextProxy) {
           nextProxy.getMedia(userId, arrMedias);
           next();
         } else {
           var keepAlive = setInterval(() => {
-            nextProxy = nextAvailableProxy(this.proxies);
-            if (nextProxy) {
+            // console.log('no proxies available');
+            var retryProxy = getNextAvailableProxy(this.proxies);
+            if (retryProxy) {
               clearInterval(keepAlive);
-              nextProxy.getMedia(userId, arrMedias);
+              retryProxy.getMedia(userId, arrMedias);
               next();
             }
-          }, 300);
+          }, 500);
         }
       }, err => {
+        console.log('media pull for batch completed, checking busy');
         var awaitCompletion = setInterval(() => {
+          console.log('proxy manager waiting for green light');
           if(!proxiesBusy(this.proxies)) {
             clearInterval(awaitCompletion);
             resolve(arrMedias);
+          } else {
+            var busyProxy = this.proxies.find(proxy => {
+              return proxy.available == false;
+            })
+            console.log('busy: ', busyProxy.ig_username);
+
           }
         }, 2000);
       })
@@ -74,6 +83,12 @@ const proxiesBusy = proxies => {
   return proxies.some(proxy => {
     return proxy.available == false;
   })
+}
+
+batchProspects = (prospects, batchSize = 1000) => {
+  return prospects.map((prospect, i) => {
+    return i % batchSize === 0 ? prospects.slice(i, i + batchSize) : null;
+  }).filter(elem => { return elem; });
 }
 
 module.exports = ProxyManager;

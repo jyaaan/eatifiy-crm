@@ -49,7 +49,9 @@ const pusher = new Pusher();
 
 // Initialization routines and parameters
 jobManager.resetInProgress();
-const MAXPOSTCOUNT = 100;
+const MAXPOSTCOUNT = 300;
+const MAXLIKERCOUNT = 10000; // public likers only
+const MININFLUENCERFOLLOWERS = 5000;
 var refreshJobs = [];
 var refreshJobURLs = [];
 
@@ -67,6 +69,13 @@ var recurringJob1Staggered;
 //   jobId: null,
 //   job: {}
 // }
+
+const availableJobs = {
+  scraper: true,
+  media_pull: true,
+  transfer: true,
+  likers: true
+}
 
 const Jobs = require('./jobs');
 const tasks = new Jobs(3);
@@ -161,7 +170,7 @@ setTimeout(() => {
     //     })
     // })
     if (tasks.pending()) {
-      tasks.getPending().map(task => {
+      tasks.getPending().forEach(task => {
         console.log('we gotta start the job!');
         task.in_progress = true;
         // set job to in progress, unqueue
@@ -189,16 +198,28 @@ const batchDB = new BatchDB();
 const launchNextJob = job => {
   switch(job.stage) {
     case 'Gathering':
-      startProspectJob(job);
+      if (availableJobs.likers) {
+        availableJobs.likers = false;
+        startProspectJob(job);
+      }
       break;
     case 'Scraping':
-      startScrapingJob(job);
+      if (availableJobs.scraper) {
+        availableJobs.scraper = false;
+        startScrapingJob(job);
+      }
       break;
     case 'Pulling Media':
-      startMediaPull(job);
+      if (availableJobs.media_pull) {
+        availableJobs.media_pull = false;
+        startMediaPull(job);
+      }
       break;
     case 'Transferring':
-      startTFTransfer(job);
+      if (availableJobs.transfer) {
+        availableJobs.transfer = false;
+        startTFTransfer(job);
+      }
       break;
     default:
       console.log('Stage Error for job id: ', job.id);
@@ -339,7 +360,7 @@ app.post('/test-download-image', (req, res) => {
 })
 
 app.post('/pusher', (req, res) => {
-  pusher.ping();
+  pusher.ping(proxyManager);
   res.send('ok');
 })
 
@@ -1114,33 +1135,48 @@ const startTFTransfer = job => {
   console.log('starting transfer');
   const listDetails = parseListDetails(job);
   const submitURL = getSubmitURL(listDetails);
+  var transferCount = 0;
   database.getUsersByJobId(job.id)
-    .then(users => {
-      async.mapSeries(users, (user, next) => {
-        database.getMediasByUserId(user.external_id)
-          .then(medias => {
-            medias.forEach(media => {
-              delete media.id;
+    .then(result => {
+      var users = result.filter(user => {
+        return user.follower_count >= MININFLUENCERFOLLOWERS;
+      })
+      console.log('transfer count: ', users.length);
+      var batches = batchProspects(users, 500);
+      async.eachSeries(batches, (batch, iter) => {
+        transferCount += batch.length;
+        console.log(transferCount + ' out of ' + users.length);
+        async.mapSeries(batch, (user, next) => {
+          database.getMediasByUserId(user.external_id)
+            .then(medias => {
+              if (medias[0]) {
+                medias.forEach(media => {
+                  delete media.id;
+                })
+                console.log('received medias for: ', user.username);
+                delete user.id;
+                user.medias = medias;
+              } else {
+                user = null;
+              }
+              next();
             })
-            console.log('received medias for: ', user.username);
-            delete user.id;
-            user.medias = medias;
-            next();
-          })
+        }, err => {
+          var mediaUsers = users.filter(user => { return user != null; });
+          batchProspects(mediaUsers, 20).forEach(batch => {
+            setTimeout(() => {
+              tfBridge.submitProspects(submitURL, batch)
+                .then(result => {
+  
+                })
+                .catch(err => {
+                  console.error(err);
+                })
+            }, 500);
+          });
+          iter();
+        })
       }, err => {
-        // console.log(users[0]);
-        // console.log(users[1]);
-        batchProspects(users, 20).forEach(batch => {
-          setTimeout(() => {
-            tfBridge.submitProspects(submitURL, batch)
-              .then(result => {
-
-              })
-              .catch(err => {
-                console.error(err);
-              })
-          }, 500);
-        });
         const jobUpdate = {
           id: job.id,
           in_progress: false,
@@ -1149,6 +1185,7 @@ const startTFTransfer = job => {
         };
         jobManager.updateJob(jobUpdate)
           .then(update => {
+            availableJobs.transfer = true;
             // launchNextJob(update);
             // console.log(job);
           })
@@ -1158,36 +1195,44 @@ const startTFTransfer = job => {
 
 const startMediaPull = job => {
   console.log('starting media pull');
-  var arrMedias = [];
-  renderFormattedProspects(job.id)
-    .then(candidates => {
-      var prospectIds = candidates.map(candidate => { return candidate[1]; });
-      prospectIds = spliceDuplicates(prospectIds);
-
-      proxyManager.getMedias(prospectIds)
+  var prospectCount = 0;
+  renderFormattedInfluencers(job.id, MININFLUENCERFOLLOWERS)
+  .then(candidates => {
+    var prospectIds = candidates.map(candidate => { return candidate[1]; });
+    prospectIds = spliceDuplicates(prospectIds);
+    var batches = batchProspects(prospectIds, 500);
+    async.eachSeries(batches, (batch, next) => {
+      prospectCount += batch.length;
+      console.log(prospectCount + ' out of ' + prospectIds.length);
+      // var arrMedias = [];
+      proxyManager.getMedias(batch)
         .then(arrMedias => {
           console.log('medias gathered');
           database.raw(batchDB.upsertMedias(arrMedias))
             .then(result => {
-              console.log()
-              const jobUpdate = {
-                id: job.id,
-                in_progress: false,
-                queued: true,
-                stage: 'Awaiting Transfer'
-              };
-              jobManager.updateJob(jobUpdate)
-                .then(update => {
-                  // launchNextJob(update);
-                  // console.log(job);
-                })
-              // next();
+              console.log('batch complete');
+              next();
             })
             .catch(err => {
               console.log(batchDB.upsertMedias([arrMedias[0]]));
               console.error(err);
             })
-        })
+          })
+        }, err => {
+          console.log('media pull complete');
+          const jobUpdate = {
+            id: job.id,
+            in_progress: false,
+            queued: true,
+            stage: 'Awaiting Transfer'
+          };
+          jobManager.updateJob(jobUpdate)
+            .then(update => {
+              availableJobs.media_pull = true;
+              // launchNextJob(update);
+              // console.log(job);
+            })
+      })
 
       // async.mapSeries(prospectIds, (prospectId, next) => {
       //   prospect.getMedia(prospectId)
@@ -1239,36 +1284,46 @@ const startMediaPull = job => {
 const startScrapingJob = job => {
   console.log('aggregating prospects for job: ', job.id);
   var users = [];
+  var batchSize = 5000;
+  var counter = 0;
   // const listDetails = parseListDetails(job);
   renderFormattedProspects(job.id)
     .then(candidates => {
       var prospects = candidates.map(candidate => { return candidate[0]; })
-      // console.log('presplice:', prospects.length);
+      console.log('presplice:', prospects.length);
       // console.log(prospects);
       // dedupe these prospects by external id.
       prospects = spliceDuplicates(prospects);
-      // console.log('post splice:', prospects.length);
+      console.log('post splice:', prospects.length);
       // console.log(prospects);
 
+      var batches = batchProspects(prospects, batchSize);
 
-      scraperManager.scrapeUsers(prospects)
-        .then(userData => {
-          console.log('batch upserting');
-          database.raw(batchDB.upsertUsers(userData))
-            .then(result => {
-              const jobUpdate = {
-                id: job.id,
-                in_progress: false,
-                queued: true,
-                stage: 'Awaiting Media Pull'
-              };
-              jobManager.updateJob(jobUpdate)
-                .then(update => {
-                  // launchNextJob(update);
-                  // console.log(job);
-                })
+      async.eachSeries(batches, (batch, next) =>{
+        counter += batch.length;
+        console.log('scraping ' + counter + ' of ' + prospects.length);
+        scraperManager.scrapeUsers(batch)
+          .then(userData => {
+            console.log('batch upserting');
+            database.raw(batchDB.upsertUsers(userData))
+              .then(result => {
+                next();
+              })
             })
-        })
+          }, err => {
+            const jobUpdate = {
+              id: job.id,
+              in_progress: false,
+              queued: true,
+              stage: 'Awaiting Media Pull'
+            };
+            jobManager.updateJob(jobUpdate)
+              .then(update => {
+                availableJobs.scraper = true;
+                // launchNextJob(update);
+                // console.log(job);
+              })
+      })
 
 
       // async.mapSeries(prospects, (prospect, next) => {
@@ -1330,7 +1385,7 @@ const startProspectJob = job => {
   var prospectCount = 0;
   if (listDetails.loaded) {
     console.log('this job be ready to rock and roll!');
-    prospect.batchLikers(job.analyzed_username, listDetails.prospect_job_id, MAXPOSTCOUNT)
+    prospect.batchLikers(job.analyzed_username, listDetails.prospect_job_id, MAXPOSTCOUNT, MAXLIKERCOUNT)
       .then(likers => {
         // console.log(submitURL);
         // renderFormattedProspects(listDetails.prospect_job_id)
@@ -1373,6 +1428,7 @@ const startProspectJob = job => {
         };
         jobManager.updateJob(jobUpdate)
           .then(update => {
+            availableJobs.likers = true;
             // launchNextJob(update);
             // console.log(job);
           })
@@ -1723,6 +1779,22 @@ batchProspects = (prospects, batchSize = 1000) => {
   return prospects.map((prospect, i) => {
     return i%batchSize === 0 ? prospects.slice(i, i + batchSize) : null;
   }).filter(elem => { return elem; });
+}
+
+renderFormattedInfluencers = (jobId, minCount = 4000) => {
+  console.log('trying render formatted influencers: ', jobId);
+  return new Promise((resolve, reject) => {
+    database.getUsersByJobId(jobId)
+      .then(prospects => {
+        const formattedProspects = prospects.filter(prospect => {
+          return (prospect.private == false || prospect.private == null) && prospect.follower_count >= minCount;
+        }).map(prospect => {
+          return [prospect.username, prospect.external_id];
+        })
+        console.log('returning ' + formattedProspects.length + ' public prospects out of ' + prospects.length);
+        resolve(formattedProspects);
+      })
+  })
 }
 
 renderFormattedProspects = jobId => {

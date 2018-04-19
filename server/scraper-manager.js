@@ -30,10 +30,11 @@ class ScraperManager {
                 nextScraper.scrape(user, userData);
                 next();
               }
-            }, 300) 
+            }, 750) 
         }
       }, err => {
         // console.log('number of retry users: ', retryUsers.length); // implement later
+        console.log('finished, awaiting all clear');
         // wait until all proxies are available
         var awaitCompletion = setInterval(() => {
           if(!scrapersBusy(this.scrapers)) {

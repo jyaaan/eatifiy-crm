@@ -45,15 +45,15 @@ if (objJSON.user.edge_owner_to_timeline_media.edges.length > 0) {
         return tot + val;
     }, 0);
 
-    user.recent_average_likes = user.recent_like_count / postCount;
+    user.recent_average_likes = postCount > 0 ? user.recent_like_count / postCount : 0;
 
-    user.recent_average_comments = user.recent_comment_count / postCount;
+    user.recent_average_comments = postCount > 0 ? user.recent_comment_count / postCount : 0;
 
-    user.recent_engagement_rate = (user.recent_average_comments + user.recent_average_likes) / user.follower_count;
+    user.recent_engagement_rate = user.follower_count > 0 ? (user.recent_average_comments + user.recent_average_likes) / user.follower_count : 0;
 
-    user.recent_like_rate = user.recent_average_likes / user.follower_count;
+    user.recent_like_rate = user.follower_count > 0 ? user.recent_average_likes / user.follower_count : 0;
 
-    user.recent_comment_rate = user.recent_average_comments / user.follower_count;
+    user.recent_comment_rate = user.follower_count > 0 ? user.recent_average_comments / user.follower_count : 0;
 
     // medias = objJSON.user.edge_owner_to_timeline_media.edges.map(media => {
     //     return {
