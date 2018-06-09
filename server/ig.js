@@ -69,6 +69,22 @@ class IG {
       retrieve();
     })
   }
+  
+  checkInbox(externalId) {
+    return new Promise((resolve, reject) => {
+      let feed = new Client.Feed.Inbox(session, limit = 10);
+      const retrieve = () => {
+        feed.get()
+          .then(result => {
+            resolve(result);
+          })
+          .catch(err => {
+            reject(err);
+          })
+      }
+      retrieve();
+    })
+  }
 
   sendMessage(externalId, message) {
     return new Promise((resolve, request) => {
@@ -82,7 +98,9 @@ class IG {
     })
   }
 
+
   getUser(username) {
+    console.log('get user:', username);
     return new Promise((resolve, reject) => {
       new Client.Account.search(this.session, username)
         .then((result) => {
@@ -184,11 +202,8 @@ class IG {
   initialize() {
     return new Promise((resolve, reject) => {
       new Client.Session.create(this.device, this.storage, this.username, this.password, this.proxyURL)
-        .then(session => {
-          this.session = session;
-          // this.session.proxyUrl = this.proxyURL;
-          resolve(session);
-        })
+        .then(resolve)
+        .catch(reject)
     })
   }
 }

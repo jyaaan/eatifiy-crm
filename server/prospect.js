@@ -18,7 +18,7 @@ const request = require('request');
 // const ProxyManager = require('./proxy_manager');
 // const proxyManager = new ProxyManager();
 const thisProxyObj = {
-  proxyAddress: "107.181.175.49",
+  proxyAddress: "191.96.50.194",
   port: "65233",
   username: "johnyamashiro",
   password: "B4h2KrO",
@@ -129,6 +129,10 @@ Prospect.prototype.sendMessage = function (externalId, message) {
     .then(result => {
       console.log(result);
     })
+}
+
+Prospect.prototype.checkInbox = function () {
+  
 }
 /*
 { username: 'truefluence',
@@ -419,9 +423,12 @@ Prospect.prototype.getPosts = function (externalId, maxIteration = 20) {
 
 Prospect.prototype.getRecentSCPost = function (externalId) {
   // loadActiveIG();
+  console.log('starting getRecentSCPost');
+  console.log(activeIG);
   return new Promise((resolve, reject) => {
     activeIG.initializeMediaFeed(externalId)
       .then(feed => {
+        console.log('feed:', feed);
         function retrieve() {
           feed.get()
             .then(medias => {

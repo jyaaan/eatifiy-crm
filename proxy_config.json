@@ -1,31 +1,4 @@
 [
-  {
-    "proxyAddress": "208.123.119.16",
-    "port": "65233",
-    "username": "johnyamashiro",
-    "password": "B4h2KrO",
-    "ig_username": "molagbal3477",
-    "ig_password": "skyrim1",
-    "expiration_date": "4/21/2018"
-  },
-    {
-      "proxyAddress": "104.224.171.226",
-      "port": "65233",
-      "username": "johnyamashiro",
-      "password": "B4h2KrO",
-      "ig_username": "james.stuttgarten",
-      "ig_password": "occsbootcamp",
-      "expiration_date": "4/21/2018"
-    },
-    {
-      "proxyAddress": "45.63.0.140",
-      "port": "65233",
-      "username": "johnyamashiro",
-      "password": "B4h2KrO",
-      "ig_username": "guysensai777",
-      "ig_password": "Goonigoogoo!777",
-      "expiration_date": "4/21/2018"
-    },
     {
       "proxyAddress": "64.188.7.156",
       "port": "65233",

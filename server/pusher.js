@@ -15,31 +15,32 @@ class Pusher {
   ping(proxyManager) {
     // get oldest unposted collab
     prospect.getRecentSCPost(TF_USER_ID)
-      .then(shortcode => {
-        this.getOldestCollab(shortcode)
-          .then(collab => {
-            if (collab) {
-              const parameters = processCreatePostJSON(collab);
-              const filename = parameters.url.substring(parameters.url.lastIndexOf('/') + 1);
-              fileHandler.downloadFile(parameters.url, filename)
-                .then(result => {
-                  prospect.createPost(result, parameters.caption, proxyManager)
-                    .then(result => {
-                      console.log('Post created for collaboration: ' + collab.brand_name +
-                        ' - ' + collab.media.instagram_username);
-                    })
-                    .catch(err => {
-                      console.error(err);
-                      console.log('error encountered');
-                      ignore.push(collab.id);
-                      console.log(ignore);
-                    })
-                })
-            } else {
-              console.log('no new collabs to post!');
-            }
+    .then(shortcode => {
+      this.getOldestCollab(shortcode)
+      .then(collab => {
+        if (collab) {
+          const parameters = processCreatePostJSON(collab);
+          const filename = parameters.url.substring(parameters.url.lastIndexOf('/') + 1);
+          
+          fileHandler.downloadFile(parameters.url, filename)
+          .then(result => {
+            prospect.createPost(result, parameters.caption, proxyManager)
+            .then(result => {
+              console.log('Post created for collaboration: ' + collab.brand_name +
+                ' - ' + collab.media.instagram_username);
+            })
+            .catch(err => {
+              console.error(err);
+              console.log('error encountered');
+              ignore.push(collab.id);
+              console.log(ignore);
+            })
           })
+        } else {
+          console.log('no new collabs to post!');
+        }
       })
+    })
   }
 
   // Returns hash of oldest un-posted collaboration to be fed directly into pusher.
@@ -52,7 +53,11 @@ class Pusher {
           .then(results => {
             if (results.length > 0) {
               results.forEach(collab => {
-                collab.shortcode = extractSCFromLink(collab.media.link);
+                if (collab.media) {
+                  collab.shortcode = extractSCFromLink(collab.media.link);
+                } else {
+                  ignore.push(collab.id);
+                }
               });
               var filteredResults = results.filter(collab => {
                 return ignore.indexOf(collab.id) == -1;

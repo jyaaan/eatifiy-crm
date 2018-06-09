@@ -18,6 +18,7 @@ const initializePerformance = () => {
 class Proxy {
   constructor (proxyObj) {
     Object.assign(this, proxyObj);
+    // console.log(this);
     this.ig = new IG(this.ig_username, this.ig_password, this.getProxyURL());
     this.performanceHistory = initializePerformance();
     this.connError = false;

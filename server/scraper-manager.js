@@ -17,9 +17,12 @@ class ScraperManager {
     return new Promise((resolve, reject) => {
       var userData = [];
       var retryUsers = []; // implement later.
+      var counter = 0;
       async.mapSeries(users, (user, next) => {
+        counter++;
         nextScraper = getNextAvailableScraper(this.scrapers);
         if (nextScraper) { // nextScraper will be undefined if no scrapers are available
+          console.log('scraper: ', counter);
           nextScraper.scrape(user, userData);
           next();
         } else { // keep trying for available scrapers every 300 ms
@@ -27,21 +30,27 @@ class ScraperManager {
               nextScraper = getNextAvailableScraper(this.scrapers);
               if (nextScraper) {
                 clearInterval(keepAlive);
+                console.log('scraper: ', counter);
                 nextScraper.scrape(user, userData);
                 next();
               }
-            }, 750) 
+            }, 500) 
         }
       }, err => {
         // console.log('number of retry users: ', retryUsers.length); // implement later
         console.log('finished, awaiting all clear');
         // wait until all proxies are available
-        var awaitCompletion = setInterval(() => {
-          if(!scrapersBusy(this.scrapers)) {
-            clearInterval(awaitCompletion);
-            resolve(userData);
-          }
-        }, 2000);
+        // var awaitCompletion = setInterval(() => {
+        //   if(!scrapersBusy(this.scrapers)) {
+        //     clearInterval(awaitCompletion);
+        //     resolve(userData);
+        //   } else {
+        //     console.log('awaiting scraper(s) to resume');
+        //   }
+        // }, 2000);
+        setTimeout(() => {
+          resolve(userData);
+        }, 10000);
       })
     })
   }

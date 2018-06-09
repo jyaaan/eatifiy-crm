@@ -519,6 +519,12 @@ Database.prototype.getUsersByJobId = function(jobId) {
     .where('external_id', 'in', subquery)
 }
 
+Database.prototype.getMediasByUserIds = function(userIds) {
+  return knex('medias')
+    .select('*')
+    .where('user_external_id', 'in', userIds)
+}
+
 Database.prototype.getMediasByUserId = function(userExternalId) {
   return knex('medias')
     .select('*')
@@ -810,4 +816,14 @@ Database.prototype.insertObjects = function (tableName, arrObjData) {
     });
 }
 
+// bio email scrape
+Database.prototype.emailScrape = function () {
+  const emailRE = '/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/'
+  knex('users')
+    .count('*')
+    .then(result => {
+      const count = parseInt(result[0].count);
+      console.log(count);
+    })
+}
 exports.Database = Database;

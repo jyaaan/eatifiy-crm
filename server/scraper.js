@@ -34,52 +34,25 @@ class Scraper {
 
         // hacky solution to get data from profile html
         var $elem = new JSDOM(bod);
-        // var scripts = $elem.window.document.getElementsByTagName('script')
         var $format = $elem.window.document.documentElement.outerHTML;
-
-
-        // for (var script in scripts) {
-        //   if (scripts[script].textContent && scripts[script].textContent.indexOf('window._sharedData') > -1) {
-        //     // user JSON data is found in a script block with some extraneous text before and after
-        //     // this process strips these if present
-        //     var rawJSON = scripts[script].textContent.replace('window._sharedData =', '');
-        //     if (rawJSON[rawJSON.length - 1] == ';') {
-        //       rawJSON = rawJSON.slice(0, -1);
-        //     }
-        //     try {
-        //       var formattedJSON = JSON.parse(rawJSON).entry_data.ProfilePage[0].graphql;
-        //       // resolve(ParseScrape(formattedJSON));
-        //       var user = ParseScrape(formattedJSON);
-        //       user.user.created_at = new Date();
-        //       user.user.updated_at = new Date();
-        //       console.log('scraped: ', user.user.username)
-        //       arrDate.push(user.user);
-        //       this.available = true;
-        //     } catch (error) {
-        //       console.log('EOF Error!');
-        //       // reject(error);
-        //       setTimeout(() => {
-        //         this.available = true;
-        //       }, 60000)
-        //     }
-        //   }
-        // }
 
         try { // this is to circumvent the occasional unexpected end of JSON error that pops up.
           var user = ParseScrape(returnParsedJSON($format));
           user.user.created_at = new Date();
           user.user.updated_at = new Date();
           arrData.push(user.user);
-          console.log('success: ', username);
-          this.available = true;
+          // console.log('success: ', username);
+          setTimeout(() => {
+            this.available = true;
+          }, 1200);
         } catch (error) {
-          // console.log(bod);
+          console.error(error);
+          // console.error(returnParsedJSON($format));
           console.log('scrape json parse error');
-          // console.log(bod);
           setTimeout(() => {
             this.available = true;
             console.log('restarting scraper');
-          }, 10000)
+          }, 15000)
         }
 
       
@@ -109,8 +82,9 @@ class Scraper {
         console.log('some other error with scraper');
         // console.error(err);
         setTimeout(() => {
+          console.log('restarting scraper (other)');
           this.available = true;
-        }, 60000)
+        }, 120000)
       }
     })
     // });
@@ -120,12 +94,18 @@ class Scraper {
 const returnParsedJSON = html => {
   // This regexp gets widest possible dict around "profile_pic_url"
   // but inside tag <script type="text/javascript">...</script>
-  let r = new RegExp('<script type="text\/javascript">' +
+  let r = new RegExp('<script type="text/javascript">' +
     '([^{]+?({.*profile_pic_url.*})[^}]+?)' +
-    '<\/script>');
+    '</script>');
 
   let jsonStr = html.match(r)[2];
   let data = JSON.parse(jsonStr);
+  // console.log(data);
+  // try {
+    //   return data.entry_data.ProfilePage[0].graphql;
+    // } catch (error) {
+      //   return data.entry_data.ProfilePage.graphql; // removed [0] from ProfilePage at one point
+  // }
   return data.entry_data.ProfilePage[0].graphql;
 }
 
