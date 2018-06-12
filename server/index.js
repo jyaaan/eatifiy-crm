@@ -282,6 +282,85 @@ const getNextJobStage = job => {
 const jsdom = require('jsdom');
 const { JSDOM } = jsdom;
 
+app.get('/test-eachof', (req, res) => {
+  var array = ['a', 'b', 'c'];
+  async.eachOfSeries(array, (val, index, next) => {
+    console.log('val: ', val);
+    console.log('index: ', index);
+    next();
+  }, err => {
+    console.log('over');
+  })
+})
+
+// post._params.caption.match(/\B\@\w\w+\b/g)
+const emailRE = /\b(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))\b/
+app.get('/get-count/:tableName', (req, res) => {
+  database.getCount(req.params.tableName)
+  .then(count => {
+    console.log(count);
+    var iterator = [];
+    for (let i = 0; i < count / 1000; i++) {
+      iterator.push([i * 1000, i * 1000 + 1000])
+    }
+    async.eachSeries(iterator, (iter, next) => {
+      database.getRowsByIdRange('users', iter[0], iter[1])
+      .then(users => {
+        async.eachSeries(users, (user, nextUser) => {
+          const emailMatch = user.bio.match(emailRE);
+          if (emailMatch) {
+            database.updateRecord('users', { email: emailMatch[0].toLowerCase() }, 'id', user.id)
+            .then(result => {
+              nextUser();
+            })
+          } else {
+            nextUser();
+          }
+        }, err => {
+          next();
+        })
+      })
+    }, err => {
+      console.log('email setting done');
+    })
+    res.send(count);
+  })
+})
+
+// 
+app.get('/get-first-names/:tableName', (req, res) => {
+  database.getCount(req.params.tableName)
+    .then(count => {
+      console.log(count);
+      var iterator = [];
+      for (let i = 0; i < count / 1000; i++) {
+        iterator.push([i * 1000, i * 1000 + 1000])
+      }
+      async.eachSeries(iterator, (iter, next) => {
+        database.getRowsByIdRange('users', iter[0], iter[1])
+          .then(users => {
+            
+            // async.eachSeries(users, (user, nextUser) => {
+            //   const emailMatch = user.bio.match(emailRE);
+            //   if (emailMatch) {
+            //     database.updateRecord('users', { email: emailMatch[0] }, 'id', user.id)
+            //       .then(result => {
+            //         nextUser();
+            //       })
+            //   } else {
+            //     nextUser();
+            //   }
+            // }, err => {
+            //   next();
+            // })
+          })
+      }, err => {
+        console.log('email setting done');
+      })
+      res.send(count);
+    })
+})
+
 app.get('/task-status', (req, res) => {
   console.log(availableJobs);
   tasks.jobs.forEach(task => {
