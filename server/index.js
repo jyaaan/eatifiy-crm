@@ -327,7 +327,8 @@ app.get('/get-count/:tableName', (req, res) => {
   })
 })
 
-// 
+const nameParser = require('parse-full-name').parseFullName;
+const emojiStrip = require('emoji-strip');
 app.get('/get-first-names/:tableName', (req, res) => {
   database.getCount(req.params.tableName)
     .then(count => {
@@ -339,7 +340,12 @@ app.get('/get-first-names/:tableName', (req, res) => {
       async.eachSeries(iterator, (iter, next) => {
         database.getRowsByIdRange('users', iter[0], iter[1])
           .then(users => {
-            
+            users.forEach(user => {
+              
+              var parsedName = nameParser(emojiStrip(user.full_name)).first;
+              parsedName = parsedName.replace(/[^0-9a-z'& ]/gi, '')
+              console.log(parsedName);
+            })
             // async.eachSeries(users, (user, nextUser) => {
             //   const emailMatch = user.bio.match(emailRE);
             //   if (emailMatch) {
@@ -445,11 +451,11 @@ app.post('/pusher', (req, res) => {
   res.send('ok');
 })
 
-setTimeout(() => {
-  setInterval(() => {
-    pusher.ping(proxyManager);
-  }, 1500000);
-}, 60000)
+// setTimeout(() => {
+//   setInterval(() => {
+//     pusher.ping(proxyManager);
+//   }, 1500000);
+// }, 60000)
 
 /*
 Below SC: should be “postinfo.co/tfdemofavorite"
