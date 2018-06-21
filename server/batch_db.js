@@ -5,6 +5,21 @@ class BatchDB {
 
   }
 
+  updateUsers(arrValues) {
+    const updateKeys = ['username', 'sent_postinfo_email'];
+    var queryText = format('INSERT INTO users (%I) VALUES %L', updateKeys, spreadFormattedValues(updateKeys, arrValues));
+    queryText += ' ON CONFLICT (username) ';
+    queryText += 'DO UPDATE SET ' + formatConflictKeys(['sent_postinfo_email']) + ';';
+    console.log(queryText);
+    return queryText;
+  }
+
+  markUsersAsSent(users) {
+    var queryText = format('UPDATE users SET sent_postinfo_email = true WHERE username IN (%L);', users);
+    console.log(queryText);
+    return queryText;
+  }
+
   upsertUsers(arrValues) {
     var queryText = format('INSERT INTO users (%I) VALUES %L', userKeys, spreadFormattedValues(userKeys, arrValues));
     queryText += ' ON CONFLICT (external_id) ';

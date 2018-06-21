@@ -19,8 +19,8 @@ const publicPath = path.join(__dirname, '/public');
 const staticMiddleware = express.static(publicPath);
 const app = express();
 const currentSession = { initialized: false, session: {} };
-// const Prospect = require('./prospect');
-// const prospect = new Prospect();
+const Prospect = require('./prospect');
+const prospect = new Prospect();
 
 const Messaging = require('./messaging');
 const messaging = new Messaging();
@@ -30,10 +30,10 @@ const tfBridge = new TFBridge();
 
 const http = require('http').createServer(app);
 
-// const scraperManager = new (require('./scraper-manager'))();
+const scraperManager = new (require('./scraper-manager'))();
 
-// const ProxyManager = require('./proxy_manager');
-// const proxyManager = new ProxyManager();
+const ProxyManager = require('./proxy_manager');
+const proxyManager = new ProxyManager();
 
 app.use(staticMiddleware);
 app.use(bodyParser.json());
@@ -43,8 +43,8 @@ app.use(bodyParser.json());
 const JobManager = require('./job-manager');
 const jobManager = new JobManager(database);
 
-// const Pusher = require('./pusher');
-// const pusher = new Pusher();
+const Pusher = require('./pusher');
+const pusher = new Pusher();
 
 // Initialization routines and parameters
 jobManager.resetInProgress();
@@ -83,73 +83,73 @@ const resetJob = job => {
 
 }
 // SELECT id, primary_username, analyzed_username, stage, queued, in_progress, prospect_count as count from prospect_jobs order by id desc limit 20;
-// setTimeout(() => {
-//   // delayed jobs
-//   refreshJobs = Object.assign(refreshJobs, jobManager.getRefreshJobs());
+setTimeout(() => {
+  // delayed jobs
+  refreshJobs = Object.assign(refreshJobs, jobManager.getRefreshJobs());
 
-//   // Every 5 minutes
-//   recurringJob5 = schedule.scheduleJob('*/5 * * * *', () => {
-//   });
+  // Every 5 minutes
+  recurringJob5 = schedule.scheduleJob('*/5 * * * *', () => {
+  });
   
-//   // Every 1 minuteSELECT id, primary_username, analyzed_username, stage, queued, in_progress, prospect_count as count from prospect_jobs order by id desc limit 20;
-//   recurringJob1 = schedule.scheduleJob('*/1 * * * *', () => {
-//     jobManager.getQueuedJobs()
-//       .then(jobs => {
-//         if (jobs[0]) {
-//           jobs.map(job => {
-//             if (tasks.jobAvailable()) {
-//               const nextStage = getNextJobStage(job);
-//               const activeJob = tasks.getAvailableJob(nextStage);
-//               if (activeJob != -1) {
-//                 activeJob.jobId = job.id;
-//                 activeJob.job = job;
-//                 activeJob.active = true;
-//                 activeJob.stage = nextStage;
-//                 const jobUpdate = {
-//                   id: activeJob.jobId,
-//                   stage: nextStage
-//                 };
+  // Every 1 minuteSELECT id, primary_username, analyzed_username, stage, queued, in_progress, prospect_count as count from prospect_jobs order by id desc limit 20;
+  recurringJob1 = schedule.scheduleJob('*/1 * * * *', () => {
+    jobManager.getQueuedJobs()
+      .then(jobs => {
+        if (jobs[0]) {
+          jobs.map(job => {
+            if (tasks.jobAvailable()) {
+              const nextStage = getNextJobStage(job);
+              const activeJob = tasks.getAvailableJob(nextStage);
+              if (activeJob != -1) {
+                activeJob.jobId = job.id;
+                activeJob.job = job;
+                activeJob.active = true;
+                activeJob.stage = nextStage;
+                const jobUpdate = {
+                  id: activeJob.jobId,
+                  stage: nextStage
+                };
   
-//                 jobManager.updateJob(jobUpdate)
-//                   .then(job => {
-//                     // console.log('current job:', activeJob);
-//                   })
-//               }
-//             }
-//           })
-//         }
-//         tasks.jobs.map(task => {
-//           if (task.active && task.in_progress) {
-//             jobManager.checkIfActive(task.jobId)
-//               .then(isActive => {
-//                 if (isActive) {
-//                   // console.log('job busy');
-//                 } else {
-//                   task.active = false;
-//                   task.in_progress = false;
-//                   task.jobId = null;
-//                   task.stage = null;
-//                   console.log('job is no longer in progress, loading next');
-//                 }
-//               })
-//           }
-//         })
+                jobManager.updateJob(jobUpdate)
+                  .then(job => {
+                    // console.log('current job:', activeJob);
+                  })
+              }
+            }
+          })
+        }
+        tasks.jobs.map(task => {
+          if (task.active && task.in_progress) {
+            jobManager.checkIfActive(task.jobId)
+              .then(isActive => {
+                if (isActive) {
+                  // console.log('job busy');
+                } else {
+                  task.active = false;
+                  task.in_progress = false;
+                  task.jobId = null;
+                  task.stage = null;
+                  console.log('job is no longer in progress, loading next');
+                }
+              })
+          }
+        })
 
-//       })
-//   });
+      })
+  });
   
-//   // Every 1 minute stagger 30 test
-//   recurringJob1Staggered = schedule.scheduleJob('30 * * * * *', () => {
-//     if (tasks.pending()) {
-//       tasks.getPending().forEach(task => {
-//         console.log('we gotta start the job!');
-//         launchNextJob(task);
-//       })
-//     } else {
-//       // console.log('no action will be taken:');
-//     }
-//   })
-//   }, 10000);
+  // Every 1 minute stagger 30 test
+  recurringJob1Staggered = schedule.scheduleJob('30 * * * * *', () => {
+    if (tasks.pending()) {
+      tasks.getPending().forEach(task => {
+        console.log('we gotta start the job!');
+        launchNextJob(task);
+      })
+    } else {
+      // console.log('no action will be taken:');
+    }
+  })
+  }, 10000);
   
   const BatchDB = require('./batch_db');
   const batchDB = new BatchDB();
@@ -330,21 +330,37 @@ app.get('/get-count/:tableName', (req, res) => {
 const nameParser = require('parse-full-name').parseFullName;
 const emojiStrip = require('emoji-strip');
 app.get('/get-first-names/:tableName', (req, res) => {
-  database.getCount(req.params.tableName)
+  database.getCount('suggestions')
     .then(count => {
       console.log(count);
       var iterator = [];
-      for (let i = 0; i < count / 1000; i++) {
+      for (let i = 10200; i < 16729124 / 1000; i++) {
         iterator.push([i * 1000, i * 1000 + 1000])
       }
       async.eachSeries(iterator, (iter, next) => {
         database.getRowsByIdRange('users', iter[0], iter[1])
           .then(users => {
-            users.forEach(user => {
-              
-              var parsedName = nameParser(emojiStrip(user.full_name)).first;
-              parsedName = parsedName.replace(/[^0-9a-z'& ]/gi, '')
-              console.log(parsedName);
+            async.eachSeries(users, (user, nextUser) => {
+              var parsedName = null;
+              if (user.full_name) {
+                try {
+                  parsedName = nameParser(emojiStrip(user.full_name)).first;
+                  parsedName = parsedName.replace(/[^0-9a-z'& ]/gi, '')
+                } catch (error) {
+                  console.log('error for:', user.username);
+                }
+              }
+              // console.log(parsedName);
+              if (parsedName == null || parsedName.length <= 2 || parsedName == 'The') {
+                parsedName = '@' + user.username;
+              }
+              database.updateRecord('users', { first_name: parsedName }, 'id', user.id)
+              .then(result => {
+                nextUser();
+              })
+            }, err => {
+              console.log(iter[1]);
+              next();
             })
             // async.eachSeries(users, (user, nextUser) => {
             //   const emailMatch = user.bio.match(emailRE);
@@ -1672,6 +1688,33 @@ const startProspectJobLEGACY = jobId => {
     }
   })
 }
+
+app.post('/update-leads', (req, res) => {
+  console.log('received leads');
+  // console.log(req.body.leads);
+  const leads = req.body.leads.map(lead => { return lead.username });
+  // console.log(leads);
+  // leads.forEach(lead => {
+  //   lead.send_postinfo_email = true;
+  // })
+  // async.eachSeries(leads, (lead, next) => {
+  //   console.log(lead.username);
+  //   database.updateRecord('users', {
+  //     sent_postinfo_email: true
+  //   }, 'username', lead.username)
+  //   .then(result => {
+  //     next();
+  //   })
+  // }, err => {
+  //   res.sendStatus(200);
+  //   console.log('done');
+  // })
+  database.raw(batchDB.markUsersAsSent(leads))
+  .then(result => {
+    console.log(result);
+    res.sendStatus(200);
+  })
+})
 
 app.get('/initiate-prospect-job/:jobId', (req, res) => {
   database.getJobByJobId(req.params.jobId)

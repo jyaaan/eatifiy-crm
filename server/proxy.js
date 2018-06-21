@@ -25,7 +25,7 @@ class Proxy {
     this.available = true;
     this.ig.initialize()
       .then(session => {
-        this.session = session;
+        this.ig.session = session;
       })
       .catch(err => {
         this.connError = true;

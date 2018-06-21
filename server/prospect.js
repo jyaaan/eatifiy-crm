@@ -18,7 +18,7 @@ const request = require('request');
 // const ProxyManager = require('./proxy_manager');
 // const proxyManager = new ProxyManager();
 const thisProxyObj = {
-  proxyAddress: "191.96.50.194",
+  proxyAddress: "191.101.148.28",
   port: "65233",
   username: "johnyamashiro",
   password: "B4h2KrO",
