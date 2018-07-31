@@ -18,7 +18,7 @@ class ProxyManager {
       this.proxies.push(new Proxy(proxy));
       setTimeout(() => {
         next();
-      }, 1000);
+      }, 3000);
     })
     this.tfProxy = new Proxy(require('../tf_proxy_config'));
     console.log('proxies loaded');
@@ -43,7 +43,7 @@ class ProxyManager {
               retryProxy.getMedia(userId, arrMedias);
               next();
             }
-          }, 500);
+          }, 750);
         }
       }, err => {
         console.log('media pull for batch completed, checking busy');
@@ -92,24 +92,3 @@ batchProspects = (prospects, batchSize = 1000) => {
 }
 
 module.exports = ProxyManager;
-
-/*
-var arrTest = [{a: 1}, {a: 2}, {a: 0}];
-undefined
-arrTest
-(3) [{…}, {…}, {…}]0: {a: 1}1: {a: 2}2: {a: 0}length: 3__proto__: Array(0)
-arrTest.reduce((prev, curr) => { return prev.a < curr.a ? prev : curr; });
-{a: 0}
-const minObj = arrTest.reduce((prev, curr) => { return prev.a < curr.a ? prev : curr;});
-undefined
-minObj
-{a: 0}
-arrTest
-(3) [{…}, {…}, {…}]
-arrTest[2];
-{a: 0}
-arrTest[2].a = 3;
-3
-minObj;
-{a: 3}
-*/

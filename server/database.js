@@ -87,6 +87,28 @@ function GetZPercent(z) {
 
 // test functions
 
+Database.prototype.getCount = function (tableName) {
+  return knex(tableName)
+         .count('*')
+         .then(count => {
+           return count[0].count;
+         })
+}
+
+Database.prototype.updateRecord = function (tableName, updateRecord, key, value) {
+  updateRecord.updated_at = new Date(Date.now()).toISOString();
+  return knex(tableName)
+         .where(key, value)
+         .update(updateRecord)
+}
+
+Database.prototype.getRowsByIdRange = function (tableName, start, stop) {
+  return knex(tableName)
+         .select('*')
+         .where('id', '>=', start)
+         .andWhere('id', '<', stop)
+}
+
 Database.prototype.raw = function (query) {
   // console.log('raw query:', query);
   return new Promise((resolve, reject) => {
@@ -519,6 +541,12 @@ Database.prototype.getUsersByJobId = function(jobId) {
     .where('external_id', 'in', subquery)
 }
 
+Database.prototype.getMediasByUserIds = function(userIds) {
+  return knex('medias')
+    .select('*')
+    .where('user_external_id', 'in', userIds)
+}
+
 Database.prototype.getMediasByUserId = function(userExternalId) {
   return knex('medias')
     .select('*')
@@ -810,4 +838,14 @@ Database.prototype.insertObjects = function (tableName, arrObjData) {
     });
 }
 
+// bio email scrape
+Database.prototype.emailScrape = function () {
+  const emailRE = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+  knex('users')
+    .count('*')
+    .then(result => {
+      const count = parseInt(result[0].count);
+      console.log(count);
+    })
+}
 exports.Database = Database;

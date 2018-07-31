@@ -5,6 +5,21 @@ class BatchDB {
 
   }
 
+  updateUsers(arrValues) {
+    const updateKeys = ['username', 'sent_postinfo_email'];
+    var queryText = format('INSERT INTO users (%I) VALUES %L', updateKeys, spreadFormattedValues(updateKeys, arrValues));
+    queryText += ' ON CONFLICT (username) ';
+    queryText += 'DO UPDATE SET ' + formatConflictKeys(['sent_postinfo_email']) + ';';
+    console.log(queryText);
+    return queryText;
+  }
+
+  markUsersAsSent(users) {
+    var queryText = format('UPDATE users SET sent_postinfo_email = true WHERE username IN (%L);', users);
+    console.log(queryText);
+    return queryText;
+  }
+
   upsertUsers(arrValues) {
     var queryText = format('INSERT INTO users (%I) VALUES %L', userKeys, spreadFormattedValues(userKeys, arrValues));
     queryText += ' ON CONFLICT (external_id) ';
@@ -163,12 +178,3 @@ const formatVariables = keys => {
 }
 
 module.exports = BatchDB;
-/*
-id: 86817541,
-external_id: "269198551",
-username: "xo_ambeyy",
-picture_url: "https://scontent.cdninstagram.com/t51.2885-19/s150x150/22709593_121955988565797_4939148743279640576_n.jpg",
-full_name: "Amber Nicole TV🎥",
-website: "https://ambernconn.wordpress.com/ambernicoletv/",
-bio: "📍Philadelphia🚘Chicago 📺TV & 📻Radio Personality (Multimedia) 💃🏽+Size Model Founder of @ambernicoletv 🎓Temple Alumna🍒 ✨Bilingual 💌ambconnally@gmail.com",
-*/

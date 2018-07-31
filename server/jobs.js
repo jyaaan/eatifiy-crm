@@ -4,6 +4,7 @@ const createJob = (id) => {
     active: false,
     in_progress: false,
     jobId: null,
+    stage: null,
     job: {}
   }
 }
@@ -22,10 +23,17 @@ class Jobs {
     });
   }
 
-  getAvailableJob() {
-    return this.jobs.find(job => {
-      return job.active === false;
-    });
+  getAvailableJob(stage) {
+    // checks if ac
+    if (this.jobs.some(job => { return job.stage == stage && job.active == true })) {
+      // if there are any active tasks that are of the same stage and are active
+      return -1;
+    } else {
+      // if no active tasks have the same stage
+      return this.jobs.find(job => {
+        return job.active === false;
+      });
+    }
   }
 
   pending() {

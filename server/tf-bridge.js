@@ -1,3 +1,5 @@
+// NOTE: Data structure at bottom.
+
 const request = require('request');
 const Database = require('./database').Database;
 const database = new Database();
@@ -11,6 +13,10 @@ const fs = require('fs');
 function TFBridge() {
 
 }
+
+// class TFBridge {
+  
+// }
 const writeToFile = data => {
   fs.writeFile("userJSON" + data.length + ".txt", JSON.stringify(data), function (err) {
     if (err) {
@@ -22,76 +28,6 @@ const writeToFile = data => {
 TFBridge.prototype.getProspectList = function (listURL, token, batchID) {
 
 }
-/*
-{
-  statusCode: 200,
-    body: {
-    list: {
-      id: 1535,
-        created_at: "2017-12-07T23:05:56.017Z",
-          updated_at: "2017-12-07T23:05:56.017Z",
-            user_id: 6,
-              settings: { },
-      approved: false,
-        token: "LB1qPbb9UV4zKNtvtJfN8j5V",
-          count: 0,
-            refreshed_at: null,
-              message: "",
-                name: "truefluence9",
-                  notes: "",
-                    indexed_at: null,
-                      began_indexing_at: null,
-                        refreshing: false,
-                          can_download: true,
-                            can_import: null,
-                              can_delete_shown: null,
-                                can_request_campaign: false
-    },
-    url: "https://search.truefluence.io/users/truefluence9/lists.json"
-  },
-  headers: {
-    cache - control: "max-age=0, private, must-revalidate",
-      content - type: "application/json; charset=utf-8",
-        date: "Thu, 07 Dec 2017 23:05:56 GMT",
-          etag: "W/"589d015763b20edf5767558897626551"",
-            server: "nginx/1.12.1",
-              vary: "Origin",
-                x - content - type - options: "nosniff",
-                  x - frame - options: "SAMEORIGIN",
-                    x - request - id: "5f8336d2-1069-4834-b788-eef5a8a7904c",
-                      x - runtime: "0.035060",
-                        x - xss - protection: "1; mode=block",
-                          content - length: "475",
-                            connection: "Close"
-  },
-  request: {
-    uri: {
-      protocol: "https:",
-        slashes: true,
-          auth: null,
-            host: "search.truefluence.io",
-              port: 443,
-                hostname: "search.truefluence.io",
-                  hash: null,
-                    search: "?api_token=LXJrk8BevkpMvGoNUA4SR3L1-u",
-                      query: "api_token=LXJrk8BevkpMvGoNUA4SR3L1-u",
-                        pathname: "/users/truefluence9/lists.json",
-                          path: "/users/truefluence9/lists.json?api_token=LXJrk8BevkpMvGoNUA4SR3L1-u",
-                            href: "https://search.truefluence.io/users/truefluence9/lists.json?api_token=LXJrk8BevkpMvGoNUA4SR3L1-u"
-    },
-    method: "POST",
-      headers: {
-      0: {
-        name: "Content-Type",
-          value: "application/csv"
-      },
-      accept: "application/json",
-        content - type: "application/json",
-          content - length: 47
-    }
-  }
-}
-*/
 TFBridge.prototype.createProspectList = function (username, listName, token) {
   // console.log('attempting to create list for:', username);
   return new Promise((resolve, reject) => {
@@ -150,7 +86,7 @@ TFBridge.prototype.getOldestUnpostedCollab = function (shortcode) {
 
 TFBridge.prototype.submitProspects = function (url, users) {
   console.log('attempting to send ' + users.length + ' user profiles');
-  writeToFile(users);
+  // writeToFile(users);
   return new Promise((resolve, reject) => {
     console.log(url);
     var options = {
@@ -172,7 +108,14 @@ TFBridge.prototype.submitProspects = function (url, users) {
         console.error(err);
         reject(err);
       } else {
-        // console.log(res.body);
+        if (res.body) { // patch this later.
+          if (res.body.error) {
+            console.log(res.body);
+          } else {
+            console.log(res.status);
+            console.log('upload successful');
+          }
+        }
         resolve('upload complete');
       }
     })
@@ -192,7 +135,7 @@ TFBridge.prototype.verifyList = (url) => {
     }
     request(options, (err, res, bod) => {
       if (err) {
-        console.error(err);
+        // console.error(err);
         reject(err);
       } else {
         const bodyObj = JSON.parse(bod); // this fucks things up
@@ -235,14 +178,14 @@ TFBridge.prototype.downloadProspects = function (url, jobId) {
           });
           if (latestInstagramUsers > 0) {
             database.raw(batchDB.upsertUsers(parsedUsers))
-              .then(result => {
+            .then(result => {
                 next();
               })
               .catch(err => {
                 console.error(err);
                 next();
               });
-          } else {
+            } else {
             next();
           }
         })
