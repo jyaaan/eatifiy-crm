@@ -18,13 +18,7 @@ const request = require('request');
 // const ProxyManager = require('./proxy_manager');
 // const proxyManager = new ProxyManager();
 const thisProxyObj = {
-  proxyAddress: "191.101.148.28",
-  port: "65233",
-  username: "johnyamashiro",
-  password: "B4h2KrO",
-  ig_username: "eatifyjohn",
-  ig_password: "occsbootcamp",
-  expiration_date: "4/21/2018"
+  // removed
 }
 const Proxy = require('./proxy');
 const proxy = new Proxy(thisProxyObj)
@@ -42,28 +36,6 @@ setTimeout(() => {
 //   nextProxy.performanceHistory.usageCount++;
 //   activeIG = nextProxy.ig;
 // }
-
-
-// const reqProxy = {
-//   proxyAddress: '146.71.87.105',
-//   port: '65233',
-//   username: 'johnyamashiro',
-//   password: 'B4h2KrO',
-//   getProxy: function (mode = 'http') {
-//     let addressBuilder = (mode == 'https' ? 'https://' : 'http://');
-//     addressBuilder += this.username + ':' + this.password + '@';
-//     addressBuilder += this.proxyAddress + ':' + this.port;
-//     return addressBuilder;
-//   }
-// }
-
-// look to change this so that we can re-use the same cookie until expiration
-// ig.initialize('JakeDMachina', 'occsbootcamp', reqProxy.getProxy('http'))
-//   .then(result => {
-//     console.log('initializing session');
-//     // console.log('session:', result);
-//     currentSession.session = result;
-//   });
 
 function spliceDuplicates(users) {
   return users.filter((user, index, collection) => {
@@ -134,19 +106,7 @@ Prospect.prototype.sendMessage = function (externalId, message) {
 Prospect.prototype.checkInbox = function () {
   
 }
-/*
-{ username: 'truefluence',
-  picture: 'https://scontent-atl3-1.cdninstagram.com/vp/7fc91e4e095b7764b5f8a3bb30cb066a/5B3F4CBF/t51.2885-19/s150x150/18299931_1176211512508631_1514144553601335296_a.jpg',
-  fullName: '',
-  id: 5436898817,
-  isPrivate: false,
-  hasAnonymousProfilePicture: false,
-  isBusiness: false,
-  profilePicId: '1510539073855659110_5436898817',
-  byLine: '65 followers',
-  followerCount: 65,
-  mutualFollowersCount: 0 }
-*/
+
 Prospect.prototype.getUser = function(username) {
   // loadActiveIG();
   return new Promise((resolve, reject) => {
@@ -258,9 +218,6 @@ Prospect.prototype.getPostLikers = function (media) {
         getAllMediaLikers(media, thisActiveIG)
           .then(likers => {
             // save them likers as prospects
-            // console.log('public count: ', likerObj.public.length);
-            // console.log('private count: ', likerObj.private.length);
-            // console.log(likerObj);
             resolve(likers);
           })
           .catch(err => {
@@ -275,27 +232,12 @@ var totalLikersProcessed = 0;
 Prospect.prototype.getAllLikers = function (externalId, timeStart, jobId, maxPostCount = 2000, igSession, maxLikerCount) {
   const errorThreshold = 10;
   var likers = [];
-  // console.log('Getting all likers for', externalId);
   var counter = 0;
   var mediaCounter = 0;
   var errorCounter = 0;
   totalLikersProcessed = 0;
   var publicLikerCount = 0;
 
-  // load active ig here
-  // loadActiveIG();
-  /*
-_params:
-   { username: 'deepakyaduvanshi5235',
-     picture: 'https://scontent-lax3-1.cdninstagram.com/vp/f2c2510885b279698dc801c413ae9ab4/5B5D020B/t51.2885-19/s150x150/17818160_230643574079114_2368253569833893888_a.jpg',
-     fullName: 'Deepak Yaduvanshi',
-     id: 4711850234,
-     isPrivate: true,
-     hasAnonymousProfilePicture: undefined,
-     isBusiness: false,
-     profilePicId: '1486874706569056270_4711850234' },
-  id: 4711850234 }
-  */
   return new Promise((resolve, reject) => {
     igSession.initializeMediaFeed(externalId)
       .then(feed => {
@@ -315,16 +257,6 @@ _params:
                           // dedupe and get public liker count.
                           publicLikerCount = likers.filter(liker => { return liker.isPrivate == false; }).length;
                           console.log('public likers: ', publicLikerCount);
-                          // var timeNow = Date.now();
-                          // var timeElapsed = (timeNow - timeStart) / 1000;
-                          // var predictedTotal = (timeElapsed * postCount) / counter;
-                          // console.log('\033c');
-                          // console.log('got new likers, unique total: ' + likers.length);
-                          // console.log('job ' + jobId + ':' + counter);
-                          // console.log('time elapsed (sec):', timeElapsed.toFixed(2));
-                          // console.log('predicted total job duration (sec):', predictedTotal.toFixed(0));
-                          // console.log('predicted time remaining (sec):', (predictedTotal - timeElapsed).toFixed(0));
-                          // console.log('errors encountered:', errorCounter);
                           setTimeout(() => {
                             next();
                           }, 1200)
@@ -826,10 +758,6 @@ const getAllMediaLikers = (media, igSession) => {
   return new Promise((resolve, reject) => {
     igSession.getLikers(media)
       .then(likers => {
-        // console.log(likers);
-        // const privateLikers = likers.filter(liker => { return liker.isPrivate; });
-        // const publicLikers = likers.filter(liker => { return liker.isPrivate == false; });
-        // resolve({ private: privateLikers, public: publicLikers });
         resolve(likers);
       })
       .catch(err => {
@@ -839,72 +767,6 @@ const getAllMediaLikers = (media, igSession) => {
   })
 }
 
-// will get likers of a specified media
-// list of candidates provided to prevent duplicate scraping
-// LEGACY
-// const getCandidates = (media, filter, candidates) => {
-//   console.log('getting likers for post');
-//   return new Promise((resolve, reject) => {
-//     ig.getLikers(media, currentSession.session)
-//       .then(likers => {
-//         var candidateNames = candidates.map(candidate => { return candidate.username });
-
-//         // First remove private likers and then remove any pre-existing.
-//         var publicLikers = likers.filter(liker => { return liker.isPrivate == false; });
-//         var dedupedPublicLikers = publicLikers.filter(liker => { return candidateNames.indexOf(liker.username) == -1; });
-//         filterLikers(dedupedPublicLikers, filter)
-//           .then(newCandidates => {
-//             resolve(newCandidates);
-//           });
-//       })
-//   })
-// }
-
-// for use with tfbridge
-// const getCandidates = (media, filter, candidates) => {
-//   console.log('getting likers for post');
-//   return new Promise((resolve, reject) => {
-//     ig.getLikers(media, currentSession.session)
-//       .then(likers => {
-//         var candidateNames = candidates.map(candidate => { return candidate.username });
-
-//         // First remove private likers and then remove any pre-existing.
-//         var publicLikers = likers.filter(liker => { return liker.isPrivate == false; });
-//         var dedupedPublicLikers = publicLikers.filter(liker => { return candidateNames.indexOf(liker.username) == -1; });
-//         filterLikers(dedupedPublicLikers, filter)
-//           .then(newCandidates => {
-//             resolve(newCandidates);
-//           });
-//       })
-//   })
-// }
-
-// scrapes and scores each liker returns list of users with score and match count
-// LEGACY VERSION - USE FOR STANDALONE PROSPECTING
-// const filterLikers = (likers, filter) => {
-//   return new Promise((resolve, reject) => {
-//     var candidates = [];
-//     async.mapSeries(likers, (liker, next) => {
-
-//       scrapeSave.scrapeSave(liker.username, database)
-//         .then(user => {
-//           var tempCandidate = verifyCandidate(user, filter);
-//           if (tempCandidate.isValid) {
-//             console.log('new candidate found');
-//             candidates.push(tempCandidate);
-//           } // put catch here
-//           next();
-//         })
-//         .catch(err => {
-//           console.error(err);
-//           next();
-//         })
-
-//     }, err => {
-//       resolve(candidates);
-//     })
-//   })
-// }
 
 // updated for use with tfbridge
 const filterCandidates = (likers, filter) => {

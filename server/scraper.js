@@ -55,27 +55,6 @@ class Scraper {
           }, 15000)
         }
 
-      
-
-
-
-
-        // try { // this is to circumvent the occasional unexpected end of JSON error that pops up.
-        //   var dataJSON = JSON.parse(bod).graphql;
-        //   var user = ParseScrape(dataJSON);
-        //   user.user.created_at = new Date();
-        //   user.user.updated_at = new Date();
-        //   arrData.push(user.user);
-        //   this.available = true;
-        // } catch (error) {
-        //   console.log(bod);
-        //   console.log('scrape json parse error');
-        //   // console.log(bod);
-        //   setTimeout(() => {
-        //     this.available = true;
-        //   }, 60000)
-        // }
-
         
       } else {
         // reject(err);
@@ -110,55 +89,3 @@ const returnParsedJSON = html => {
 }
 
 module.exports = Scraper;
-
-/*
-208.123.119.183
-
-191.101.148.33
-
-191.101.148.7
-
-144.208.127.91
-
-192.252.210.98
-
-191.96.51.250
-
-216.21.9.89
-
-163.182.175.192
-
-198.8.91.13
-
-23.88.238.18
-
-154.16.127.220
-
-208.123.119.16
-
-104.224.171.226
-
-45.63.0.140
-
-64.188.7.156
-
-107.181.175.49
-
-181.215.83.186
-
-162.213.121.250
-
-23.244.68.238
-
-181.214.203.171
-
-
-
-Login: johnyamashiro
-Password: B4h2KrO
-
-
-
-port http/https 65233
-port socks5 65234
-*/

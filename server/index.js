@@ -19,32 +19,18 @@ const publicPath = path.join(__dirname, '/public');
 const staticMiddleware = express.static(publicPath);
 const app = express();
 const currentSession = { initialized: false, session: {} };
-const Prospect = require('./prospect');
-const prospect = new Prospect();
-
-const Messaging = require('./messaging');
-const messaging = new Messaging();
-
-const TFBridge = require('./tf-bridge');
-const tfBridge = new TFBridge();
-
+const prospect = new (require('./prospect'))();
+const messaging = new (require('./messaging'))();
+const tfBridge = new (require('./tf-bridge'))();
 const http = require('http').createServer(app);
-
 const scraperManager = new (require('./scraper-manager'))();
-
-const ProxyManager = require('./proxy_manager');
-const proxyManager = new ProxyManager();
+const proxyManager = new (require('./proxy_manager'))();
+const jobManager = new(require('./job-manager'))(database);
+const pusher = new (require('./pusher'))();
 
 app.use(staticMiddleware);
 app.use(bodyParser.json());
 
-// select id, username, 
-
-const JobManager = require('./job-manager');
-const jobManager = new JobManager(database);
-
-const Pusher = require('./pusher');
-const pusher = new Pusher();
 
 // Initialization routines and parameters
 jobManager.resetInProgress();
@@ -62,12 +48,6 @@ var recurringJob5;
 var recurringJob1;
 var recurringJob1Staggered;
 
-// const activeJob = {
-//   active: false,
-//   in_progress: false,
-//   jobId: null,
-//   job: {}
-// }
 
 const availableJobs = {
   scraper: true,
@@ -247,37 +227,6 @@ const getNextJobStage = job => {
   }
 }
 
-/*
-{
-  "brand_name" => "atever',
-  "brand_username" => 'whatever',
-  "instagram_media" => {
-    "id"=>18,
-    "instagram_user_id"=>2001,
-    "external_id"=>"1564008820233265731_5759148120",
-    "link"=>"https://www.instagram.com/p/BW0ebxLlOJD/",
-    "image_low"=>"https://scontent.cdninstagram.com/vp/a48d1d7a69553ac6dc2b2f685b4a0eeb/5B1744B7/t51.2885-15/s320x320/e35/20180917_572370079819430_2476356784277684224_n.jpg",
-    "image_standard"=>"https://scontent.cdninstagram.com/vp/e97a799d719c6e55101681f942c00b7d/5B0495F4/t51.2885-15/s640x640/sh0.08/e35/20180917_572370079819430_2476356784277684224_n.jpg",
-    "image_thumbnail"=>"https://scontent.cdninstagram.com/vp/d4f9d234ab08b9b78f406e877406a811/5B2311F0/t51.2885-15/s150x150/e35/20180917_572370079819430_2476356784277684224_n.jpg",
-    "like_count"=>0,
-    "comment_count"=>0,
-    "type"=>"image",
-    "caption"=>"Meter.",
-    "posted_at"=>Fri, 21 Jul 2017 19:13:22 UTC +00:00,
-    "tags"=>[],
-    "caption_usernames"=>[],
-    "photo_usernames"=>["tfdemoj"],
-    "latitude"=>nil,
-    "longitude"=>nil,
-    "created_at"=>Tue, 05 Dec 2017 04:12:01 UTC +00:00,
-    "updated_at"=>Tue, 20 Feb 2018 19:14:17 UTC +00:00,
-    "deleted"=>false,
-    "shortcode"=>"BW0ebxLlOJD",
-    "instagram_username"=>"tfdemofavorite",
-    "usernames"=>["tfdemoj"]
-  }
-}
-*/
 
 const jsdom = require('jsdom');
 const { JSDOM } = jsdom;
@@ -362,19 +311,6 @@ app.get('/get-first-names/:tableName', (req, res) => {
               console.log(iter[1]);
               next();
             })
-            // async.eachSeries(users, (user, nextUser) => {
-            //   const emailMatch = user.bio.match(emailRE);
-            //   if (emailMatch) {
-            //     database.updateRecord('users', { email: emailMatch[0] }, 'id', user.id)
-            //       .then(result => {
-            //         nextUser();
-            //       })
-            //   } else {
-            //     nextUser();
-            //   }
-            // }, err => {
-            //   next();
-            // })
           })
       }, err => {
         console.log('email setting done');
@@ -467,42 +403,6 @@ app.post('/pusher', (req, res) => {
   res.send('ok');
 })
 
-// setTimeout(() => {
-//   setInterval(() => {
-//     pusher.ping(proxyManager);
-//   }, 1500000);
-// }, 60000)
-
-/*
-Below SC: should be “postinfo.co/tfdemofavorite"
-
-For security and re-runnability how about his for the flow:
-Truefluence pings the pusher that a new collaborations is available.
-The pusher:
-load recent posts from the TF IG account
-load recent collaborations from truefluence.io/collaborations.json
-push new collaboration posts to the TF IG account
-And since there is no state then no db is needed. It could run on AWS lambda.
-*/
-
-// returns {caption: "", url: ""}
-const processCreatePostJSON = json => {
-  var caption = '.\n' + json.brand_name + '\n' +
-  '📸Partner: @' + json.instagram_media.instagram_username + '\n' +
-  'Visit @truefluence to discover who talks to your target market\n' +
-  '.\n' +
-  '.\n' +
-  '.\n' +
-  json.instagram_media.caption + '\n' +
-  'SC:' + json.instagram_media.shortcode + '\n' +
-  'postinfo.co/' + json.instagram_media.instagram_username;
-
-  return {
-    url: json.instagram_media.image_standard,
-    caption: caption
-  }
-}
-
 app.get('/test-refresh-jobs', (req, res) => {
   jobManager.getQueuedRefreshJobs()
     .then(jobs => {
@@ -583,35 +483,6 @@ const addDays = (begin, numberOfDays) => {
 const addMonths = (begin, numberOfMonths) => {
   begin.setMonth(begin.getMonth() + numberOfMonths);
 }
-
-/*
- {
-    id: 876950,
-    username: 'jojoegaray',
-    picture_url: 'https://scontent.cdninstagram.com/vp/afd1d1f5f16290ffb248ef2309280c6c/5B519315/t51.2885-19/s150x150/28154371_979843565499046_3229711515628077056_n.jpg',
-    full_name: 'Carrying your lungs with me.❤',
-    external_id: '480674522',
-    private: false,
-    following_count: 1511,
-    follower_count: 3836,
-    bio: 'MyDonorMyHero♻DonateLife\nDbl.LungTransplant 4•5•15♻\nPF Survivor \nScleroderma CKD Gp Tube fed\nBelieves in miracles🌟\nGrateful💐\nblessed✨\nloved♥️\nTexas📍',
-    post_count: 1487,
-    external_url: 'https://flipagram.com/f/lp2jw5c3Rg',
-    created_at: 2017-11-09T19:53:21.016Z,
-    updated_at: 2018-03-30T01:46:52.133Z,
-    recent_like_count: 1050,
-    recent_comment_count: 81,
-    email: null,
-    recent_post_count: 20,
-    recent_video_count: 1,
-    days_since_last_post: '0.37',
-    recent_average_likes: '192.30',
-    recent_engagement_rate: '0.06',
-    recent_average_comments: '24.10',
-    recent_like_rate: '0.05',
-    recent_comment_rate: '0.01',
-    truefluence_score: null }
-    */
 
 
 app.get('/get-post-breakdown/:jobId', (req, res) => {
@@ -857,39 +728,7 @@ app.get('/test-method/:argument', (req, res) => {
   prospect.processJob(req.params.argument);
 
 })
-/*
-{
-prospect_list: {
-id: 1761,
-created_at: "2017-12-09T17:20:09.494-08:00",
-updated_at: "2018-01-22T18:14:58.175-08:00",
-user_id: 189,
-settings: {
-terms: { },
-prospect_count: "300",
-candidate_count: "1000",
-reference_brands: [ ],
-instagram_username: "eatifyjohn",
-upload_url: "https://app.truefluence.io/users/lovepopcards/lists/1761.json"
-},
-approved: true,
-token: "9FCzXHzdfhwBWpTi2xiv2KZQ",
-count: 49,
-refreshed_at: "2018-01-23T14:14:23.531-08:00",
-message: "",
-name: "Lovepop Line Campaign (Larger Influencers)",
-notes: "wedding line. higher followers",
-indexed_at: "2018-01-22T18:14:58.129-08:00",
-began_indexing_at: null,
-can_download: true,
-can_import: null,
-can_delete_shown: null,
-can_request_campaign: true,
-refreshing: false
-},
-}
 
-*/
 app.post('/gather', (req, res) => {
   console.log('gather request');
   const gatherObj = req.body.prospect_list;
@@ -936,60 +775,7 @@ app.post('/gather', (req, res) => {
       res.send(err);
     })
 })
-/*
-{ prospect_list:
-   { id: 5539,
-     created_at: '2018-02-20T10:42:02.799-08:00',
-     updated_at: '2018-02-26T19:46:31.582-08:00',
-     user_id: 970,
-     settings:
-      { terms: [Object],
-        region: 'eua',
-        dream_partners: [],
-        reference_brands: [Object],
-        special_requests: '' },
-     approved: false,
-     token: 'rBn4c8nES7hBCm7Qrtc4EhzK',
-     count: 0,
-     refreshed_at: '2018-02-26T19:50:04.011-08:00',
-     message: '',
-     name: 'Prospects',
-     notes: '',
-     indexed_at: '2018-02-26T19:46:30.685-08:00',
-     began_indexing_at: '2018-02-21T18:51:05.969-08:00',
-     upload_url: 'https://app.truefluence.io/users/dgentrena/prospects/5539.csv?token=rBn4c8nES7hBCm7Qrtc4EhzK',
-     candidate_count: 1000,
-     prospect_count: 300,
-     region: 'eua',
-     special_requests: '',
-     positive_keywords: 'cycling',
-     reference_brands: '@rapha',
-     dream_partners: '',
-     follower_count_min: null,
-     follower_count_ideal: null,
-     follower_count_max: null,
-     follower_following_ratio_min: null,
-     follower_following_ratio_ideal: null,
-     follower_following_ratio_max: null,
-     recent_average_like_rate_min: null,
-     recent_average_like_rate_ideal: null,
-     recent_average_like_rate_max: null,
-     recent_average_comment_rate_min: null,
-     recent_average_comment_rate_ideal: null,
-     recent_average_comment_rate_max: null,
-     recent_average_engagement_rate_min: null,
-     recent_average_engagement_rate_ideal: null,
-     recent_average_engagement_rate_max: null,
-     recent_average_post_rate_min: null,
-     recent_average_post_rate_ideal: null,
-     recent_average_post_rate_max: null,
-     instagram_username: 'dgentrena',
-     instgram_user_external_id: '1568926667',
-     can_download: true,
-     can_import: null,
-     can_delete_shown: null,
-     can_request_campaign: true } }
-*/
+
 app.post('/distill', (req, res) => {
   console.log('distill request');
   // console.log(req.body);
@@ -1021,23 +807,6 @@ app.post('/distill', (req, res) => {
   // console.log(JSON.stringify(distillRequest));
   res.send('received');
 });
-
-// const getFilters = distillRequest => {
-//   searchTerms = getKeywords(distillRequest);
-//   return {
-//     keywords: searchTerms.terms,
-//     keywords_count: searchTerms.count,
-//     min_followers: ,
-//     max_followers: ,
-//     min_following: ,
-//     max_following: ,
-//     min_posts: ,
-//     max_posts: ,
-//     min_recent_posts: ,
-//     max_recent_posts: ,
-//     min_
-//   }
-// }
 
 const getKeywords = distillRequest => {
   const terms = Object.keys(distillRequest.prospect_list.settings.terms);
@@ -1081,13 +850,7 @@ getDownloadURL = listDetails => {
   return downloadURL;
 }
 
-/*
-return:
-{
-prospect_list_id: 1637,
-token: "xWNVzMMFcbA5YyVSQiWyMpt5"
-}
-*/
+
 app.get('/test-create-prospect-list/:username', (req, res) => {
   tfBridge.createProspectList(req.params.username, 'LXJrk8BevkpMvGoNUA4SR3L1-u') // save to env var
     .then(result => {
@@ -1211,29 +974,6 @@ app.post('/create-job', (req, res) => {
     })
 })
 
-// renderFormattedProspects(listDetails.prospect_job_id)
-//   .then(prospects => {
-//     prospectCount = prospects.length;
-//     batchProspects(prospects).map(batch => {
-//       setTimeout(() => {
-//         tfBridge.submitProspects(submitURL, batch);
-//       }, 500);
-//     })
-//   })
-//   .then(result => {
-//     const updateJob = {
-//       id: listDetails.prospect_job_id,
-//       list_sent: true,
-//       prospect_count: prospectCount
-//     }
-//     console.log('update job:', updateJob);
-//     database.updateJob(updateJob)
-//       .then(done => {
-//         // confirmed that update occurs
-//         // start checking every minute to see if list is finished
-//       })
-//   })
-
 const startTFTransfer = job => {
   console.log('starting transfer');
   const listDetails = parseListDetails(job);
@@ -1300,48 +1040,6 @@ const startTFTransfer = job => {
               iter();
             })
           })
-
-        // async.mapSeries(batch, (user, next) => {
-        //   database.getMediasByUserId(user.external_id)
-        //     .then(medias => {
-        //       if (medias.length > 0) {
-        //         medias.forEach(media => {
-        //           delete media.id;
-        //         })
-        //         console.log('received medias for: ', user.username);
-        //         delete user.id;
-        //         user.medias = medias;
-        //       } else {
-        //         user.medias = [];
-        //       }
-        //       next();
-        //     })
-        // }, err => {
-        //   // users.forEach(user => {
-        //   //   try {
-        //   //     user.medias.length;
-        //   //   } catch (error) {
-        //   //     console.log('could not get length of undefined:');
-        //   //     console.error(error);
-        //   //     console.log(user);
-        //   //   }
-        //   // })
-        //   var mediaUsers = batch.filter(user => { return user.medias }).filter(user => { return user.medias.length > 0 });
-        //   var uploadBatches = batchProspects(mediaUsers, 20);
-        //   async.eachSeries(uploadBatches, (uploadBatch, next) => {
-        //     setTimeout(() => {
-        //       tfBridge.submitProspects(submitURL, uploadBatch)
-        //         .then(result => {
-        //           next();
-        //         })
-        //         .catch(err => {
-        //           console.error(err);
-        //         })
-        //       }, 300);
-        //     }, err => {
-        //       iter();
-        //   })
-        // })
       }, err => {
         const jobUpdate = {
           id: job.id,
@@ -1399,51 +1097,6 @@ const startMediaPull = job => {
               // console.log(job);
             })
       })
-
-      // async.mapSeries(prospectIds, (prospectId, next) => {
-      //   prospect.getMedia(prospectId)
-      //     .then(medias => {
-      //       if (medias[0]) {
-      //         medias.forEach(media => {
-      //           media.user_external_id = prospectId;
-      //           media.created_at = new Date();
-      //           media.updated_at = new Date();
-      //           arrMedias.push(media); 
-      //         });
-      //       }
-      //       next();
-      //     })
-      //     .catch(err => {
-      //       console.error(err);
-      //       next();
-      //     })
-      // }, err => {
-      //   console.log('media pull completed, upserting');
-      //   // console.log(arrMedias);
-      //   // console.log(batchDB.upsertMedias([arrMedias[0], arrMedias[1]]));
-      //   // async.mapSeries(arrMedias, (media, next) => {
-      //     database.raw(batchDB.upsertMedias(arrMedias))
-      //       .then(result => {
-      //         console.log()
-      //         const jobUpdate = {
-      //           id: job.id,
-      //           in_progress: false,
-      //           queued: true,
-      //           stage: 'Awaiting Transfer'
-      //         };
-      //         jobManager.updateJob(jobUpdate)
-      //           .then(update => {
-      //             // launchNextJob(update);
-      //             // console.log(job);
-      //           })
-      //         // next();
-      //       })
-      //       .catch(err => {
-      //         console.log(batchDB.upsertMedias([arrMedias[0]]));
-      //         console.error(err);
-      //       })
-      //   // })
-      // })
     })
 }
 
@@ -1491,58 +1144,6 @@ const startScrapingJob = job => {
               })
       })
 
-
-      // async.mapSeries(prospects, (prospect, next) => {
-      //   setTimeout(() => {
-      //     Scraper(prospect)
-      //       .then(user => {
-              // user.user.created_at = new Date();
-              // user.user.updated_at = new Date();
-              // users.push(user.user);
-              // console.log('scraped: ', user.user.username)
-      //         // database.upsertUser(user.user)
-      //         //   .then(result => {
-      //         //     console.log('successful upsert');
-      //         //     next();
-      //         //   })
-      //         //   .catch(err => {
-      //         //     console.log('upser error');
-      //         //     console.error(err);
-      //         //     next();
-      //         //   })
-      //         next();
-      //       })
-      //       .catch(err => {
-      //         console.log('error detected');
-      //         setTimeout(() => {
-      //             next();
-      //           }, 30000);
-      //         })
-      //   }, 300);
-      // }, err => {
-      //   console.log('batch upserting');
-      //   database.raw(batchDB.upsertUsers(users))
-      //     .then(result => {
-      //       const jobUpdate = {
-      //         id: job.id,
-      //         in_progress: false,
-      //         queued: true,
-      //         stage: 'Awaiting Media Pull'
-      //       };
-      //       jobManager.updateJob(jobUpdate)
-      //         .then(update => {
-      //           // launchNextJob(update);
-      //           // console.log(job);
-      //         })
-      //     })
-      //     // .then(result => {
-      //     //   console.log('batch upsert count:', users.length);
-      //     //   console.log(result);
-      //     // })
-      //     // .catch(err => {
-      //     //   console.log('batch upsert failure');
-      //     // })
-      // })
     })
 }
 
@@ -1626,26 +1227,6 @@ const startProspectJobLEGACY = jobId => {
                 database.updateJob(updateJob)
                   .then(done => {
                     return('holla!');
-                    // res.end();
-                    // confirmed that update occurs
-                    // start checking every minute to see if list is finished
-                    // var checkJob = setInterval(checkIfRefreshed, 60000);
-                    // function checkIfRefreshed() {
-                    //   tfBridge.verifyList(downloadURL)
-                    //     .then(verified => {
-                    //       if (verified) {
-                    //         console.log('refresh complete, killing recurring job and initializing download');
-                    //         clearInterval(checkJob);
-                    //         res.send('downloading in progress');
-                    //         tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
-                    //           .then(returnObj => {
-                    //             messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
-                    //           });
-                    //       } else {
-                    //         console.log('refresh not complete, retrying in 60 seconds');
-                    //       }
-                    //     })
-                    // }
                   })
               })
           })
@@ -1693,22 +1274,6 @@ app.post('/update-leads', (req, res) => {
   console.log('received leads');
   // console.log(req.body.leads);
   const leads = req.body.leads.map(lead => { return lead.username });
-  // console.log(leads);
-  // leads.forEach(lead => {
-  //   lead.send_postinfo_email = true;
-  // })
-  // async.eachSeries(leads, (lead, next) => {
-  //   console.log(lead.username);
-  //   database.updateRecord('users', {
-  //     sent_postinfo_email: true
-  //   }, 'username', lead.username)
-  //   .then(result => {
-  //     next();
-  //   })
-  // }, err => {
-  //   res.sendStatus(200);
-  //   console.log('done');
-  // })
   database.raw(batchDB.markUsersAsSent(leads))
   .then(result => {
     console.log(result);
@@ -1759,26 +1324,6 @@ app.get('/initiate-prospect-job/:jobId', (req, res) => {
                   database.updateJob(updateJob)
                     .then(done => {
                       return('holla!');
-                      // res.end();
-                      // confirmed that update occurs
-                      // start checking every minute to see if list is finished
-                      // var checkJob = setInterval(checkIfRefreshed, 60000);
-                      // function checkIfRefreshed() {
-                      //   tfBridge.verifyList(downloadURL)
-                      //     .then(verified => {
-                      //       if (verified) {
-                      //         console.log('refresh complete, killing recurring job and initializing download');
-                      //         clearInterval(checkJob);
-                      //         res.send('downloading in progress');
-                      //         tfBridge.downloadProspects(downloadURL, listDetails.prospect_job_id)
-                      //           .then(returnObj => {
-                      //             messaging.send(returnObj.count + ' users downloaded in ' + returnObj.duration + ' seconds for jobId: ' + listDetails.prospect_job_id);
-                      //           });
-                      //       } else {
-                      //         console.log('refresh not complete, retrying in 60 seconds');
-                      //       }
-                      //     })
-                      // }
                     })
                 })
             })

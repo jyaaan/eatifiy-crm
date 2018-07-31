@@ -55,29 +55,8 @@ if (objJSON.user.edge_owner_to_timeline_media.edges.length > 0) {
 
     user.recent_comment_rate = user.follower_count > 0 ? user.recent_average_comments / user.follower_count : 0;
 
-    // medias = objJSON.user.edge_owner_to_timeline_media.edges.map(media => {
-    //     return {
-    //         date: media.node.date,
-    //         picture_url: media.node.thumbnail_src,
-    //         external_id: media.node.id,
-    //         user_id: media.node.owner.id,
-    //         image_low: media.node.display_url,
-    //         image_standard: media.node.display_url,
-    //         image_thumbnail: media.node.thumbnail_src,
-    //         caption: media.node.edge_media_to_caption.edges[0] ? media.node.edge_media_to_caption.edges[0].node.text : '',
-    //         link: 'https://www.instagram.com/p/' + media.node.shortcode,
-    //         like_count: media.node.edge_liked_by.count,
-    //         comment_count: media.node.edge_media_to_comment.count,
-    //         user_tags: []
-    //     }
-
-    // });
 }
-//   console.log('user:', user);
-//   return {
-//       user: user,
-//       medias: medias
-//   };
+
     return {
         user: user
     };
