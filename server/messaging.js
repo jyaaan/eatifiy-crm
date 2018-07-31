@@ -3,8 +3,7 @@ const twilio = require('twilio');
 
 class Messaging {
   constructor() {
-    // console.log(ACedcc03d72bf75acb1b6e95c6750590e3);
-    this.twilioClient = new twilio('ACedcc03d72bf75acb1b6e95c6750590e3', 'ff2abed237244f14327aebf0b26f9381');
+    this.twilioClient = new twilio();
     this.sentMessageCount = 0;
   }
   
